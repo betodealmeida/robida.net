@@ -1,0 +1,5 @@
+.python-version
+.coverage
+.env
+robida.sqlite
+__pycache__

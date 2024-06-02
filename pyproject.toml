@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "robida"
+version = "0.1.0"
+description = ""
+authors = ["Beto Dealmeida <roberto@dealmeida.net>"]
+readme = "README.md"
+packages = [{include = "robida", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+quart = "^0.19.6"
+quart-schema = "^0.20.0"
+aiosqlite = "^0.20.0"
+python-dotenv = "^1.0.1"
+
+types-aiofiles = "^23.2.0.20240403"
+puremagic = "^1.23"
+pydantic = "^2.7.2"
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.7"
+flake8-pyproject = "^1.2.3"
+pytest-asyncio = "^0.23.7"
+pytest-mock = "^3.14.0"
+pytest-cov = "^5.0.0"
+freezegun = "^1.5.1"
+pre-commit = "^3.7.1"
+pylint = "^3.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+start = "robida.main:run"
+init_db = "robida.main:init_db_sync"
+
+[tool.flake8]
+max-line-length = 90
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
