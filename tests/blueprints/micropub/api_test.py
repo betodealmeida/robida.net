@@ -7,18 +7,18 @@ import urllib.parse
 from io import BytesIO
 from uuid import UUID
 
-import aiosqlite
+from aiosqlite.core import Connection
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
-from quart import Quart, testing
+from quart import testing
 from quart.datastructures import FileStorage
 
 
 @freeze_time("2024-01-01 00:00:00")
 async def test_create_entry(
     mocker: MockerFixture,
-    current_app: Quart,
     client: testing.QuartClient,
+    db: Connection,
 ) -> None:
     """
     Test main endpoint.
@@ -41,35 +41,32 @@ async def test_create_entry(
 
     assert response.status_code == 201
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute("SELECT * FROM entries") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM entries") as cursor:
+        row = await cursor.fetchone()
 
-    assert row == (
-        "92cdeabd-8278-43ad-871d-0214dcb2d12e",
-        "http://robida.net/",
-        json.dumps(
+    assert dict(row) == {
+        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://robida.net/",
+        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "content": json.dumps(
             {
                 "type": ["h-entry"],
-                "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo", "bar"],
-                },
+                "properties": {"content": ["hello world"], "category": ["foo", "bar"]},
             },
             separators=(",", ":"),
         ),
-        0,
-        0,
-        "2024-01-01 00:00:00+00:00",
-        "2024-01-01 00:00:00+00:00",
-    )
+        "read": 0,
+        "deleted": 0,
+        "created_at": "2024-01-01 00:00:00+00:00",
+        "last_modified_at": "2024-01-01 00:00:00+00:00",
+    }
 
 
 @freeze_time("2024-01-01 00:00:00")
 async def test_create_entry_no_type(
     mocker: MockerFixture,
-    current_app: Quart,
     client: testing.QuartClient,
+    db: Connection,
 ) -> None:
     """
     Test main endpoint with a multipart/form-data payload without the type specified.
@@ -91,35 +88,32 @@ async def test_create_entry_no_type(
 
     assert response.status_code == 201
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute("SELECT * FROM entries") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM entries") as cursor:
+        row = await cursor.fetchone()
 
-    assert row == (
-        "92cdeabd-8278-43ad-871d-0214dcb2d12e",
-        "http://robida.net/",
-        json.dumps(
+    assert dict(row) == {
+        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://robida.net/",
+        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "content": json.dumps(
             {
                 "type": ["h-entry"],
-                "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo", "bar"],
-                },
+                "properties": {"content": ["hello world"], "category": ["foo", "bar"]},
             },
             separators=(",", ":"),
         ),
-        0,
-        0,
-        "2024-01-01 00:00:00+00:00",
-        "2024-01-01 00:00:00+00:00",
-    )
+        "read": 0,
+        "deleted": 0,
+        "created_at": "2024-01-01 00:00:00+00:00",
+        "last_modified_at": "2024-01-01 00:00:00+00:00",
+    }
 
 
 @freeze_time("2024-01-01 00:00:00")
 async def test_create_entry_from_json(
     mocker: MockerFixture,
-    current_app: Quart,
     client: testing.QuartClient,
+    db: Connection,
 ) -> None:
     """
     Test main endpoint with a JSON request payload.
@@ -144,14 +138,14 @@ async def test_create_entry_from_json(
 
     assert response.status_code == 201
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute("SELECT * FROM entries") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM entries") as cursor:
+        row = await cursor.fetchone()
 
-    assert row == (
-        "92cdeabd-8278-43ad-871d-0214dcb2d12e",
-        "http://robida.net/",
-        json.dumps(
+    assert dict(row) == {
+        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://robida.net/",
+        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
@@ -162,18 +156,18 @@ async def test_create_entry_from_json(
             },
             separators=(",", ":"),
         ),
-        0,
-        0,
-        "2024-01-01 00:00:00+00:00",
-        "2024-01-01 00:00:00+00:00",
-    )
+        "read": 0,
+        "deleted": 0,
+        "created_at": "2024-01-01 00:00:00+00:00",
+        "last_modified_at": "2024-01-01 00:00:00+00:00",
+    }
 
 
 @freeze_time("2024-01-01 00:00:00")
 async def test_create_entry_from_json_no_type(
     mocker: MockerFixture,
-    current_app: Quart,
     client: testing.QuartClient,
+    db: Connection,
 ) -> None:
     """
     Test main endpoint with a JSON request payload without the type specified.
@@ -197,14 +191,14 @@ async def test_create_entry_from_json_no_type(
 
     assert response.status_code == 201
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute("SELECT * FROM entries") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM entries") as cursor:
+        row = await cursor.fetchone()
 
-    assert row == (
-        "92cdeabd-8278-43ad-871d-0214dcb2d12e",
-        "http://robida.net/",
-        json.dumps(
+    assert dict(row) == {
+        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://robida.net/",
+        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
@@ -215,21 +209,21 @@ async def test_create_entry_from_json_no_type(
             },
             separators=(",", ":"),
         ),
-        0,
-        0,
-        "2024-01-01 00:00:00+00:00",
-        "2024-01-01 00:00:00+00:00",
-    )
+        "read": 0,
+        "deleted": 0,
+        "created_at": "2024-01-01 00:00:00+00:00",
+        "last_modified_at": "2024-01-01 00:00:00+00:00",
+    }
 
 
 @freeze_time("2024-01-01 00:00:00")
 async def test_create_entry_with_file(
     mocker: MockerFixture,
-    current_app: Quart,
     client: testing.QuartClient,
+    db: Connection,
 ) -> None:
     """
-    Test main endpoint.
+    Test uploading file directly.
     """
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
@@ -238,7 +232,7 @@ async def test_create_entry_with_file(
             UUID("c35ad471-6c6c-488b-9ffc-8854607192f0"),
         ],
     )
-    mocker.patch("robida.blueprints.media.api.aiofiles")
+    mocker.patch("robida.blueprints.micropub.api.aiofiles")
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
@@ -253,31 +247,31 @@ async def test_create_entry_with_file(
 
     assert response.status_code == 201
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute("SELECT * FROM entries") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM entries") as cursor:
+        row = await cursor.fetchone()
 
-    assert row == (
-        "c35ad471-6c6c-488b-9ffc-8854607192f0",
-        "http://robida.net/",
-        json.dumps(
+    assert dict(row) == {
+        "uuid": "c35ad4716c6c488b9ffc8854607192f0",
+        "author": "http://robida.net/",
+        "location": "http://robida.net/entries/c35ad4716c6c488b9ffc8854607192f0",
+        "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
                     "content": ["hello world"],
                     "category": ["foo"],
                     "photo": [
-                        "http://robida.net/media/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                        "http://robida.net/media/92cdeabd827843ad871d0214dcb2d12e"
                     ],
                 },
             },
             separators=(",", ":"),
         ),
-        0,
-        0,
-        "2024-01-01 00:00:00+00:00",
-        "2024-01-01 00:00:00+00:00",
-    )
+        "read": 0,
+        "deleted": 0,
+        "created_at": "2024-01-01 00:00:00+00:00",
+        "last_modified_at": "2024-01-01 00:00:00+00:00",
+    }
 
 
 async def test_index(client: testing.QuartClient) -> None:
@@ -370,10 +364,7 @@ async def test_index_invalid(client: testing.QuartClient) -> None:
     }
 
 
-async def test_delete_and_undelete(
-    current_app: Quart,
-    client: testing.QuartClient,
-) -> None:
+async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) -> None:
     """
     Test deleting and undeleting an entry.
     """
@@ -390,44 +381,38 @@ async def test_delete_and_undelete(
     url = response.headers["Location"]
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute(
-            "SELECT deleted FROM entries WHERE uuid = ?",
-            (uuid,),
-        ) as cursor:
-            row = await cursor.fetchone()
+    async with db.execute(
+        "SELECT deleted FROM entries WHERE uuid = ?",
+        (uuid,),
+    ) as cursor:
+        row = await cursor.fetchone()
 
     assert row[0] == 0
 
     response = await client.post("/micropub/", json={"url": url, "action": "delete"})
     assert response.status_code == 204
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute(
-            "SELECT deleted FROM entries WHERE uuid = ?",
-            (uuid,),
-        ) as cursor:
-            row = await cursor.fetchone()
+    async with db.execute(
+        "SELECT deleted FROM entries WHERE uuid = ?",
+        (uuid,),
+    ) as cursor:
+        row = await cursor.fetchone()
 
     assert row[0] == 1
 
     response = await client.post("/micropub/", json={"url": url, "action": "undelete"})
     assert response.status_code == 204
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute(
-            "SELECT deleted FROM entries WHERE uuid = ?",
-            (uuid,),
-        ) as cursor:
-            row = await cursor.fetchone()
+    async with db.execute(
+        "SELECT deleted FROM entries WHERE uuid = ?",
+        (uuid,),
+    ) as cursor:
+        row = await cursor.fetchone()
 
     assert row[0] == 0
 
 
-async def test_update(
-    current_app: Quart,
-    client: testing.QuartClient,
-) -> None:
+async def test_update(client: testing.QuartClient, db: Connection) -> None:
     """
     Test updating an entry.
     """
@@ -464,15 +449,14 @@ async def test_update(
         )
     assert response.status_code == 204
 
-    async with aiosqlite.connect(current_app.config["DATABASE"]) as db:
-        async with db.execute(
-            "SELECT content, last_modified_at FROM entries WHERE uuid = ?",
-            (uuid,),
-        ) as cursor:
-            row = await cursor.fetchone()
+    async with db.execute(
+        "SELECT content, last_modified_at FROM entries WHERE uuid = ?",
+        (uuid,),
+    ) as cursor:
+        row = await cursor.fetchone()
 
-    assert row == (
-        json.dumps(
+    assert dict(row) == {
+        "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
@@ -482,8 +466,8 @@ async def test_update(
             },
             separators=(",", ":"),
         ),
-        "2024-01-02 00:00:00+00:00",
-    )
+        "last_modified_at": "2024-01-02 00:00:00+00:00",
+    }
 
 
 async def test_invalid_action(client: testing.QuartClient) -> None:

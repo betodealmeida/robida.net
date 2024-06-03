@@ -16,26 +16,22 @@
         </header>
 
         <main>
-            <h2>Heya!</h2>
+            <h2>Authorization request</h2>
 
-            <p>This is my very minimal website.</p>
+            <p>
+                <strong><a href="{{ client_info.url }}">{{ client_info.name }}</a></strong>
+                is requesting access to your identity{% if scope %} and the following scopes:{% else %}.{% endif %}
+            </p>
 
-            <nav>
-                <ol>
-                    <li>If you want to follow content:
-                        <ul>
-                            <li>Subscribe to the <a href="#">RSS</a> or <a href="#">Atom</a> feed.</li>
-                            <li>Use <a href="#">WebSub</a>.</li>
-                        </ul>
-                    </li>
-                    <li>If you want to leave a comment:
-                        <ul>
-                            <li>Send a <a href="#">WebMention</a> to any page.</li>
-                            <li>Comment from the <a href="#">Fediverse</a>.</li>
-                        </ul>
-                    </li>
-                </ol>
-            </nav>
+            {% if scope %}
+            <ul>
+                {% for s in scope.split(" ") %}
+                <li><code>{{ s }}</code></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            <p><a class="button" href="{{ redirect_uri }}">Allow</a></p>
         </main>
 
         <footer>

@@ -9,7 +9,7 @@ blueprint = Blueprint("wellknown", __name__, url_prefix="/.well-known")
 
 
 RESPONSE_TYPES_SUPPORTED = {"code"}
-GRANT_TYPES_SUPPORTED = {"authorization_code"}
+GRANT_TYPES_SUPPORTED = {"authorization_code", "refresh_token"}
 CODE_CHALLENGE_METHODS_SUPPORTED = {"S256"}
 
 
@@ -48,10 +48,12 @@ async def oauth_authorization_server() -> Response:
                 "profile",
                 "email",
             ],
-            "response_types_supported": list(RESPONSE_TYPES_SUPPORTED),
-            "grant_types_supported": list(GRANT_TYPES_SUPPORTED),
+            "response_types_supported": sorted(RESPONSE_TYPES_SUPPORTED),
+            "grant_types_supported": sorted(GRANT_TYPES_SUPPORTED),
             "service_documentation": "https://indieauth.spec.indieweb.org/",
-            "code_challenge_methods_supported": list(CODE_CHALLENGE_METHODS_SUPPORTED),
+            "code_challenge_methods_supported": sorted(
+                CODE_CHALLENGE_METHODS_SUPPORTED
+            ),
             "authorization_response_iss_parameter_supported": True,
             "userinfo_endpoint": url_for("indieauth.userinfo", _external=True),
         }

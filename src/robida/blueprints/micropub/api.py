@@ -119,7 +119,7 @@ async def index() -> Response:
         url = request.args.get("url")
         uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
-        async with get_db() as db:
+        async with get_db(current_app) as db:
             async with db.execute(
                 "SELECT content FROM entries WHERE uuid = ?", (uuid,)
             ) as cursor:
@@ -195,7 +195,7 @@ async def post() -> Response:
     files = await request.files
     for name, file in files.items():
         uuid = uuid4()
-        file_path = Path(current_app.config["MEDIA"]) / str(uuid)
+        file_path = Path(current_app.config["MEDIA"]) / uuid.hex
 
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(file.read())
@@ -203,7 +203,7 @@ async def post() -> Response:
         data.properties[name] = [
             url_for(
                 "media.download",
-                filename=str(uuid),
+                filename=uuid.hex,
                 _external=True,
             )
         ]
@@ -218,15 +218,17 @@ async def create(data: Microformats2) -> Response:
     uuid = uuid4()
     author = url_for("homepage.index", _external=True)
     created_at = last_modified_at = datetime.now(timezone.utc)
+    url = url_for("entries.entry", uuid=uuid.hex, _external=True)
 
-    async with get_db() as db:
+    async with get_db(current_app) as db:
         await db.execute(
             "INSERT INTO entries "
-            "(uuid, author, content, created_at, last_modified_at) "
-            "VALUES (?, ?, ?, ?, ?)",
+            "(uuid, author, location, content, created_at, last_modified_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             (
-                str(uuid),
+                uuid.hex,
                 author,
+                url,
                 data.model_dump_json(exclude_unset=True),
                 created_at,
                 last_modified_at,
@@ -236,7 +238,7 @@ async def create(data: Microformats2) -> Response:
 
     response = await make_response("")
     response.status_code = 201
-    response.headers["Location"] = url_for("feed.entry", uuid=uuid, _external=True)
+    response.headers["Location"] = url
 
     return response
 
@@ -248,7 +250,7 @@ async def update(payload) -> Response:
     url = payload["url"]
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
-    async with get_db() as db:
+    async with get_db(current_app) as db:
         async with db.execute(
             "SELECT content FROM entries WHERE uuid = ?", (uuid,)
         ) as cursor:
@@ -275,7 +277,7 @@ async def update(payload) -> Response:
 
     last_modified_at = datetime.now(timezone.utc)
 
-    async with get_db() as db:
+    async with get_db(current_app) as db:
         await db.execute(
             "UPDATE entries SET content = ?, last_modified_at = ? WHERE uuid = ?",
             (data.model_dump_json(exclude_unset=True), last_modified_at, uuid),
@@ -284,7 +286,7 @@ async def update(payload) -> Response:
 
     response = await make_response("")
     response.status_code = 204
-    response.headers["Location"] = url_for("feed.entry", uuid=uuid, _external=True)
+    response.headers["Location"] = url_for("entries.entry", uuid=uuid, _external=True)
 
     return response
 
@@ -296,7 +298,7 @@ async def delete(payload) -> Response:
     url = payload["url"]
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
-    async with get_db() as db:
+    async with get_db(current_app) as db:
         await db.execute("UPDATE entries SET deleted = TRUE WHERE uuid = ?", (uuid,))
         await db.commit()
 
@@ -310,7 +312,7 @@ async def undelete(payload) -> Response:
     url = payload["url"]
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
-    async with get_db() as db:
+    async with get_db(current_app) as db:
         await db.execute("UPDATE entries SET deleted = FALSE WHERE uuid = ?", (uuid,))
         await db.commit()
 

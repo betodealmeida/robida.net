@@ -24,7 +24,7 @@ async def index() -> Response:
     """
     links = {rel: url_for(endpoint, _external=True) for rel, endpoint in rels.items()}
 
-    headers = {"Link": [f'<{url}>; rel="{rel}"' for rel, url in rels.items()]}
+    headers = {"Link": [f'<{url}>; rel="{rel}"' for rel, url in links.items()]}
 
     rendered = await render_template("index.html", links=links)
     response = await make_response(rendered)
