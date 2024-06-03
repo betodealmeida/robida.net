@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimal HTML5 Page</title>
+    {% for rel, endpoint in links.items() %}
+    <link rel="{{ rel }}" href="{{ endpoint }}">
+    {% endfor %}
     <style>
         body {
             font-family: Arial, sans-serif;

@@ -12,8 +12,10 @@ from quart_schema import QuartSchema
 
 from robida.blueprints.feed import api as feed
 from robida.blueprints.homepage import api as homepage
+from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
+from robida.blueprints.wellknown import api as wellknown
 
 quart_schema = QuartSchema()
 
@@ -35,8 +37,13 @@ def create_app(test_config: dict[str, str] | None = None) -> Quart:
     # blueprints
     app.register_blueprint(feed.blueprint)
     app.register_blueprint(homepage.blueprint)
+    app.register_blueprint(indieauth.blueprint)
     app.register_blueprint(media.blueprint)
     app.register_blueprint(micropub.blueprint)
+    app.register_blueprint(wellknown.blueprint)
+
+    app.jinja_env.trim_blocks = True
+    app.jinja_env.lstrip_blocks = True
 
     return app
 
