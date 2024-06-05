@@ -5,10 +5,14 @@ My website.
 ## TODO
 
 - [X] MicroPub
-- [ ] IndieAuth
+- [X] IndieAuth
+- [ ] Passkeys
+- [ ] RSS/Atom/XSLT
+- [ ] WebMentions
 - [ ] MicroSub
 - [ ] WebSub
-- [ ] WebMentions
 - [ ] ActivityPub
 - [ ] Syndication
-
+- [ ] Gemini
+- [ ] Titan?
+- [ ] RelMeAuth?

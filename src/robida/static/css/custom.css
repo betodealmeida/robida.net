@@ -1,0 +1,11 @@
+:root {
+  --accent: #456;
+}
+
+.copyright {
+    text-decoration: none;
+}
+
+.copyright img {
+    height: 1.0em;
+}

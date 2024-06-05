@@ -11,6 +11,9 @@ blueprint = Blueprint("homepage", __name__, url_prefix="/")
 rels = {
     "self": "homepage.index",
     "micropub": "micropub.index",
+    "indieauth-metadata": "wellknown.oauth_authorization_server",
+    "authorization_endpoint": "indieauth.authorization",
+    "token_endpoint": "indieauth.token",
 }
 
 
@@ -19,14 +22,11 @@ async def index() -> Response:
     """
     Serve the main homepage.
     """
-    headers = {
-        "Link": [
-            f'<{url_for(endpoint, _external=True)}>; rel="{rel}"'
-            for rel, endpoint in rels.items()
-        ],
-    }
+    links = {rel: url_for(endpoint, _external=True) for rel, endpoint in rels.items()}
 
-    rendered = await render_template("index.html")
+    headers = {"Link": [f'<{url}>; rel="{rel}"' for rel, url in links.items()]}
+
+    rendered = await render_template("index.html", links=links)
     response = await make_response(rendered)
     response.headers.update(headers)
 

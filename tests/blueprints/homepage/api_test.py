@@ -19,5 +19,12 @@ async def test_homepage_headers(client: testing.QuartClient) -> None:
             ("Content-Length", len(await response.data)),
             ("link", '<http://robida.net/>; rel="self"'),
             ("link", '<http://robida.net/micropub/>; rel="micropub"'),
+            (
+                "link",
+                "<http://robida.net/.well-known/oauth-authorization-server>; "
+                'rel="indieauth-metadata"',
+            ),
+            ("link", '<http://robida.net/auth>; rel="authorization_endpoint"'),
+            ("link", '<http://robida.net/token>; rel="token_endpoint"'),
         ]
     )

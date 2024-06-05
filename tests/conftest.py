@@ -3,8 +3,10 @@ Fixtures for testing BYODB.
 """
 
 import pytest
+from aiosqlite.core import Connection
 from quart import Quart, testing
 
+from robida.db import get_db
 from robida.main import create_app, init_db
 
 
@@ -17,6 +19,8 @@ async def app(tmpdir) -> Quart:
         {
             "DATABASE": str(tmpdir.join("robida.sqlite")),
             "SERVER_NAME": "robida.net",
+            "NAME": "Robida",
+            "EMAIL": "robida@example.com",
         },
     )
     await init_db(test_app)
@@ -34,8 +38,9 @@ async def client(current_app: Quart) -> testing.QuartClient:
 
 
 @pytest.fixture
-async def runner(current_app: Quart):
+async def db(current_app: Quart) -> Connection:
     """
-    A test runner for the app's Click commands.
+    A database connection for the app.
     """
-    return current_app.test_cli_runner()
+    async with get_db(current_app) as test_db:
+        yield test_db
