@@ -8,6 +8,7 @@ from uuid import UUID
 from pytest_mock import MockerFixture
 from quart import Response, testing
 from quart.datastructures import FileStorage
+from werkzeug.datastructures import Authorization
 
 
 async def test_media_upload(mocker: MockerFixture, client: testing.QuartClient) -> None:
@@ -23,6 +24,7 @@ async def test_media_upload(mocker: MockerFixture, client: testing.QuartClient) 
     response = await client.post(
         "/media/",
         files={"file": FileStorage(BytesIO(b"bytes"), "photo.jpg")},
+        auth=Authorization("bearer", token="media"),
     )
 
     assert response.status_code == 201
@@ -39,6 +41,7 @@ async def test_media_upload_error(client: testing.QuartClient) -> None:
     response = await client.post(
         "/media/",
         files={"image": FileStorage(BytesIO(b"bytes"), "photo.jpg")},
+        auth=Authorization("bearer", token="media"),
     )
 
     assert response.status_code == 400

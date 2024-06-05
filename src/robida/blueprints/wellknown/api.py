@@ -11,6 +11,24 @@ blueprint = Blueprint("wellknown", __name__, url_prefix="/.well-known")
 RESPONSE_TYPES_SUPPORTED = {"code"}
 GRANT_TYPES_SUPPORTED = {"authorization_code", "refresh_token"}
 CODE_CHALLENGE_METHODS_SUPPORTED = {"S256"}
+SCOPES_SUPPORTED = [
+    # micropub
+    "create",
+    "draft",
+    "update",
+    "delete",
+    "undelete",
+    "media",
+    # microsub
+    "read",
+    "follow",
+    "mute",
+    "block",
+    "channels",
+    # indieauth
+    "profile",
+    "email",
+]
 
 
 @blueprint.route("/oauth-authorization-server", methods=["GET"])
@@ -30,24 +48,7 @@ async def oauth_authorization_server() -> Response:
             "introspection_endpoint_auth_methods_supported": ["client_secret_basic"],
             "revocation_endpoint": url_for("indieauth.revoke", _external=True),
             "revocation_endpoint_auth_methods_supported": ["none"],
-            "scopes_supported": [
-                # micropub
-                "create",
-                "draft",
-                "update",
-                "delete",
-                "undelete",
-                "media",
-                # microsub
-                "read",
-                "follow",
-                "mute",
-                "block",
-                "channels",
-                # indieauth
-                "profile",
-                "email",
-            ],
+            "scopes_supported": SCOPES_SUPPORTED,
             "response_types_supported": sorted(RESPONSE_TYPES_SUPPORTED),
             "grant_types_supported": sorted(GRANT_TYPES_SUPPORTED),
             "service_documentation": "https://indieauth.spec.indieweb.org/",

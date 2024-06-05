@@ -134,3 +134,16 @@ class ValidTokenVerificationResponse(TokenVerificationResponse):
     scope: str
     exp: int
     iat: int
+
+
+@dataclass
+class AuthRedirectRequest:
+    """
+    Authorization redirect request data.
+    """
+
+    code: str
+    redirect_uri: str
+    known: list[str] | str | None = None
+    unknown: list[str] | str | None = None
+    other: list[str] | str | None = None

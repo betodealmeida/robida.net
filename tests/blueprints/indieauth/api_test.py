@@ -2,6 +2,8 @@
 Tests for the IndieAuth API.
 """
 
+# pylint: disable=too-many-lines
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -55,7 +57,7 @@ async def test_authorization(
     assert response.status_code == 200
 
     soup = BeautifulSoup(await response.data, "html.parser")
-    assert soup.find("a", {"class": "button"})["href"] == (
+    assert soup.find("input", {"id": "redirect_uri"})["value"] == (
         "https://app.example.com/redirect?"
         "code=92cdeabd827843ad871d0214dcb2d12e&"
         "state=1234567890&"
@@ -948,7 +950,8 @@ async def test_introspect_token(client: testing.QuartClient, db: Connection) -> 
 
 
 async def test_introspect_token_expired(
-    client: testing.QuartClient, db: Connection
+    client: testing.QuartClient,
+    db: Connection,
 ) -> None:
     """
     Test the token introspection endpoint.
@@ -982,3 +985,65 @@ async def test_introspect_token_expired(
 
     assert response.status_code == 200
     assert await response.json == {"active": False}
+
+
+@freeze_time("2024-01-01 00:00:00")
+async def test_auth_redirect(client: testing.QuartClient, db: Connection) -> None:
+    """
+    Test the authorization redirect endpoint.
+    """
+    created_at = datetime.now(timezone.utc)
+
+    await db.execute(
+        "INSERT INTO oauth_authorization_codes "
+        "(code, client_id, redirect_uri, scope, code_challenge, "
+        "code_challenge_method, used, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "abcdef123456",
+            "https://app.example.com/",
+            "https://app.example.com/redirect",
+            "create update delete",
+            "hjooUY_1tBlE_dBuCKGUK8XuSRrc_zNByH-roC5sIXA",
+            "S256",
+            False,
+            created_at + timedelta(minutes=10),
+            created_at,
+        ),
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/auth/redirect",
+        form=[
+            ("code", "abcdef123456"),
+            (
+                "redirect_uri",
+                (
+                    "https://app.example.com/redirect?"
+                    "code=92cdeabd827843ad871d0214dcb2d12e&"
+                    "state=1234567890&"
+                    "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+                ),
+            ),
+            ("known", "create"),
+            ("known", "update"),
+            ("other", "draft"),
+        ],
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == (
+        "https://app.example.com/redirect?"
+        "code=92cdeabd827843ad871d0214dcb2d12e&"
+        "state=1234567890&"
+        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+    )
+
+    async with db.execute(
+        "SELECT scope FROM oauth_authorization_codes WHERE code = ?",
+        ("abcdef123456",),
+    ) as cursor:
+        row = await cursor.fetchone()
+
+    assert row["scope"] == "create draft update"
