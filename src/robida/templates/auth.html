@@ -20,18 +20,39 @@
 
             <p>
                 <strong><a href="{{ client_info.url }}">{{ client_info.name }}</a></strong>
-                is requesting access to your identity{% if scope %} and the following scopes:{% else %}.{% endif %}
+                is requesting access to your identity and the following scopes:
             </p>
 
-            {% if scope %}
-            <ul>
-                {% for s in scope.split(" ") %}
-                <li><code>{{ s }}</code></li>
-                {% endfor %}
-            </ul>
-            {% endif %}
+            <form action="/auth/redirect" method="post">
+                <input type="hidden" id="redirect_uri" name="redirect_uri" value="{{ redirect_uri }}" />
+                <input type="hidden" id="code" name="code" value="{{ code }}" />
 
-            <p><a class="button" href="{{ redirect_uri }}">Allow</a></p>
+                {% if known_requested_scopes %}
+                <h3>Known scopes</h3>
+                {% for scope in known_requested_scopes %}
+                <input checked type="checkbox" id="{{ scope }}" name="known" value="{{ scope }}">
+                <label for="{{ scope }}">{{ scope }}</label><br>
+                {% endfor %}
+                {% endif %}
+
+                {% if unknown_requested_scopes %}
+                <h3>Unknown scopes</h3>
+                {% for scope in unknown_requested_scopes %}
+                <input checked type="checkbox" id="{{ scope }}" name="unknown" value="{{ scope }}">
+                <label for="{{ scope }}">{{ scope }}</label><br>
+                {% endfor %}
+                {% endif %}
+
+                {% if other_scopes %}
+                <h3>Other supported scopes</h3>
+                {% for scope in other_scopes %}
+                <input type="checkbox" id="{{ scope }}" name="other" value="{{ scope }}">
+                <label for="{{ scope }}">{{ scope }}</label><br>
+                {% endfor %}
+                {% endif %}
+
+                <p><input type="submit" value="Allow" /></p>
+            </form>
         </main>
 
         <footer>
@@ -45,7 +66,8 @@
                     <img src="/static/img/by.svg" alt="BY">
                     <img src="/static/img/sa.svg" alt="SA">
                 </a>
-                2024 robida.net
+                2024
+                <a href="https://github.com/betodealmeida/robida.net/">robida.net</a>
             </p>
         </footer>
     </body>

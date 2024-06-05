@@ -14,7 +14,7 @@ from typing import Any
 from uuid import uuid4
 
 from quart import Blueprint, Response, current_app, g, render_template, request
-from quart.helpers import make_response, url_for
+from quart.helpers import make_response, redirect, url_for
 from quart_schema import (
     DataSource,
     validate_querystring,
@@ -26,6 +26,7 @@ from robida.blueprints.wellknown.api import (
     CODE_CHALLENGE_METHODS_SUPPORTED,
     GRANT_TYPES_SUPPORTED,
     RESPONSE_TYPES_SUPPORTED,
+    SCOPES_SUPPORTED,
 )
 from robida.db import get_db
 
@@ -40,6 +41,7 @@ from .models import (
     AccessTokenResponse,
     AccessTokenWithProfileResponse,
     AuthorizationRequest,
+    AuthRedirectRequest,
     ProfileResponse,
     ProfileURLResponse,
     RedeemCodeRequest,
@@ -114,14 +116,51 @@ async def authorization(query_args: AuthorizationRequest) -> Response:
     query = urllib.parse.urlencode(query_params)
     redirect_uri = parsed._replace(query=query).geturl()
 
+    supported_scopes = set(SCOPES_SUPPORTED)
+    requested_scopes = set(query_args.scope.split(" ")) if query_args.scope else set()
+    known_requested_scopes = sorted(requested_scopes & supported_scopes)
+    unknown_requested_scopes = sorted(requested_scopes - supported_scopes)
+    other_scopes = sorted(supported_scopes - requested_scopes)
+
     return await render_template(
         "auth.html",
         links={},
         me=query_args.me,
         client_info=client_info,
-        scope=query_args.scope,
+        code=code,
+        known_requested_scopes=known_requested_scopes,
+        unknown_requested_scopes=unknown_requested_scopes,
+        other_scopes=other_scopes,
         redirect_uri=redirect_uri,
     )
+
+
+@blueprint.route("/auth/redirect", methods=["POST"])
+@validate_request(AuthRedirectRequest, source=DataSource.FORM)
+async def auth_redirect(data: AuthRedirectRequest) -> Response:
+    """
+    Redirect user to the client application.
+
+    This allows the user to modify the requested scope.
+    """
+    scopes = []
+    for group in [data.known, data.unknown, data.other]:
+        if group:
+            if isinstance(group, str):
+                scopes.append(group)
+            else:
+                scopes.extend(group)
+
+    scope = " ".join(sorted(scopes))
+
+    async with get_db(current_app) as db:
+        await db.execute(
+            "UPDATE oauth_authorization_codes SET scope = ? WHERE code = ?",
+            (scope, data.code),
+        )
+        await db.commit()
+
+    return redirect(data.redirect_uri)
 
 
 @blueprint.route("/auth", methods=["POST"])

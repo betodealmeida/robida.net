@@ -25,6 +25,7 @@ from quart import (
 from quart.helpers import make_response, url_for
 from werkzeug.datastructures import MultiDict
 
+from robida.blueprints.indieauth.helpers import requires_scope
 from robida.db import get_db
 
 blueprint = Blueprint("micropub", __name__, url_prefix="/micropub")
@@ -211,6 +212,7 @@ async def post() -> Response:
     return await create(data)
 
 
+@requires_scope("create")
 async def create(data: Microformats2) -> Response:
     """
     Create a new Micropub entry.
@@ -243,6 +245,7 @@ async def create(data: Microformats2) -> Response:
     return response
 
 
+@requires_scope("update")
 async def update(payload) -> Response:
     """
     Update a Micropub entry.
@@ -291,6 +294,7 @@ async def update(payload) -> Response:
     return response
 
 
+@requires_scope("delete")
 async def delete(payload) -> Response:
     """
     Delete a Micropub entry.
@@ -305,6 +309,7 @@ async def delete(payload) -> Response:
     return await make_response("", 204)
 
 
+@requires_scope("undelete")
 async def undelete(payload) -> Response:
     """
     Undelete a Micropub entry.

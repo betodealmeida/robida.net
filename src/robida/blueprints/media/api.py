@@ -20,12 +20,14 @@ from quart import (
 )
 from quart.helpers import make_response, safe_join, send_from_directory, url_for
 
+from robida.blueprints.indieauth.helpers import requires_scope
 from robida.blueprints.micropub.api import ErrorType
 
 blueprint = Blueprint("media", __name__, url_prefix="/media")
 
 
 @blueprint.route("/", methods=["POST"])
+@requires_scope("media")
 async def upload() -> Response:
     """
     Upload a file to the Media Endpoint.

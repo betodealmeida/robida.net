@@ -2,10 +2,14 @@
 Fixtures for testing BYODB.
 """
 
+from unittest.mock import patch
+
 import pytest
 from aiosqlite.core import Connection
 from quart import Quart, testing
 
+from robida.blueprints.indieauth.helpers import get_scopes
+from robida.blueprints.wellknown.api import SCOPES_SUPPORTED
 from robida.db import get_db
 from robida.main import create_app, init_db
 
@@ -33,8 +37,19 @@ async def client(current_app: Quart) -> testing.QuartClient:
     """
     A test client for the app.
     """
-    async with current_app.test_client() as test_client:
-        yield test_client
+
+    async def mock_get_scopes(token: str | None) -> set[str]:
+        """
+        Mock `get_scopes` to return the token as the scope.
+        """
+        if token in SCOPES_SUPPORTED:
+            return {token}
+
+        return await get_scopes(token)
+
+    with patch("robida.blueprints.indieauth.helpers.get_scopes", mock_get_scopes):
+        async with current_app.test_client() as test_client:
+            yield test_client
 
 
 @pytest.fixture

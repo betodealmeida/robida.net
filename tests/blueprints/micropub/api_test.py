@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from pytest_mock import MockerFixture
 from quart import testing
 from quart.datastructures import FileStorage
+from werkzeug.datastructures import Authorization
 
 
 @freeze_time("2024-01-01 00:00:00")
@@ -37,6 +38,7 @@ async def test_create_entry(
             ("category[]", "foo"),
             ("category[]", "bar"),
         ],
+        auth=Authorization("bearer", token="create"),
     )
 
     assert response.status_code == 201
@@ -84,6 +86,7 @@ async def test_create_entry_no_type(
             ("category[]", "foo"),
             ("category[]", "bar"),
         ],
+        auth=Authorization("bearer", token="create"),
     )
 
     assert response.status_code == 201
@@ -134,6 +137,7 @@ async def test_create_entry_from_json(
                 "photo": ["https://photos.example.com/592829482876343254.jpg"],
             },
         },
+        auth=Authorization("bearer", token="create"),
     )
 
     assert response.status_code == 201
@@ -187,6 +191,7 @@ async def test_create_entry_from_json_no_type(
                 "photo": ["https://photos.example.com/592829482876343254.jpg"],
             },
         },
+        auth=Authorization("bearer", token="create"),
     )
 
     assert response.status_code == 201
@@ -243,6 +248,7 @@ async def test_create_entry_with_file(
             "category[]": "foo",
         },
         files={"photo": FileStorage(BytesIO(b"bytes"), "photo.jpg")},
+        auth=Authorization("bearer", token="create"),
     )
 
     assert response.status_code == 201
@@ -324,6 +330,7 @@ async def test_index_source(client: testing.QuartClient) -> None:
                 "category": ["foo", "bar"],
             },
         },
+        auth=Authorization("bearer", token="create"),
     )
     url = response.headers["Location"]
 
@@ -377,6 +384,7 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
                 "photo": ["https://photos.example.com/592829482876343254.jpg"],
             },
         },
+        auth=Authorization("bearer", token="create"),
     )
     url = response.headers["Location"]
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
@@ -389,7 +397,11 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
 
     assert row[0] == 0
 
-    response = await client.post("/micropub/", json={"url": url, "action": "delete"})
+    response = await client.post(
+        "/micropub/",
+        json={"url": url, "action": "delete"},
+        auth=Authorization("bearer", token="delete"),
+    )
     assert response.status_code == 204
 
     async with db.execute(
@@ -400,7 +412,11 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
 
     assert row[0] == 1
 
-    response = await client.post("/micropub/", json={"url": url, "action": "undelete"})
+    response = await client.post(
+        "/micropub/",
+        json={"url": url, "action": "undelete"},
+        auth=Authorization("bearer", token="undelete"),
+    )
     assert response.status_code == 204
 
     async with db.execute(
@@ -426,6 +442,7 @@ async def test_update(client: testing.QuartClient, db: Connection) -> None:
                     "photo": ["https://photos.example.com/592829482876343254.jpg"],
                 },
             },
+            auth=Authorization("bearer", token="create"),
         )
     url = response.headers["Location"]
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
@@ -446,6 +463,7 @@ async def test_update(client: testing.QuartClient, db: Connection) -> None:
                     "photo": ["https://photos.example.com/592829482876343254.jpg"],
                 },
             },
+            auth=Authorization("bearer", token="update"),
         )
     assert response.status_code == 204
 

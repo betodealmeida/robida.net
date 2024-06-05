@@ -50,7 +50,6 @@ async def get_client_info(client_id: str) -> ClientInfo:
             app_info = item["properties"]
             break
 
-    print(app_info)
     name = app_info.get("name", [client_id])[0]
     url = urllib.parse.urljoin(client_id, app_info.get("url", [""])[0])
     image = None
