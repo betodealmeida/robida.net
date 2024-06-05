@@ -188,12 +188,15 @@ async def profile_url(data: RedeemCodeRequest) -> ProfileURLResponse:
         ) as cursor:
             row = await cursor.fetchone()
 
-        if row is None or not verify_code_challenge(
+        if row is None:
+            return await make_response("invalid_grant", 400)
+
+        if not verify_code_challenge(
             row["code_challenge"],
             row["code_challenge_method"],
             data.code_verifier,
         ):
-            return await make_response("invalid_grant", 400)
+            return await make_response("invalid_request", 400)
 
         await db.execute(
             "UPDATE oauth_authorization_codes SET used = TRUE WHERE code = ?",
