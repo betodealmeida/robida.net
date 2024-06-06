@@ -20,7 +20,7 @@ async def test_oauth_authorization_server(client: testing.QuartClient) -> None:
         "introspection_endpoint": "http://robida.net/introspect",
         "introspection_endpoint_auth_methods_supported": ["client_secret_basic"],
         "issuer": "http://robida.net/.well-known/oauth-authorization-server",
-        "response_types_supported": ["code"],
+        "response_types_supported": ["code", "id"],
         "revocation_endpoint": "http://robida.net/revoke",
         "revocation_endpoint_auth_methods_supported": ["none"],
         "scopes_supported": [

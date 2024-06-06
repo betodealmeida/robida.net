@@ -65,6 +65,105 @@ async def test_authorization(
     )
 
 
+async def test_authorization_with_id(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+) -> None:
+    """
+    Test the authorization endpoint with `response_type=id`.
+
+    https://aaronparecki.com/2020/12/03/1/indieauth-2020#response-type
+    """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
+    mocker.patch(
+        "robida.blueprints.indieauth.api.get_client_info",
+        return_value=ClientInfo(
+            name="Example App",
+            url="https://example.com/",
+            image="https://example.com/logo.png",
+            redirect_uris={
+                "https://example.com/redirect2",
+                "https://example.com/redirect",
+            },
+        ),
+    )
+
+    response = await client.get(
+        "/auth",
+        query_string={
+            "response_type": "id",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+            "state": "1234567890",
+            "code_challenge": "OfYAxt8zU2dAPDWQxTAUIteRzMsoj9QBdMIVEDOErUo",
+            "code_challenge_method": "S256",
+            "me": "https://user.example.net/",
+        },
+    )
+
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(await response.data, "html.parser")
+    assert soup.find("input", {"id": "redirect_uri"})["value"] == (
+        "https://app.example.com/redirect?"
+        "code=92cdeabd827843ad871d0214dcb2d12e&"
+        "state=1234567890&"
+        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+    )
+
+
+async def test_authorization_without_me(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+) -> None:
+    """
+    Test the authorization endpoint without `me`.
+
+    https://aaronparecki.com/2020/12/03/1/indieauth-2020#the-me-parameter
+    """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
+    mocker.patch(
+        "robida.blueprints.indieauth.api.get_client_info",
+        return_value=ClientInfo(
+            name="Example App",
+            url="https://example.com/",
+            image="https://example.com/logo.png",
+            redirect_uris={
+                "https://example.com/redirect2",
+                "https://example.com/redirect",
+            },
+        ),
+    )
+
+    response = await client.get(
+        "/auth",
+        query_string={
+            "response_type": "code",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+            "state": "1234567890",
+            "code_challenge": "OfYAxt8zU2dAPDWQxTAUIteRzMsoj9QBdMIVEDOErUo",
+            "code_challenge_method": "S256",
+        },
+    )
+
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(await response.data, "html.parser")
+    assert soup.find("input", {"id": "redirect_uri"})["value"] == (
+        "https://app.example.com/redirect?"
+        "code=92cdeabd827843ad871d0214dcb2d12e&"
+        "state=1234567890&"
+        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+    )
+
+
 async def test_authorization_invalid_response_type(client: testing.QuartClient) -> None:
     """
     Test the authorization endpoint with an invalid response type.
@@ -183,6 +282,188 @@ async def test_profile_url(client: testing.QuartClient, db: Connection) -> None:
             "client_id": "https://app.example.com/",
             "redirect_uri": "https://app.example.com/redirect",
             "code_verifier": "zo6yP8H9te4I0lk2Uclcry47yPbTT9jRbdnIZPdMUfazH5iD8vkNw",
+        },
+    )
+
+    assert response.status_code == 200
+    assert await response.json == {"me": "http://robida.net/"}
+
+
+@freeze_time("2024-01-01 00:00:00")
+async def test_profile_url_no_grant_type(
+    client: testing.QuartClient,
+    db: Connection,
+) -> None:
+    """
+    Test the profile URL endpoint when `grant_type` is missing.
+
+    "For backwards compatibility, treat the omission of this parameter the same as
+    providing it with `grant_type=authorization_code`."
+    """
+    created_at = datetime.now(timezone.utc)
+
+    await db.execute(
+        "INSERT INTO oauth_authorization_codes "
+        "(code, client_id, redirect_uri, scope, code_challenge, "
+        "code_challenge_method, used, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "abcdef123456",
+            "https://app.example.com/",
+            "https://app.example.com/redirect",
+            None,
+            "hjooUY_1tBlE_dBuCKGUK8XuSRrc_zNByH-roC5sIXA",
+            "S256",
+            False,
+            created_at + timedelta(minutes=10),
+            created_at,
+        ),
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/auth",
+        form={
+            "code": "abcdef123456",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+            "code_verifier": "zo6yP8H9te4I0lk2Uclcry47yPbTT9jRbdnIZPdMUfazH5iD8vkNw",
+        },
+    )
+
+    assert response.status_code == 200
+    assert await response.json == {"me": "http://robida.net/"}
+
+
+@freeze_time("2024-01-01 00:00:00")
+async def test_profile_url_no_code_verifier(
+    client: testing.QuartClient, db: Connection
+) -> None:
+    """
+    Test the profile URL endpoint when no `code_verifier` is passed.
+
+    "If a `code_challenge` is provided in an authorization request, don't allow the
+    authorization code to be used unless the corresponding `code_verifier` is present in
+    the request using the authorization code."
+
+    https://aaronparecki.com/2020/12/03/1/indieauth-2020#pkce
+    """
+    created_at = datetime.now(timezone.utc)
+
+    await db.execute(
+        "INSERT INTO oauth_authorization_codes "
+        "(code, client_id, redirect_uri, scope, code_challenge, "
+        "code_challenge_method, used, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "abcdef123456",
+            "https://app.example.com/",
+            "https://app.example.com/redirect",
+            None,
+            "hjooUY_1tBlE_dBuCKGUK8XuSRrc_zNByH-roC5sIXA",
+            "S256",
+            False,
+            created_at + timedelta(minutes=10),
+            created_at,
+        ),
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/auth",
+        form={
+            "grant_type": "authorization_code",
+            "code": "abcdef123456",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+        },
+    )
+
+    assert response.status_code == 400
+    assert await response.data == b"invalid_request"
+
+
+@freeze_time("2024-01-01 00:00:00")
+async def test_profile_url_no_code_challenge(
+    client: testing.QuartClient, db: Connection
+) -> None:
+    """
+    Test the profile URL endpoint when no `code_challenge` is passed.
+
+    "For backwards compatibility, if no code_challenge is provided in the request, make
+    sure the request to use the authorization code does not contain a code_verifier."
+
+    https://aaronparecki.com/2020/12/03/1/indieauth-2020#pkce
+    """
+    created_at = datetime.now(timezone.utc)
+
+    await db.execute(
+        "INSERT INTO oauth_authorization_codes "
+        "(code, client_id, redirect_uri, scope, code_challenge, "
+        "code_challenge_method, used, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "abcdef123456",
+            "https://app.example.com/",
+            "https://app.example.com/redirect",
+            None,
+            None,
+            None,
+            False,
+            created_at + timedelta(minutes=10),
+            created_at,
+        ),
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/auth",
+        form={
+            "grant_type": "authorization_code",
+            "code": "abcdef123456",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+            "code_verifier": "zo6yP8H9te4I0lk2Uclcry47yPbTT9jRbdnIZPdMUfazH5iD8vkNw",
+        },
+    )
+
+    assert response.status_code == 400
+    assert await response.data == b"invalid_request"
+
+
+@freeze_time("2024-01-01 00:00:00")
+async def test_profile_url_no_pkce(client: testing.QuartClient, db: Connection) -> None:
+    """
+    Test the profile URL endpoint when PKCE is not used.
+    """
+    created_at = datetime.now(timezone.utc)
+
+    await db.execute(
+        "INSERT INTO oauth_authorization_codes "
+        "(code, client_id, redirect_uri, scope, code_challenge, "
+        "code_challenge_method, used, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "abcdef123456",
+            "https://app.example.com/",
+            "https://app.example.com/redirect",
+            None,
+            None,
+            None,
+            False,
+            created_at + timedelta(minutes=10),
+            created_at,
+        ),
+    )
+    await db.commit()
+
+    response = await client.post(
+        "/auth",
+        form={
+            "grant_type": "authorization_code",
+            "code": "abcdef123456",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
         },
     )
 

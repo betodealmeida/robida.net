@@ -8,7 +8,7 @@ from quart.helpers import url_for
 blueprint = Blueprint("wellknown", __name__, url_prefix="/.well-known")
 
 
-RESPONSE_TYPES_SUPPORTED = {"code"}
+RESPONSE_TYPES_SUPPORTED = {"code", "id"}
 GRANT_TYPES_SUPPORTED = {"authorization_code", "refresh_token"}
 CODE_CHALLENGE_METHODS_SUPPORTED = {"S256"}
 SCOPES_SUPPORTED = [

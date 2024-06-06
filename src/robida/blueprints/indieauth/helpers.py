@@ -93,13 +93,25 @@ def redirect_match(url1: str, url2: str) -> bool:
 
 
 def verify_code_challenge(
-    code_challenge: str,
-    code_challenge_method: str,
-    code_verifier: str,
+    code_challenge: str | None,
+    code_challenge_method: str | None,
+    code_verifier: str | None,
 ) -> bool:
     """
     PKCE verification.
+
+    "If a `code_challenge` is provided in an authorization request, don't allow the
+    authorization code to be used unless the corresponding `code_verifier` is present in
+    the request using the authorization code. For backwards compatibility, if no
+    `code_challenge` is provided in the request, make sure the request to use the
+    authorization code does not contain a `code_verifier`."
     """
+    if code_challenge is None:
+        return code_verifier is None
+
+    if code_verifier is None or code_challenge_method is None:
+        return False
+
     verification_method = VERIFICATION_METHODS.get(code_challenge_method)
     if verification_method is None:
         return False

@@ -15,8 +15,8 @@ class AuthorizationRequest:  # pylint: disable=too-many-instance-attributes
     client_id: str
     redirect_uri: str
     state: str
-    code_challenge: str
-    code_challenge_method: str
+    code_challenge: str | None = None
+    code_challenge_method: str | None = None
     scope: str | None = None
     me: str | None = None
 
@@ -27,11 +27,11 @@ class RedeemCodeRequest:
     Redeem code request data.
     """
 
-    grant_type: str
     code: str
     client_id: str
     redirect_uri: str
-    code_verifier: str
+    grant_type: str = "authorization_code"
+    code_verifier: str | None = None
 
 
 @dataclass
