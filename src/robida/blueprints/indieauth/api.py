@@ -9,11 +9,12 @@ https://aaronparecki.com/2020/12/03/1/indieauth-2020
 
 import hashlib
 import urllib.parse
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
-from quart import Blueprint, Response, current_app, g, render_template, request
+from quart import Blueprint, Response, current_app, g, render_template, request, session
 from quart.helpers import make_response, redirect, url_for
 from quart_schema import (
     DataSource,
@@ -68,6 +69,19 @@ async def authorization(query_args: AuthorizationRequest) -> Response:
     """
     Handle the authorization request
     """
+    # If for some reason the user is logged as someone else, log them out. This could
+    # happen because we're using RelMeAuth to login, so technically anyone could log in
+    # to the website.
+    if session.get("me") and session["me"] != url_for("homepage.index", _external=True):
+        session.pop("me")
+        return await make_response("insufficient_scope", 403)
+
+    # If the user is not logged in, store the payload to continue the flow later, and
+    # redirect them to the login page.
+    if "me" not in session:
+        session["next"] = url_for("indieauth.authorization", **asdict(query_args))
+        return redirect(url_for("relmeauth.login"))
+
     if query_args.response_type not in RESPONSE_TYPES_SUPPORTED or (
         query_args.code_challenge_method not in CODE_CHALLENGE_METHODS_SUPPORTED
     ):
@@ -123,8 +137,7 @@ async def authorization(query_args: AuthorizationRequest) -> Response:
     other_scopes = sorted(supported_scopes - requested_scopes)
 
     return await render_template(
-        "auth.html",
-        links={},
+        "indieauth/auth.html",
         me=query_args.me,
         client_info=client_info,
         code=code,

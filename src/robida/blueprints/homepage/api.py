@@ -23,10 +23,9 @@ async def index() -> Response:
     Serve the main homepage.
     """
     links = {rel: url_for(endpoint, _external=True) for rel, endpoint in rels.items()}
-
     headers = {"Link": [f'<{url}>; rel="{rel}"' for rel, url in links.items()]}
 
-    rendered = await render_template("index.html", links=links)
+    rendered = await render_template("index.html")
     response = await make_response(rendered)
     response.headers.update(headers)
 

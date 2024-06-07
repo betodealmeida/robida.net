@@ -12,6 +12,21 @@ files = [
 ]
 
 [[package]]
+name = "aiosmtplib"
+version = "3.0.1"
+description = "asyncio SMTP client"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "aiosmtplib-3.0.1-py3-none-any.whl", hash = "sha256:abcceae7e820577307b4cda2041b2c25e5121469c0e186764ddf8e15b12064cd"},
+    {file = "aiosmtplib-3.0.1.tar.gz", hash = "sha256:43580604b152152a221598be3037f0ae6359c2817187ac4433bd857bc3fc6513"},
+]
+
+[package.extras]
+docs = ["furo (>=2023.9.10,<2024.0.0)", "sphinx (>=7.0.0,<8.0.0)", "sphinx-copybutton (>=0.5.0,<0.6.0)", "sphinx_autodoc_typehints (>=1.24.0,<2.0.0)"]
+uvloop = ["uvloop (>=0.18,<0.19)"]
+
+[[package]]
 name = "aiosqlite"
 version = "0.20.0"
 description = "asyncio bridge to the standard sqlite3 module"
@@ -1417,4 +1432,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "40c34b2cbfd9862fac631995b8b3f65934fe73e5f970fb864cb7a932315f5cff"
+content-hash = "eb1dcea4690286b2f997e17f0e0f7dae9ea4385c1e69476e87d952984ff7151f"

@@ -1,57 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>robida.net</title>
-        {% for rel, endpoint in links.items() %}
-        <link rel="{{ rel }}" href="{{ endpoint }}">
-        {% endfor %}
-        <link rel="stylesheet" href="/static/css/simple.min.css">
-        <link rel="stylesheet" href="/static/css/custom.css">
-    </head>
-    <body>
-        <header>
-            <h1>Robida</h1>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            <h2>Heya!</h2>
+{% block content %}
+<h2>Heya!</h2>
 
-            <p>This is my very minimal website.</p>
+<p>My name is <strong class="word-cloud">{{ config.NAME }}</strong>. I'm a <a rel="me" class="word-cloud" href="https://thefishermenandthepriestess.com/">musician</a> and an <a rel="me" class="word-cloud" href="https://home.apache.org/phonebook.html?uid=beto">Apache PMC member</a>, passionate about <a class="word-cloud" href="https://www.vegansociety.com/go-vegan/definition-veganism">veganism</a> and <a class="word-cloud" href="https://www.gnu.org/software/">free software</a>.</p>
 
-            <nav>
-                <ol>
-                    <li>If you want to follow content:
-                        <ul>
-                            <li>Subscribe to the <a href="#">RSS</a> or <a href="#">Atom</a> feed.</li>
-                            <li>Use <a href="#">WebSub</a>.</li>
-                        </ul>
-                    </li>
-                    <li>If you want to leave a comment:
-                        <ul>
-                            <li>Send a <a href="#">WebMention</a> to any page.</li>
-                            <li>Comment from the <a href="#">Fediverse</a>.</li>
-                        </ul>
-                    </li>
-                </ol>
-            </nav>
-        </main>
+<p>This is my very minimal website. You can find my posts in the <a class="word-cloud" href="#">RSS</a> or <a class="word-cloud" href="#">Atom</a> feed. You can also subscribe to the feed using <a class="word-cloud" href="https://www.w3.org/TR/websub/">WebSub</a>, or follow <code class="word-cloud">@me@robida.net</code> from any <a class="word-cloud" href="https://www.w3.org/TR/activitypub/">ActivityPub</a> client, like Mastodon. You can also leave a <a class="word-cloud" href="https://www.w3.org/TR/webmention/">WebMention</a>.</p>
 
-        <footer>
-            <p>
-                <a
-                    class="copyright"
-                    href="https://creativecommons.org/licenses/by-sa/4.0/"
-                    title="CC BY-SA 4.0"
-                >
-                    <img src="/static/img/cc.svg" alt="CC">
-                    <img src="/static/img/by.svg" alt="BY">
-                    <img src="/static/img/sa.svg" alt="SA">
-                </a>
-                2024
-                <a href="https://github.com/betodealmeida/robida.net/">robida.net</a>
-            </p>
-        </footer>
-    </body>
-</html>
+<form method="post" action="/search">
+    <input type="search" name="search" placeholder="Looking for something?">
+    <button type="submit">Search</button>
+</form>
+{% endblock %}
