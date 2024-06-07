@@ -48,8 +48,8 @@ async def test_create_entry(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "author": "http://robida.net/",
-        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://example.com/",
+        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -96,8 +96,8 @@ async def test_create_entry_no_type(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "author": "http://robida.net/",
-        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://example.com/",
+        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -147,8 +147,8 @@ async def test_create_entry_from_json(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "author": "http://robida.net/",
-        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://example.com/",
+        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -201,8 +201,8 @@ async def test_create_entry_from_json_no_type(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "author": "http://robida.net/",
-        "location": "http://robida.net/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "author": "http://example.com/",
+        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -258,8 +258,8 @@ async def test_create_entry_with_file(
 
     assert dict(row) == {
         "uuid": "c35ad4716c6c488b9ffc8854607192f0",
-        "author": "http://robida.net/",
-        "location": "http://robida.net/entries/c35ad4716c6c488b9ffc8854607192f0",
+        "author": "http://example.com/",
+        "location": "http://example.com/entries/c35ad4716c6c488b9ffc8854607192f0",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -267,7 +267,7 @@ async def test_create_entry_with_file(
                     "content": ["hello world"],
                     "category": ["foo"],
                     "photo": [
-                        "http://robida.net/media/92cdeabd827843ad871d0214dcb2d12e"
+                        "http://example.com/media/92cdeabd827843ad871d0214dcb2d12e"
                     ],
                 },
             },
@@ -301,7 +301,7 @@ async def test_index_config(client: testing.QuartClient) -> None:
 
     assert response.status_code == 200
     assert await response.json == {
-        "media-endpoint": "http://robida.net/media/",
+        "media-endpoint": "http://example.com/media/",
         "syndicate-to": [],
     }
 

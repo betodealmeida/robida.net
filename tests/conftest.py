@@ -22,10 +22,11 @@ async def app(tmpdir) -> Quart:
     test_app = create_app(
         {
             "DATABASE": str(tmpdir.join("robida.sqlite")),
-            "SERVER_NAME": "robida.net",
-            "NAME": "Robida",
-            "EMAIL": "robida@example.com",
+            "SERVER_NAME": "example.com",
+            "NAME": "Beto Dealmeida",
+            "EMAIL": "me@example.com",
         },
+        env=".env.test",
     )
     await init_db(test_app)
 

@@ -24,6 +24,10 @@ async def test_authorization(
     Test the authorization endpoint.
     """
     mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://example.com/"},
+    )
+    mocker.patch(
         "robida.blueprints.indieauth.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
@@ -61,8 +65,82 @@ async def test_authorization(
         "https://app.example.com/redirect?"
         "code=92cdeabd827843ad871d0214dcb2d12e&"
         "state=1234567890&"
-        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+        "iss=http%3A%2F%2Fexample.com%2F.well-known%2Foauth-authorization-server"
     )
+
+
+async def test_authorization_invalid_me(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+) -> None:
+    """
+    Test the authorization endpoint when `me` in the session is incorrect.
+    """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://alice.example.com/"},
+    )
+
+    response = await client.get(
+        "/auth",
+        query_string={
+            "response_type": "code",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+            "state": "1234567890",
+            "code_challenge": "OfYAxt8zU2dAPDWQxTAUIteRzMsoj9QBdMIVEDOErUo",
+            "code_challenge_method": "S256",
+            "scope": "profile+create+update+delete",
+            "me": "https://user.example.net/",
+        },
+    )
+
+    assert response.status_code == 403
+    assert await response.data == b"insufficient_scope"
+
+
+async def test_authorization_unauthenticated(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+) -> None:
+    """
+    Test the authorization endpoint when the user is not authenticated.
+    """
+    session: dict[str, str] = {}
+    mocker.patch("robida.blueprints.indieauth.api.session", new=session)
+    mocker.patch(
+        "robida.blueprints.indieauth.api.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
+
+    response = await client.get(
+        "/auth",
+        query_string={
+            "response_type": "code",
+            "client_id": "https://app.example.com/",
+            "redirect_uri": "https://app.example.com/redirect",
+            "state": "1234567890",
+            "code_challenge": "OfYAxt8zU2dAPDWQxTAUIteRzMsoj9QBdMIVEDOErUo",
+            "code_challenge_method": "S256",
+            "scope": "profile+create+update+delete",
+            "me": "https://user.example.net/",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/login"
+    assert session == {
+        "next": (
+            "/auth?response_type=code&"
+            "client_id=https://app.example.com/&"
+            "redirect_uri=https://app.example.com/redirect&"
+            "state=1234567890&"
+            "code_challenge=OfYAxt8zU2dAPDWQxTAUIteRzMsoj9QBdMIVEDOErUo&"
+            "code_challenge_method=S256&"
+            "scope=profile%2Bcreate%2Bupdate%2Bdelete&"
+            "me=https://user.example.net/"
+        )
+    }
 
 
 async def test_authorization_with_id(
@@ -74,6 +152,10 @@ async def test_authorization_with_id(
 
     https://aaronparecki.com/2020/12/03/1/indieauth-2020#response-type
     """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://example.com/"},
+    )
     mocker.patch(
         "robida.blueprints.indieauth.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -111,7 +193,7 @@ async def test_authorization_with_id(
         "https://app.example.com/redirect?"
         "code=92cdeabd827843ad871d0214dcb2d12e&"
         "state=1234567890&"
-        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+        "iss=http%3A%2F%2Fexample.com%2F.well-known%2Foauth-authorization-server"
     )
 
 
@@ -124,6 +206,10 @@ async def test_authorization_without_me(
 
     https://aaronparecki.com/2020/12/03/1/indieauth-2020#the-me-parameter
     """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://example.com/"},
+    )
     mocker.patch(
         "robida.blueprints.indieauth.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -160,14 +246,21 @@ async def test_authorization_without_me(
         "https://app.example.com/redirect?"
         "code=92cdeabd827843ad871d0214dcb2d12e&"
         "state=1234567890&"
-        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+        "iss=http%3A%2F%2Fexample.com%2F.well-known%2Foauth-authorization-server"
     )
 
 
-async def test_authorization_invalid_response_type(client: testing.QuartClient) -> None:
+async def test_authorization_invalid_response_type(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+) -> None:
     """
     Test the authorization endpoint with an invalid response type.
     """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://example.com/"},
+    )
     response = await client.get(
         "/auth",
         query_string={
@@ -187,11 +280,16 @@ async def test_authorization_invalid_response_type(client: testing.QuartClient) 
 
 
 async def test_authorization_invalid_code_challenge_method(
+    mocker: MockerFixture,
     client: testing.QuartClient,
 ) -> None:
     """
     Test the authorization endpoint with an invalid code challenge method.
     """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://example.com/"},
+    )
     response = await client.get(
         "/auth",
         query_string={
@@ -217,6 +315,10 @@ async def test_authorization_invalid_redirect(
     """
     Test validating the authorization redirect URI.
     """
+    mocker.patch(
+        "robida.blueprints.indieauth.api.session",
+        new={"me": "http://example.com/"},
+    )
     mocker.patch(
         "robida.blueprints.indieauth.api.get_client_info",
         return_value=ClientInfo(
@@ -286,7 +388,7 @@ async def test_profile_url(client: testing.QuartClient, db: Connection) -> None:
     )
 
     assert response.status_code == 200
-    assert await response.json == {"me": "http://robida.net/"}
+    assert await response.json == {"me": "http://example.com/"}
 
 
 @freeze_time("2024-01-01 00:00:00")
@@ -332,7 +434,7 @@ async def test_profile_url_no_grant_type(
     )
 
     assert response.status_code == 200
-    assert await response.json == {"me": "http://robida.net/"}
+    assert await response.json == {"me": "http://example.com/"}
 
 
 @freeze_time("2024-01-01 00:00:00")
@@ -468,7 +570,7 @@ async def test_profile_url_no_pkce(client: testing.QuartClient, db: Connection) 
     )
 
     assert response.status_code == 200
-    assert await response.json == {"me": "http://robida.net/"}
+    assert await response.json == {"me": "http://example.com/"}
 
 
 @freeze_time("2024-01-01 00:00:00")
@@ -588,12 +690,12 @@ async def test_access_token(
     assert await response.json == {
         "access_token": "ra_92cdeabd827843ad871d0214dcb2d12e",
         "expires_in": 3600,
-        "me": "http://robida.net/",
+        "me": "http://example.com/",
         "profile": {
-            "email": "robida@example.com",
-            "name": "Robida",
-            "photo": "http://robida.net/static/photo.jpg",
-            "url": "http://robida.net/",
+            "email": "me@example.com",
+            "name": "Beto Dealmeida",
+            "photo": "http://example.com/static/photo.jpg",
+            "url": "http://example.com/",
         },
         "refresh_token": "rr_c35ad4716c6c488b9ffc8854607192f0",
         "scope": "read email profile",
@@ -668,7 +770,7 @@ async def test_access_token_email_without_profile(
     assert await response.json == {
         "access_token": "ra_92cdeabd827843ad871d0214dcb2d12e",
         "expires_in": 3600,
-        "me": "http://robida.net/",
+        "me": "http://example.com/",
         "refresh_token": "rr_c35ad4716c6c488b9ffc8854607192f0",
         "scope": "read email",
         "token_type": "Bearer",
@@ -1027,10 +1129,10 @@ async def test_userinfo(client: testing.QuartClient, db: Connection) -> None:
 
     assert response.status_code == 200
     assert await response.json == {
-        "email": "robida@example.com",
-        "name": "Robida",
-        "photo": "http://robida.net/static/photo.jpg",
-        "url": "http://robida.net/",
+        "email": "me@example.com",
+        "name": "Beto Dealmeida",
+        "photo": "http://example.com/static/photo.jpg",
+        "url": "http://example.com/",
     }
 
 
@@ -1222,7 +1324,7 @@ async def test_introspect_token(client: testing.QuartClient, db: Connection) -> 
     assert response.status_code == 200
     assert await response.json == {
         "active": True,
-        "me": "http://robida.net/",
+        "me": "http://example.com/",
         "client_id": "https://app.example.com/",
         "scope": "read",
         "exp": 1704067800,
@@ -1304,7 +1406,7 @@ async def test_auth_redirect(client: testing.QuartClient, db: Connection) -> Non
                     "https://app.example.com/redirect?"
                     "code=92cdeabd827843ad871d0214dcb2d12e&"
                     "state=1234567890&"
-                    "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+                    "iss=http%3A%2F%2Fexample.com%2F.well-known%2Foauth-authorization-server"
                 ),
             ),
             ("known", "create"),
@@ -1318,7 +1420,7 @@ async def test_auth_redirect(client: testing.QuartClient, db: Connection) -> Non
         "https://app.example.com/redirect?"
         "code=92cdeabd827843ad871d0214dcb2d12e&"
         "state=1234567890&"
-        "iss=http%3A%2F%2Frobida.net%2F.well-known%2Foauth-authorization-server"
+        "iss=http%3A%2F%2Fexample.com%2F.well-known%2Foauth-authorization-server"
     )
 
     async with db.execute(

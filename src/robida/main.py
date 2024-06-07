@@ -4,9 +4,10 @@ Main application.
 
 import asyncio
 from pathlib import Path
+from typing import Any
 
 from dotenv import dotenv_values
-from quart import Quart, g, request
+from quart import Quart, g, request, url_for
 from quart_schema import QuartSchema
 
 from robida.blueprints.entries import api as entries
@@ -14,20 +15,24 @@ from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
+from robida.blueprints.relmeauth import api as relmeauth
 from robida.blueprints.wellknown import api as wellknown
 from robida.db import get_db
 
 quart_schema = QuartSchema()
 
 
-def create_app(test_config: dict[str, str] | None = None) -> Quart:
+def create_app(
+    test_config: dict[str, str] | None = None,
+    env: str = ".env",
+) -> Quart:
     """
     Initialize the app, with extensions and blueprints.
     """
     app = Quart(__name__)
 
     # configuration
-    app.config.update(dotenv_values(".env"))
+    app.config.update(dotenv_values(env))
     if test_config:
         app.config.from_mapping(test_config)
 
@@ -40,6 +45,7 @@ def create_app(test_config: dict[str, str] | None = None) -> Quart:
     app.register_blueprint(indieauth.blueprint)
     app.register_blueprint(media.blueprint)
     app.register_blueprint(micropub.blueprint)
+    app.register_blueprint(relmeauth.blueprint)
     app.register_blueprint(wellknown.blueprint)
 
     app.jinja_env.trim_blocks = True
@@ -60,6 +66,22 @@ def create_app(test_config: dict[str, str] | None = None) -> Quart:
             g.access_token = authorization.split(" ", 1)[1]
         else:
             g.access_token = None
+
+    @app.context_processor
+    def inject_config() -> dict[str, Any]:
+        """
+        Inject app config into all templates.
+        """
+        return {
+            "config": app.config,
+            "links": {
+                rel: url_for(endpoint, _external=True)
+                for rel, endpoint in homepage.rels.items()
+            },
+        }
+
+    # app.config["SERVER_NAME"] = "0082-172-58-129-44.ngrok-free.app"
+    # app.config["PREFER_SECURE_URLS"] = True
 
     return app
 
@@ -87,4 +109,4 @@ def run() -> None:
     Main app.
     """
     app = create_app()
-    app.run(port=5001)
+    app.run("0.0.0.0", port=5001)

@@ -6,13 +6,15 @@ My website.
 
 - [X] MicroPub
 - [X] IndieAuth
-- [ ] Passkeys
+- [X] RelMeAuth
 - [ ] RSS/Atom/XSLT
+- [ ] WebSub
+- [ ] Search
 - [ ] WebMentions
 - [ ] MicroSub
-- [ ] WebSub
 - [ ] ActivityPub
 - [ ] Syndication
 - [ ] Gemini
 - [ ] Titan?
-- [ ] RelMeAuth?
+- [ ] Passkeys?
+- [ ] OpenStreetMap provider?

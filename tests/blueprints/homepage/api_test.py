@@ -17,14 +17,14 @@ async def test_homepage_headers(client: testing.QuartClient) -> None:
         [
             ("content-type", "text/html; charset=utf-8"),
             ("Content-Length", len(await response.data)),
-            ("link", '<http://robida.net/>; rel="self"'),
-            ("link", '<http://robida.net/micropub/>; rel="micropub"'),
+            ("link", '<http://example.com/>; rel="self"'),
+            ("link", '<http://example.com/micropub/>; rel="micropub"'),
             (
                 "link",
-                "<http://robida.net/.well-known/oauth-authorization-server>; "
+                "<http://example.com/.well-known/oauth-authorization-server>; "
                 'rel="indieauth-metadata"',
             ),
-            ("link", '<http://robida.net/auth>; rel="authorization_endpoint"'),
-            ("link", '<http://robida.net/token>; rel="token_endpoint"'),
+            ("link", '<http://example.com/auth>; rel="authorization_endpoint"'),
+            ("link", '<http://example.com/token>; rel="token_endpoint"'),
         ]
     )

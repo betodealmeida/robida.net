@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>RelMeAuth Login</h2>
+
+<form method="post" action="/login">
+    <input type="text" name="me" placeholder="https://" required/>
+    <button type="submit">Go!</button>
+</form>
+{% endblock %}
