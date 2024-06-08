@@ -6,15 +6,15 @@ from uuid import UUID
 
 from quart import Blueprint
 
-blueprint = Blueprint("entries", __name__, url_prefix="/entries")
+blueprint = Blueprint("feed", __name__, url_prefix="/feed")
 
 
-@blueprint.route("/", methods=["GET"])
-async def entries() -> dict:
+@blueprint.route("", methods=["GET"])
+async def index() -> dict:
     """
     Load all the entries.
     """
-    return {"entries": "entries"}
+    return {"feed": "feed"}
 
 
 @blueprint.route("/<uuid:uuid>", methods=["GET"])

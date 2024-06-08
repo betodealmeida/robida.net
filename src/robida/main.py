@@ -7,19 +7,32 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import dotenv_values
-from quart import Quart, g, request, url_for
+from quart import Quart, Response, g, request, url_for
 from quart_schema import QuartSchema
+from werkzeug.datastructures import Headers
 
-from robida.blueprints.entries import api as entries
+from robida.blueprints.feed import api as feed
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
 from robida.blueprints.relmeauth import api as relmeauth
+from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
+from robida.constants import rels
 from robida.db import get_db
 
 quart_schema = QuartSchema()
+
+
+def get_links() -> dict[str, str]:
+    """
+    Return all the links for `Link` headers and elements.
+    """
+    links = {rel: url_for(endpoint, _external=True) for rel, endpoint in rels.items()}
+    links["self"] = request.url
+
+    return links
 
 
 def create_app(
@@ -40,12 +53,13 @@ def create_app(
     quart_schema.init_app(app)
 
     # blueprints
-    app.register_blueprint(entries.blueprint)
+    app.register_blueprint(feed.blueprint)
     app.register_blueprint(homepage.blueprint)
     app.register_blueprint(indieauth.blueprint)
     app.register_blueprint(media.blueprint)
     app.register_blueprint(micropub.blueprint)
     app.register_blueprint(relmeauth.blueprint)
+    app.register_blueprint(websub.blueprint)
     app.register_blueprint(wellknown.blueprint)
 
     app.jinja_env.trim_blocks = True
@@ -72,13 +86,22 @@ def create_app(
         """
         Inject app config into all templates.
         """
-        return {
-            "config": app.config,
-            "links": {
-                rel: url_for(endpoint, _external=True)
-                for rel, endpoint in homepage.rels.items()
-            },
-        }
+        links = get_links()
+
+        return {"config": app.config, "links": links}
+
+    @app.after_request
+    def add_links(response: Response) -> Response:
+        """
+        Add Link headers to responses.
+        """
+        response.headers.extend(
+            Headers(
+                [("Link", f'<{url}>; rel="{rel}"') for rel, url in get_links().items()]
+            )
+        )
+
+        return response
 
     # app.config["SERVER_NAME"] = "0082-172-58-129-44.ngrok-free.app"
     # app.config["PREFER_SECURE_URLS"] = True

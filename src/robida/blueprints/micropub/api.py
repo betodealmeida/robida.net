@@ -98,7 +98,7 @@ def process_form(payload: MultiDict) -> Microformats2:
     return Microformats2(**data)
 
 
-@blueprint.route("/", methods=["GET"])
+@blueprint.route("", methods=["GET"])
 async def index() -> Response:
     """
     Query the Micropub endpoint.
@@ -122,7 +122,15 @@ async def index() -> Response:
 
         async with get_db(current_app) as db:
             async with db.execute(
-                "SELECT content FROM entries WHERE uuid = ?", (uuid,)
+                """
+SELECT
+    content
+FROM
+    entries
+WHERE
+    uuid = ?
+            """,
+                (uuid,),
             ) as cursor:
                 row = await cursor.fetchone()
 
@@ -154,7 +162,7 @@ async def index() -> Response:
     )
 
 
-@blueprint.route("/", methods=["POST"])
+@blueprint.route("", methods=["POST"])
 async def post() -> Response:
     """
     Dispatcher for creating, updating, deleting, and undeleting Micropub entries.
@@ -220,13 +228,20 @@ async def create(data: Microformats2) -> Response:
     uuid = uuid4()
     author = url_for("homepage.index", _external=True)
     created_at = last_modified_at = datetime.now(timezone.utc)
-    url = url_for("entries.entry", uuid=uuid.hex, _external=True)
+    url = url_for("feed.entry", uuid=uuid.hex, _external=True)
 
     async with get_db(current_app) as db:
         await db.execute(
-            "INSERT INTO entries "
-            "(uuid, author, location, content, created_at, last_modified_at) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            """
+INSERT INTO entries (
+    uuid,
+    author,
+    location,
+    content,
+    created_at,
+    last_modified_at
+) VALUES (?, ?, ?, ?, ?, ?)
+            """,
             (
                 uuid.hex,
                 author,
@@ -255,7 +270,15 @@ async def update(payload) -> Response:
 
     async with get_db(current_app) as db:
         async with db.execute(
-            "SELECT content FROM entries WHERE uuid = ?", (uuid,)
+            """
+SELECT
+    content
+FROM
+    entries
+WHERE
+    uuid = ?
+        """,
+            (uuid,),
         ) as cursor:
             row = await cursor.fetchone()
 
@@ -282,14 +305,22 @@ async def update(payload) -> Response:
 
     async with get_db(current_app) as db:
         await db.execute(
-            "UPDATE entries SET content = ?, last_modified_at = ? WHERE uuid = ?",
+            """
+UPDATE
+    entries
+SET
+    content = ?,
+    last_modified_at = ?
+WHERE
+    uuid = ?
+            """,
             (data.model_dump_json(exclude_unset=True), last_modified_at, uuid),
         )
         await db.commit()
 
     response = await make_response("")
     response.status_code = 204
-    response.headers["Location"] = url_for("entries.entry", uuid=uuid, _external=True)
+    response.headers["Location"] = url_for("feed.entry", uuid=uuid, _external=True)
 
     return response
 
@@ -303,7 +334,17 @@ async def delete(payload) -> Response:
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
     async with get_db(current_app) as db:
-        await db.execute("UPDATE entries SET deleted = TRUE WHERE uuid = ?", (uuid,))
+        await db.execute(
+            """
+UPDATE
+    entries
+SET
+    deleted = TRUE
+WHERE
+    uuid = ?
+        """,
+            (uuid,),
+        )
         await db.commit()
 
     return await make_response("", 204)
@@ -318,7 +359,17 @@ async def undelete(payload) -> Response:
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
     async with get_db(current_app) as db:
-        await db.execute("UPDATE entries SET deleted = FALSE WHERE uuid = ?", (uuid,))
+        await db.execute(
+            """
+UPDATE
+    entries
+SET
+    deleted = FALSE
+WHERE
+    uuid = ?
+        """,
+            (uuid,),
+        )
         await db.commit()
 
     return await make_response("", 204)

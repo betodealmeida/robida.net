@@ -1,10 +1,10 @@
 """
-Tests for the entries helper functions.
+Tests for the feed helper functions.
 """
 
 from aiosqlite import Connection
 
-from robida.blueprints.entries.helpers import get_entry_graph
+from robida.blueprints.feed.helpers import get_entry_graph
 
 
 async def test_get_entry_graph(db: Connection) -> None:
@@ -13,7 +13,14 @@ async def test_get_entry_graph(db: Connection) -> None:
     """
     await db.execute(
         """
-INSERT INTO entries (uuid, author, location, content, read, deleted)
+INSERT INTO entries (
+    uuid,
+    author,
+    location,
+    content,
+    read,
+    deleted
+)
 VALUES
 ('1', 'author1', 'location1', '{"properties": {"in-reply-to": []}}', 0, 0),
 ('2', 'author2', 'location2', '{"properties": {"in-reply-to": ["location1"]}}', 0, 0),

@@ -100,10 +100,20 @@ async def authorization(query_args: AuthorizationRequest) -> Response:
 
     async with get_db(current_app) as db:
         await db.execute(
-            "INSERT INTO oauth_authorization_codes "
-            "(code, client_id, redirect_uri, scope, code_challenge, "
-            "code_challenge_method, used, expires_at, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (
                 code,
                 query_args.client_id,
@@ -168,7 +178,14 @@ async def auth_redirect(data: AuthRedirectRequest) -> Response:
 
     async with get_db(current_app) as db:
         await db.execute(
-            "UPDATE oauth_authorization_codes SET scope = ? WHERE code = ?",
+            """
+UPDATE
+    oauth_authorization_codes
+SET
+    scope = ?
+WHERE
+    code = ?
+            """,
             (scope, data.code),
         )
         await db.commit()
@@ -188,10 +205,19 @@ async def profile_url(data: RedeemCodeRequest) -> ProfileURLResponse:
 
     async with get_db(current_app) as db:
         async with db.execute(
-            "SELECT code_challenge, code_challenge_method "
-            "FROM oauth_authorization_codes "
-            "WHERE code = ? AND client_id = ? AND redirect_uri = ? AND "
-            "used IS FALSE AND expires_at > ?",
+            """
+SELECT
+    code_challenge,
+    code_challenge_method
+FROM
+    oauth_authorization_codes
+WHERE
+    code = ? AND
+    client_id = ? AND
+    redirect_uri = ? AND
+    used IS FALSE AND
+    expires_at > ?
+            """,
             (
                 data.code,
                 data.client_id,
@@ -212,7 +238,14 @@ async def profile_url(data: RedeemCodeRequest) -> ProfileURLResponse:
             return await make_response("invalid_request", 400)
 
         await db.execute(
-            "UPDATE oauth_authorization_codes SET used = TRUE WHERE code = ?",
+            """
+UPDATE
+    oauth_authorization_codes
+SET
+    used = TRUE
+WHERE
+    code = ?
+            """,
             (data.code,),
         )
         await db.commit()
@@ -248,10 +281,20 @@ async def access_token(data: RedeemCodeRequest) -> AccessTokenResponse:
     """
     async with get_db(current_app) as db:
         async with db.execute(
-            "SELECT scope, code_challenge, code_challenge_method "
-            "FROM oauth_authorization_codes "
-            "WHERE code = ? AND client_id = ? AND redirect_uri = ? AND "
-            "used IS FALSE AND expires_at > ?",
+            """
+SELECT
+    scope,
+    code_challenge,
+    code_challenge_method
+FROM
+    oauth_authorization_codes
+WHERE
+    code = ? AND
+    client_id = ? AND
+    redirect_uri = ? AND
+    used IS FALSE AND
+    expires_at > ?
+            """,
             (
                 data.code,
                 data.client_id,
@@ -279,10 +322,19 @@ async def access_token(data: RedeemCodeRequest) -> AccessTokenResponse:
         token_type = "Bearer"
 
         await db.execute(
-            "INSERT INTO oauth_tokens "
-            "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-            "last_refresh_at, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (
                 data.client_id,
                 token_type,
@@ -328,9 +380,16 @@ async def refresh_token(data: RefreshTokenRequest) -> RefreshTokenResponse:
     """
     async with get_db(current_app) as db:
         async with db.execute(
-            "SELECT scope, last_refresh_at "
-            "FROM oauth_tokens "
-            "WHERE client_id = ? AND refresh_token = ?",
+            """
+SELECT
+    scope,
+    last_refresh_at
+FROM
+    oauth_tokens
+WHERE
+    client_id = ? AND
+    refresh_token = ?
+            """,
             (data.client_id, data.refresh_token),
         ) as cursor:
             row = await cursor.fetchone()
@@ -355,10 +414,19 @@ async def refresh_token(data: RefreshTokenRequest) -> RefreshTokenResponse:
         token_type = "Bearer"
 
         await db.execute(
-            "UPDATE oauth_tokens "
-            "SET access_token = ?, refresh_token = ?, scope = ?, "
-            "expires_at = ?, last_refresh_at = ? "
-            "WHERE client_id = ? AND refresh_token = ?",
+            """
+UPDATE
+    oauth_tokens
+SET
+    access_token = ?,
+    refresh_token = ?,
+    scope = ?,
+    expires_at = ?,
+    last_refresh_at = ?
+WHERE
+    client_id = ? AND
+    refresh_token = ?
+            """,
             (
                 access_token,
                 refresh_token,
@@ -389,9 +457,17 @@ async def introspect(data: TokenRequest) -> TokenVerificationResponse:
     """
     async with get_db(current_app) as db:
         async with db.execute(
-            "SELECT client_id, scope, expires_at, created_at "
-            "FROM oauth_tokens "
-            "WHERE access_token = ?",
+            """
+SELECT
+    client_id,
+    scope,
+    expires_at,
+    created_at
+FROM
+    oauth_tokens
+WHERE
+    access_token = ?
+            """,
             (data.token,),
         ) as cursor:
             row = await cursor.fetchone()
@@ -420,7 +496,14 @@ async def revoke(data: TokenRequest) -> Response:
     """
     async with get_db(current_app) as db:
         await db.execute(
-            "UPDATE oauth_tokens SET expires_at = ? WHERE access_token = ?",
+            """
+UPDATE
+    oauth_tokens
+SET
+    expires_at = ?
+WHERE
+    access_token = ?
+            """,
             (datetime.now(timezone.utc), data.token),
         )
 

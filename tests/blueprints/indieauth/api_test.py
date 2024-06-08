@@ -358,10 +358,19 @@ async def test_profile_url(client: testing.QuartClient, db: Connection) -> None:
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -405,10 +414,19 @@ async def test_profile_url_no_grant_type(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -453,10 +471,19 @@ async def test_profile_url_no_code_verifier(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -500,10 +527,19 @@ async def test_profile_url_no_code_challenge(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -541,10 +577,19 @@ async def test_profile_url_no_pkce(client: testing.QuartClient, db: Connection) 
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -584,10 +629,19 @@ async def test_profile_url_expired(
     created_at = datetime.now(timezone.utc) - timedelta(minutes=20)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -657,10 +711,19 @@ async def test_access_token(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -737,10 +800,19 @@ async def test_access_token_email_without_profile(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -788,10 +860,19 @@ async def test_access_token_no_scope(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -841,10 +922,18 @@ async def test_refresh_token(
         created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -912,10 +1001,18 @@ async def test_refresh_token_reduce_scope(
         created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -975,10 +1072,18 @@ async def test_refresh_token_increase_scope(
         created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1027,10 +1132,18 @@ async def test_refresh_token_expired(
         created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1105,10 +1218,18 @@ async def test_userinfo(client: testing.QuartClient, db: Connection) -> None:
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1147,10 +1268,18 @@ async def test_userinfo_expired_token(
         created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1185,10 +1314,18 @@ async def test_userinfo_invalid_scope(
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1229,10 +1366,18 @@ async def test_revoke_token(client: testing.QuartClient, db: Connection) -> None
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1247,7 +1392,14 @@ async def test_revoke_token(client: testing.QuartClient, db: Connection) -> None
     await db.commit()
 
     async with db.execute(
-        "SELECT expires_at FROM oauth_tokens WHERE access_token = ?",
+        """
+SELECT
+    expires_at
+FROM
+    oauth_tokens
+WHERE
+    access_token = ?
+        """,
         ("ra_92cdeabd827843ad871d0214dcb2d12e",),
     ) as cursor:
         row = await cursor.fetchone()
@@ -1262,7 +1414,14 @@ async def test_revoke_token(client: testing.QuartClient, db: Connection) -> None
     assert response.status_code == 200
 
     async with db.execute(
-        "SELECT expires_at FROM oauth_tokens WHERE access_token = ?",
+        """
+SELECT
+    expires_at
+FROM
+    oauth_tokens
+WHERE
+    access_token = ?
+        """,
         ("ra_92cdeabd827843ad871d0214dcb2d12e",),
     ) as cursor:
         row = await cursor.fetchone()
@@ -1299,10 +1458,18 @@ async def test_introspect_token(client: testing.QuartClient, db: Connection) -> 
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1343,10 +1510,18 @@ async def test_introspect_token_expired(
         created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_tokens"
-        "(client_id, token_type, access_token, refresh_token, scope, expires_at, "
-        "last_refresh_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_tokens (
+    client_id,
+    token_type,
+    access_token,
+    refresh_token,
+    scope,
+    expires_at,
+    last_refresh_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "https://app.example.com/",
             "Bearer",
@@ -1378,10 +1553,19 @@ async def test_auth_redirect(client: testing.QuartClient, db: Connection) -> Non
     created_at = datetime.now(timezone.utc)
 
     await db.execute(
-        "INSERT INTO oauth_authorization_codes "
-        "(code, client_id, redirect_uri, scope, code_challenge, "
-        "code_challenge_method, used, expires_at, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        """
+INSERT INTO oauth_authorization_codes (
+    code,
+    client_id,
+    redirect_uri,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    used,
+    expires_at,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
         (
             "abcdef123456",
             "https://app.example.com/",
@@ -1424,7 +1608,14 @@ async def test_auth_redirect(client: testing.QuartClient, db: Connection) -> Non
     )
 
     async with db.execute(
-        "SELECT scope FROM oauth_authorization_codes WHERE code = ?",
+        """
+SELECT
+    scope
+FROM
+    oauth_authorization_codes
+WHERE
+    code = ?
+        """,
         ("abcdef123456",),
     ) as cursor:
         row = await cursor.fetchone()

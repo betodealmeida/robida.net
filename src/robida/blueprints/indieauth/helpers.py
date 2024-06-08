@@ -132,7 +132,15 @@ async def get_scopes(token: str | None) -> set[str]:
 
     async with get_db(current_app) as db:
         async with db.execute(
-            "SELECT scope FROM oauth_tokens WHERE access_token = ? AND expires_at > ?",
+            """
+SELECT
+    scope
+FROM
+    oauth_tokens
+WHERE
+    access_token = ? AND
+    expires_at > ?
+            """,
             (token, datetime.now(timezone.utc)),
         ) as cursor:
             row = await cursor.fetchone()
