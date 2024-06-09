@@ -1,0 +1,24 @@
+{% import 'macros/feed/author.html' as author_macros %}
+
+{% macro note(data) %}
+<article class="h-entry">
+    <p class="p-content e-content">
+        {% if data.properties.content[0] is mapping %}
+            {# ignore HTML #}
+            {{ data.properties.content[0].value }}
+        {% else %}
+            {{ data.properties.content[0] }}
+        {% endif %}
+    </p>
+    <footer>
+        <p>
+            {% if data.properties.author %}
+            Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
+            {% endif %}
+            <time class="dt-published" datetime="{{ data.properties.published[0] }}">
+                {{ data.properties.published[0] }}
+            </time>
+        </p>
+    </footer>
+</article>
+{% endmacro %}

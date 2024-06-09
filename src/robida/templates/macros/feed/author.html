@@ -1,0 +1,10 @@
+{% import 'macros/feed/h-card.html' as card_macros %}
+
+{% macro author(data, compact=False) %}
+    {% if data is mapping %}
+        {{ card_macros.h_card(data, compact) }}
+    {% else %}
+        {# try to fetch h-card #}
+        {{ card_macros.h_card(fetch_hcard(data), compact) }}
+    {% endif %}
+{% endmacro %}

@@ -14,9 +14,7 @@ from quart_schema import DataSource, validate_request
 from .helpers import distribute_content, validate_subscription
 from .models import PublishRequest, SubscriptionRequest
 
-
 blueprint = Blueprint("websub", __name__, url_prefix="/websub")
-
 
 MAX_LEASE = timedelta(days=365)
 

@@ -15,11 +15,27 @@ My website.
 
 - [X] MicroPub
 - [X] WebSub
-- [ ] Feed: h-feed, RSS/ATOM (with XSL), JSON
+- [/] Feed: h-feed, RSS/ATOM (with XSL), JSON
+  - [X] note
+  - [X] card
+  - [X] article
+  - [ ] reply
+  - [ ] repost
+  - [ ] like
+  - [ ] bookmark
+  - [ ] event
+  - [ ] issue
+  - [ ] rsvp
+  - [ ] geocache
+  - [ ] read
+  - [ ] checkin
+  - [ ] trip
+  - [ ] venue (h-card)
 - [ ] Search
 - [ ] WebMentions
+  - [ ] @-mention (https://indieweb.org/person_mention)
 - [ ] ActivityPub
-- [ ] Syndication
+- [ ] Syndication (FAWM?, Archive.org, Bandcamp?)
 
 ### Reader
 

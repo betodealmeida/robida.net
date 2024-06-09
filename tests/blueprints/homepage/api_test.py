@@ -26,6 +26,9 @@ async def test_homepage_headers(client: testing.QuartClient) -> None:
             ("link", '<http://example.com/auth>; rel="authorization_endpoint"'),
             ("link", '<http://example.com/token>; rel="token_endpoint"'),
             ("link", '<http://example.com/websub>; rel="hub"'),
-            ("link", '<http://example.com/>; rel="self"'),
+            ("link", '<http://example.com/feed.json>; rel="alternate"'),
+            ("link", '<http://example.com/feed.rss>; rel="alternate"'),
+            ("link", '<http://example.com/feed.xml>; rel="alternate"'),
+            ("link", '<http://example.com/feed.html>; rel="alternate"'),
         ]
     )

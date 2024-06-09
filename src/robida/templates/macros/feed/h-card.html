@@ -1,0 +1,20 @@
+{% macro h_card(data, compact=False) %}
+    {% if compact %}
+        <a class="h-card" href="{{ data.properties.url[0] }}">
+            {{ data.properties.name[0] }}
+        </a>
+    {% else %}
+        <div class="h-card">
+            <a class="p-name u-url" href="{{ data.properties.url[0] }}">
+                {{ data.properties.name[0] }}
+            </a>
+            {% if data.properties.photo %}
+                <img
+                    class="u-photo"
+                    src="{{ data.properties.photo[0] }}"
+                    alt="{{ data.properties.name[0] }}"
+                />
+            {% endif %}
+        </div>
+    {% endif %}
+{% endmacro %}

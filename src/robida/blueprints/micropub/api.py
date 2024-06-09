@@ -8,13 +8,11 @@ from __future__ import annotations
 
 import urllib.parse
 from datetime import datetime, timezone
-from enum import Enum
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import aiofiles
-from pydantic import BaseModel
 from quart import (
     Blueprint,
     Response,
@@ -27,53 +25,11 @@ from werkzeug.datastructures import MultiDict
 
 from robida.blueprints.indieauth.helpers import requires_scope
 from robida.db import get_db
+from robida.models import Microformats2
+
+from .models import ActionType, ErrorType
 
 blueprint = Blueprint("micropub", __name__, url_prefix="/micropub")
-
-
-class ErrorType(str, Enum):
-    """
-    Micropub error types.
-
-    See https://www.w3.org/TR/micropub/#error-response-li-3.
-    """
-
-    FORBIDDEN = "forbidden"
-    UNAUTHORIZED = "unauthorized"
-    INSUFFICIENT_SCOPE = "insufficient_scope"
-    INVALID_REQUEST = "invalid_request"
-
-
-class ActionType(str, Enum):
-    """
-    Micropub action types.
-    """
-
-    UPDATE = "update"
-    DELETE = "delete"
-    UNDELETE = "undelete"
-
-
-class UpdateProperty(str, Enum):
-    """
-    Micropub update properties.
-    """
-
-    ADD = "add"
-    REPLACE = "replace"
-    DELETE = "delete"
-
-
-class Microformats2(BaseModel):
-    """
-    Microformats 2 JSON.
-
-    See http://microformats.org/wiki/microformats2-json.
-    """
-
-    type: list[str]
-    properties: dict[str, Any]
-    children: list[Microformats2] = []
 
 
 def process_form(payload: MultiDict) -> Microformats2:
@@ -118,7 +74,7 @@ async def index() -> Response:
 
     if q == "source":
         url = request.args.get("url")
-        uuid = urllib.parse.urlparse(url).path.split("/")[-1]
+        uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
         async with get_db(current_app) as db:
             async with db.execute(
@@ -130,7 +86,7 @@ FROM
 WHERE
     uuid = ?
             """,
-                (uuid,),
+                (uuid.hex,),
             ) as cursor:
                 row = await cursor.fetchone()
 
@@ -204,7 +160,7 @@ async def post() -> Response:
     files = await request.files
     for name, file in files.items():
         uuid = uuid4()
-        file_path = Path(current_app.config["MEDIA"]) / uuid.hex
+        file_path = Path(current_app.config["MEDIA"]) / str(uuid)
 
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(file.read())
@@ -212,7 +168,7 @@ async def post() -> Response:
         data.properties[name] = [
             url_for(
                 "media.download",
-                filename=uuid.hex,
+                filename=str(uuid),
                 _external=True,
             )
         ]
@@ -228,7 +184,7 @@ async def create(data: Microformats2) -> Response:
     uuid = uuid4()
     author = url_for("homepage.index", _external=True)
     created_at = last_modified_at = datetime.now(timezone.utc)
-    url = url_for("feed.entry", uuid=uuid.hex, _external=True)
+    url = url_for("feed.entry", uuid=str(uuid), _external=True)
 
     async with get_db(current_app) as db:
         await db.execute(
@@ -266,7 +222,7 @@ async def update(payload) -> Response:
     Update a Micropub entry.
     """
     url = payload["url"]
-    uuid = urllib.parse.urlparse(url).path.split("/")[-1]
+    uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with get_db(current_app) as db:
         async with db.execute(
@@ -278,7 +234,7 @@ FROM
 WHERE
     uuid = ?
         """,
-            (uuid,),
+            (uuid.hex,),
         ) as cursor:
             row = await cursor.fetchone()
 
@@ -314,13 +270,13 @@ SET
 WHERE
     uuid = ?
             """,
-            (data.model_dump_json(exclude_unset=True), last_modified_at, uuid),
+            (data.model_dump_json(exclude_unset=True), last_modified_at, uuid.hex),
         )
         await db.commit()
 
     response = await make_response("")
     response.status_code = 204
-    response.headers["Location"] = url_for("feed.entry", uuid=uuid, _external=True)
+    response.headers["Location"] = url_for("feed.entry", uuid=str(uuid), _external=True)
 
     return response
 
@@ -331,7 +287,7 @@ async def delete(payload) -> Response:
     Delete a Micropub entry.
     """
     url = payload["url"]
-    uuid = urllib.parse.urlparse(url).path.split("/")[-1]
+    uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with get_db(current_app) as db:
         await db.execute(
@@ -343,7 +299,7 @@ SET
 WHERE
     uuid = ?
         """,
-            (uuid,),
+            (uuid.hex,),
         )
         await db.commit()
 
@@ -356,7 +312,7 @@ async def undelete(payload) -> Response:
     Undelete a Micropub entry.
     """
     url = payload["url"]
-    uuid = urllib.parse.urlparse(url).path.split("/")[-1]
+    uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with get_db(current_app) as db:
         await db.execute(
@@ -368,7 +324,7 @@ SET
 WHERE
     uuid = ?
         """,
-            (uuid,),
+            (uuid.hex,),
         )
         await db.commit()
 

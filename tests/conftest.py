@@ -21,7 +21,7 @@ async def app(tmpdir) -> Quart:
     """
     test_app = create_app(
         {
-            "DATABASE": str(tmpdir.join("robida.sqlite")),
+            "DATABASE": str(tmpdir.join("tests.sqlite")),
             "SERVER_NAME": "example.com",
             "NAME": "Beto Dealmeida",
             "EMAIL": "me@example.com",

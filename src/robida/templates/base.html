@@ -4,11 +4,11 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{{ title|default(config.SITE_NAME) }}</title>
-        {% for rel, endpoint in links.items() %}
-        <link rel="{{ rel }}" href="{{ endpoint }}">
+        {% for link in links %}
+        <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint, _external=True) }}">
         {% endfor %}
-        <link rel="stylesheet" href="/static/css/simple.min.css">
-        <link rel="stylesheet" href="/static/css/custom.css">
+        <link rel="stylesheet" href="{{ url_for("static", filename="css/simple.min.css") }}">
+        <link rel="stylesheet" href="{{ url_for("static", filename="css/custom.css") }}">
     </head>
     <body>
         <header>

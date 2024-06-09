@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/xsl" href="{{ url_for("feed.rss_xslt", _external=True) }}"?>
+
+<rss version="2.0">
+    <channel>
+        <title>{{ hfeed.properties.name[0] }}</title>
+        <link>{{ hfeed.properties.url[0] }}</link>
+        <description>{{ hfeed.properties.summary[0] }}</description>
+        <lastBuildDate>{{ iso_to_rfc822(hfeed.properties.published[0]) }}</lastBuildDate>
+        <pubDate>{{ iso_to_rfc822(hfeed.properties.published[0]) }}</pubDate>
+        <language>{{ hfeed.properties.language[0] }}</language>
+        <generator>https://github.com/betodealmeida/robida.net</generator>
+
+        {% for child in hfeed.children %}
+        <item>
+            {% if child.properties.name %}
+            <title>{{ child.properties.name[0] }}</title>
+            {% endif %}
+            <link>{{ child.properties.url[0] }}</link>
+            {% if child.properties.content[0] is mapping %}
+            <description><![CDATA[{{ child.properties.content[0].html | safe }}]]></description>
+            {% else %}
+            <description>{{ child.properties.content[0] }}</description>
+            {% endif %}
+            {% for category in child.properties.category or [] %}
+            <category>{{ category }}</category>
+            {% endfor %}
+            <pubDate>{{ iso_to_rfc822(child.properties.published[0]) }}</pubDate>
+            <guid>{{ child.properties.url[0] }}</guid>
+        </item>
+        {% endfor %}
+    </channel>
+</rss>

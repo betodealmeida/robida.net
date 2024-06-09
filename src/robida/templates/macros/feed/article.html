@@ -1,0 +1,33 @@
+{% import 'macros/feed/author.html' as author_macros %}
+
+{% macro article(data) %}
+<article class="h-entry">
+    {% if data.properties.name %}
+    <h1 class="p-name">{{ data.properties.name[0] }}</h1>
+    {% endif %}
+
+    {% if data.properties.summary %}
+    <p class="p-summary">{{ data.properties.summary[0] }}</p>
+    {% endif %}
+
+    {% if data.properties.content %}
+        <div class="e-content">
+            {% if data.properties.content[0] is mapping %}
+                {{ data.properties.content[0].html | safe}}
+            {% else %}
+                {{ data.properties.content[0] }}
+            {% endif %}
+        </div>
+    {% endif %}
+    <footer>
+        <p>
+            {% if data.properties.author %}
+            Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
+            {% endif %}
+            <time class="dt-published" datetime="{{ data.properties.published[0] }}">
+                {{ data.properties.published[0] }}
+            </time>
+        </p>
+    </footer>
+</article>
+{% endmacro %}

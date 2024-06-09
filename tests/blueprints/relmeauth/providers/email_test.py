@@ -227,9 +227,17 @@ async def test_send_email(mocker: MockerFixture, current_app: Quart) -> None:
     """
     aiosmtplib = mocker.AsyncMock()
     mocker.patch("robida.blueprints.relmeauth.providers.email.aiosmtplib", aiosmtplib)
+    EmailMessage = mocker.patch(
+        "robida.blueprints.relmeauth.providers.email.EmailMessage"
+    )
 
     async with current_app.app_context():
         await send_email("me@example.com", "Subject", "Body")
 
-    # print(aiosmtplib.send.mock_calls)
-    # aiosmtplib.send.assert_called_with()
+    aiosmtplib.send.assert_called_with(
+        EmailMessage(),
+        hostname="mail.example.com",
+        port=587,
+        username="noreply",
+        password="XXX",
+    )
