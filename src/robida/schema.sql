@@ -37,3 +37,13 @@ CREATE TABLE oauth_tokens (
     last_refresh_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+DROP TABLE IF EXISTS websub_publisher;
+CREATE TABLE websub_publisher (
+    callback TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    expires_at TIMESTAMP,
+    secret TEXT,
+    last_delivery_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(callback, topic)
+);

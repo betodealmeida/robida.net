@@ -17,8 +17,7 @@ async def test_homepage_headers(client: testing.QuartClient) -> None:
         [
             ("content-type", "text/html; charset=utf-8"),
             ("Content-Length", len(await response.data)),
-            ("link", '<http://example.com/>; rel="self"'),
-            ("link", '<http://example.com/micropub/>; rel="micropub"'),
+            ("link", '<http://example.com/micropub>; rel="micropub"'),
             (
                 "link",
                 "<http://example.com/.well-known/oauth-authorization-server>; "
@@ -26,5 +25,7 @@ async def test_homepage_headers(client: testing.QuartClient) -> None:
             ),
             ("link", '<http://example.com/auth>; rel="authorization_endpoint"'),
             ("link", '<http://example.com/token>; rel="token_endpoint"'),
+            ("link", '<http://example.com/websub>; rel="hub"'),
+            ("link", '<http://example.com/>; rel="self"'),
         ]
     )

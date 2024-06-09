@@ -1,5 +1,5 @@
 """
-Helper functions for entries.
+Helper functions for the feed.
 """
 
 from collections import defaultdict

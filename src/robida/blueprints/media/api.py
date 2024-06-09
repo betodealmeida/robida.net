@@ -26,7 +26,7 @@ from robida.blueprints.micropub.api import ErrorType
 blueprint = Blueprint("media", __name__, url_prefix="/media")
 
 
-@blueprint.route("/", methods=["POST"])
+@blueprint.route("", methods=["POST"])
 @requires_scope("media")
 async def upload() -> Response:
     """

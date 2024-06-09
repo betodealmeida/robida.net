@@ -22,7 +22,7 @@ async def test_media_upload(mocker: MockerFixture, client: testing.QuartClient) 
     mocker.patch("robida.blueprints.media.api.aiofiles")
 
     response = await client.post(
-        "/media/",
+        "/media",
         files={"file": FileStorage(BytesIO(b"bytes"), "photo.jpg")},
         auth=Authorization("bearer", token="media"),
     )
@@ -39,7 +39,7 @@ async def test_media_upload_error(client: testing.QuartClient) -> None:
     Test media upload error response.
     """
     response = await client.post(
-        "/media/",
+        "/media",
         files={"image": FileStorage(BytesIO(b"bytes"), "photo.jpg")},
         auth=Authorization("bearer", token="media"),
     )

@@ -4,17 +4,30 @@ My website.
 
 ## TODO
 
-- [X] MicroPub
+### Infra
+
 - [X] IndieAuth
 - [X] RelMeAuth
-- [ ] RSS/Atom/XSLT
-- [ ] WebSub
+- [ ] OpenStreetMap provider
+- [ ] Passkeys?
+
+### Blog
+
+- [X] MicroPub
+- [X] WebSub
+- [ ] Feed: h-feed, RSS/ATOM (with XSL), JSON
 - [ ] Search
 - [ ] WebMentions
-- [ ] MicroSub
 - [ ] ActivityPub
 - [ ] Syndication
+
+### Reader
+
+- [ ] MicroSub
+- [ ] WebSub
+- [ ] ActivityPub
+
+### Other
+
 - [ ] Gemini
 - [ ] Titan?
-- [ ] Passkeys?
-- [ ] OpenStreetMap provider?

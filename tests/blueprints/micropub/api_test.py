@@ -31,7 +31,7 @@ async def test_create_entry(
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         form=[
             ("h", "entry"),
             ("content", "hello world"),
@@ -49,7 +49,7 @@ async def test_create_entry(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -80,7 +80,7 @@ async def test_create_entry_no_type(
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         form=[
             ("content", "hello world"),
             ("category[]", "foo"),
@@ -97,7 +97,7 @@ async def test_create_entry_no_type(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -128,7 +128,7 @@ async def test_create_entry_from_json(
 
     # https://www.w3.org/TR/micropub/#json-syntax
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         json={
             "type": ["h-entry"],
             "properties": {
@@ -148,7 +148,7 @@ async def test_create_entry_from_json(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -183,7 +183,7 @@ async def test_create_entry_from_json_no_type(
 
     # https://www.w3.org/TR/micropub/#json-syntax
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         json={
             "properties": {
                 "content": ["hello world"],
@@ -202,7 +202,7 @@ async def test_create_entry_from_json_no_type(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/entries/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -241,7 +241,7 @@ async def test_create_entry_with_file(
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         form={
             "h": "entry",
             "content": "hello world",
@@ -259,7 +259,7 @@ async def test_create_entry_with_file(
     assert dict(row) == {
         "uuid": "c35ad4716c6c488b9ffc8854607192f0",
         "author": "http://example.com/",
-        "location": "http://example.com/entries/c35ad4716c6c488b9ffc8854607192f0",
+        "location": "http://example.com/feed/c35ad4716c6c488b9ffc8854607192f0",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -284,7 +284,7 @@ async def test_index(client: testing.QuartClient) -> None:
     """
     Test the query endpoint.
     """
-    response = await client.get("/micropub/")
+    response = await client.get("/micropub")
 
     assert response.status_code == 400
     assert await response.json == {
@@ -297,11 +297,11 @@ async def test_index_config(client: testing.QuartClient) -> None:
     """
     Test fetching the configuration.
     """
-    response = await client.get("/micropub/", query_string={"q": "config"})
+    response = await client.get("/micropub", query_string={"q": "config"})
 
     assert response.status_code == 200
     assert await response.json == {
-        "media-endpoint": "http://example.com/media/",
+        "media-endpoint": "http://example.com/media",
         "syndicate-to": [],
     }
 
@@ -310,7 +310,7 @@ async def test_index_syndicate_to(client: testing.QuartClient) -> None:
     """
     Test fetching the list of syndication targets.
     """
-    response = await client.get("/micropub/", query_string={"q": "syndicate-to"})
+    response = await client.get("/micropub", query_string={"q": "syndicate-to"})
 
     assert response.status_code == 200
     assert await response.json == {"syndicate-to": []}
@@ -321,7 +321,7 @@ async def test_index_source(client: testing.QuartClient) -> None:
     Test fetching information about an entry.
     """
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         json={
             "type": ["h-entry"],
             "properties": {
@@ -335,7 +335,7 @@ async def test_index_source(client: testing.QuartClient) -> None:
     url = response.headers["Location"]
 
     response = await client.get(
-        f"/micropub/?q=source&properties[]=published&properties[]=category&url={url}"
+        f"/micropub?q=source&properties[]=published&properties[]=category&url={url}"
     )
 
     assert response.status_code == 200
@@ -346,7 +346,7 @@ async def test_index_source(client: testing.QuartClient) -> None:
         }
     }
 
-    response = await client.get(f"/micropub/?q=source&url={url}")
+    response = await client.get(f"/micropub?q=source&url={url}")
     assert response.status_code == 200
     assert await response.json == {
         "type": ["h-entry"],
@@ -362,7 +362,7 @@ async def test_index_invalid(client: testing.QuartClient) -> None:
     """
     Test the query endpoint.
     """
-    response = await client.get("/micropub/", query_string={"q": "invalid"})
+    response = await client.get("/micropub", query_string={"q": "invalid"})
 
     assert response.status_code == 400
     assert await response.json == {
@@ -376,7 +376,7 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
     Test deleting and undeleting an entry.
     """
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         json={
             "properties": {
                 "content": ["hello world"],
@@ -390,7 +390,14 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
     uuid = urllib.parse.urlparse(url).path.split("/")[-1]
 
     async with db.execute(
-        "SELECT deleted FROM entries WHERE uuid = ?",
+        """
+SELECT
+    deleted
+FROM
+    entries
+WHERE
+    uuid = ?
+        """,
         (uuid,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -398,14 +405,21 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
     assert row[0] == 0
 
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         json={"url": url, "action": "delete"},
         auth=Authorization("bearer", token="delete"),
     )
     assert response.status_code == 204
 
     async with db.execute(
-        "SELECT deleted FROM entries WHERE uuid = ?",
+        """
+SELECT
+    deleted
+FROM
+    entries
+WHERE
+    uuid = ?
+        """,
         (uuid,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -413,14 +427,21 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
     assert row[0] == 1
 
     response = await client.post(
-        "/micropub/",
+        "/micropub",
         json={"url": url, "action": "undelete"},
         auth=Authorization("bearer", token="undelete"),
     )
     assert response.status_code == 204
 
     async with db.execute(
-        "SELECT deleted FROM entries WHERE uuid = ?",
+        """
+SELECT
+    deleted
+FROM
+    entries
+WHERE
+    uuid = ?
+        """,
         (uuid,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -434,7 +455,7 @@ async def test_update(client: testing.QuartClient, db: Connection) -> None:
     """
     with freeze_time("2024-01-01 00:00:00"):
         response = await client.post(
-            "/micropub/",
+            "/micropub",
             json={
                 "properties": {
                     "content": ["hello world"],
@@ -449,7 +470,7 @@ async def test_update(client: testing.QuartClient, db: Connection) -> None:
 
     with freeze_time("2024-01-02 00:00:00"):
         response = await client.post(
-            "/micropub/",
+            "/micropub",
             json={
                 "action": "update",
                 "url": url,
@@ -468,7 +489,15 @@ async def test_update(client: testing.QuartClient, db: Connection) -> None:
     assert response.status_code == 204
 
     async with db.execute(
-        "SELECT content, last_modified_at FROM entries WHERE uuid = ?",
+        """
+SELECT
+    content,
+    last_modified_at
+FROM
+    entries
+WHERE
+    uuid = ?
+        """,
         (uuid,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -492,7 +521,7 @@ async def test_invalid_action(client: testing.QuartClient) -> None:
     """
     Test error response when user passes an invalid action.
     """
-    response = await client.post("/micropub/", json={"action": "invalid"})
+    response = await client.post("/micropub", json={"action": "invalid"})
 
     assert response.status_code == 400
     assert await response.json == {
