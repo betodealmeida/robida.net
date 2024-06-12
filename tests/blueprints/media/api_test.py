@@ -30,7 +30,7 @@ async def test_media_upload(mocker: MockerFixture, client: testing.QuartClient) 
     assert response.status_code == 201
     assert (
         response.headers["Location"]
-        == "http://example.com/media/92cdeabd827843ad871d0214dcb2d12e"
+        == "http://example.com/media/92cdeabd-8278-43ad-871d-0214dcb2d12e"
     )
 
 

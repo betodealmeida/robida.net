@@ -9,9 +9,9 @@ from typing import Any
 from dotenv import dotenv_values
 from quart import Quart, Response, g, request, url_for
 from quart_schema import QuartSchema
-from werkzeug.datastructures import Headers
 
 from robida.blueprints.feed import api as feed
+from robida.blueprints.feed.helpers import fetch_hcard
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
@@ -19,20 +19,10 @@ from robida.blueprints.micropub import api as micropub
 from robida.blueprints.relmeauth import api as relmeauth
 from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
-from robida.constants import rels
-from robida.db import get_db
+from robida.constants import links
+from robida.db import init_db, load_entries
 
 quart_schema = QuartSchema()
-
-
-def get_links() -> dict[str, str]:
-    """
-    Return all the links for `Link` headers and elements.
-    """
-    links = {rel: url_for(endpoint, _external=True) for rel, endpoint in rels.items()}
-    links["self"] = request.url
-
-    return links
 
 
 def create_app(
@@ -64,6 +54,7 @@ def create_app(
 
     app.jinja_env.trim_blocks = True
     app.jinja_env.lstrip_blocks = True
+    app.jinja_env.enable_async = True
 
     # create MEDIA directory
     if not Path(app.config["MEDIA"]).exists():
@@ -84,11 +75,9 @@ def create_app(
     @app.context_processor
     def inject_config() -> dict[str, Any]:
         """
-        Inject app config into all templates.
+        Inject app config (and more) into all templates.
         """
-        links = get_links()
-
-        return {"config": app.config, "links": links}
+        return {"config": app.config, "links": links, "fetch_hcard": fetch_hcard}
 
     @app.after_request
     def add_links(response: Response) -> Response:
@@ -96,27 +85,18 @@ def create_app(
         Add Link headers to responses.
         """
         response.headers.extend(
-            Headers(
-                [("Link", f'<{url}>; rel="{rel}"') for rel, url in get_links().items()]
-            )
+            [
+                (
+                    "Link",
+                    f'<{url_for(link["endpoint"], _external=True)}>; rel="{link["rel"]}"',
+                )
+                for link in links
+            ]
         )
 
         return response
 
-    # app.config["SERVER_NAME"] = "0082-172-58-129-44.ngrok-free.app"
-    # app.config["PREFER_SECURE_URLS"] = True
-
     return app
-
-
-async def init_db(app: Quart) -> None:
-    """
-    Create tables.
-    """
-    async with get_db(app) as db:
-        with open(Path(app.root_path) / "schema.sql", encoding="utf-8") as file_:
-            await db.executescript(file_.read())
-        await db.commit()
 
 
 def init_db_sync():
@@ -127,9 +107,19 @@ def init_db_sync():
     asyncio.run(init_db(app))
 
 
+def load_entries_sync() -> None:
+    """
+    Synchronous wrapper of `load_entries` for Poetry.
+    """
+    app = create_app()
+    asyncio.run(load_entries(app))
+
+
 def run() -> None:
     """
     Main app.
     """
     app = create_app()
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.config["DEBUG"] = True
     app.run("0.0.0.0", port=5001)

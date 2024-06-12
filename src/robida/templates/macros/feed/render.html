@@ -1,0 +1,15 @@
+{% import 'macros/feed/h-card.html' as card_macros %}
+{% import 'macros/feed/h-entry.html' as entry_macros %}
+{% import 'macros/feed/h-feed.html' as feed_macros %}
+
+{% macro render_microformat(data) %}
+    {% if "type" not in data %}
+        {{ data }}
+    {% elif data.type[0] == 'h-feed' %}
+        {{ feed_macros.h_feed(data) }}
+    {% elif data.type[0] == 'h-entry' %}
+        {{ entry_macros.h_entry(data) }}
+    {% elif data.type[0] == 'h-card' %}
+        {{ card_macros.h_card(data) }}
+    {% endif %}
+{% endmacro %}

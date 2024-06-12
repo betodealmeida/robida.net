@@ -31,7 +31,7 @@ async def send_email(email: str, subject: str, body: str) -> None:
     await aiosmtplib.send(
         message,
         hostname=current_app.config["SMTP_HOSTNAME"],
-        port=current_app.config["SMTP_PORT"],
+        port=int(current_app.config["SMTP_PORT"]),
         username=current_app.config["SMTP_USERNAME"],
         password=current_app.config["SMTP_PASSWORD"],
     )

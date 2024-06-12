@@ -6,8 +6,8 @@ CREATE TABLE entries(
     content JSON,
     read BOOLEAN DEFAULT FALSE,
     deleted BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP,
+    last_modified_at TIMESTAMP
 );
 CREATE INDEX idx_entries_author ON entries((author));
 CREATE INDEX idx_entries_location ON entries((location));
@@ -23,7 +23,7 @@ CREATE TABLE oauth_authorization_codes(
     code_challenge_method TEXT,
     used BOOLEAN DEFAULT FALSE,
     expires_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP
 );
 
 DROP TABLE IF EXISTS oauth_tokens;
@@ -35,7 +35,7 @@ CREATE TABLE oauth_tokens (
     scope TEXT,
     expires_at TIMESTAMP,
     last_refresh_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP
 );
 
 DROP TABLE IF EXISTS websub_publisher;
@@ -44,6 +44,6 @@ CREATE TABLE websub_publisher (
     topic TEXT NOT NULL,
     expires_at TIMESTAMP,
     secret TEXT,
-    last_delivery_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_delivery_at TIMESTAMP,
     UNIQUE(callback, topic)
 );

@@ -49,7 +49,7 @@ async def test_create_entry(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -97,7 +97,7 @@ async def test_create_entry_no_type(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -148,7 +148,7 @@ async def test_create_entry_from_json(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -202,7 +202,7 @@ async def test_create_entry_from_json_no_type(
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/feed/92cdeabd827843ad871d0214dcb2d12e",
+        "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -259,7 +259,7 @@ async def test_create_entry_with_file(
     assert dict(row) == {
         "uuid": "c35ad4716c6c488b9ffc8854607192f0",
         "author": "http://example.com/",
-        "location": "http://example.com/feed/c35ad4716c6c488b9ffc8854607192f0",
+        "location": "http://example.com/feed/c35ad471-6c6c-488b-9ffc-8854607192f0",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
@@ -267,7 +267,7 @@ async def test_create_entry_with_file(
                     "content": ["hello world"],
                     "category": ["foo"],
                     "photo": [
-                        "http://example.com/media/92cdeabd827843ad871d0214dcb2d12e"
+                        "http://example.com/media/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
                 },
             },
@@ -387,7 +387,7 @@ async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) 
         auth=Authorization("bearer", token="create"),
     )
     url = response.headers["Location"]
-    uuid = urllib.parse.urlparse(url).path.split("/")[-1]
+    uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with db.execute(
         """
@@ -398,7 +398,7 @@ FROM
 WHERE
     uuid = ?
         """,
-        (uuid,),
+        (uuid.hex,),
     ) as cursor:
         row = await cursor.fetchone()
 
@@ -420,7 +420,7 @@ FROM
 WHERE
     uuid = ?
         """,
-        (uuid,),
+        (uuid.hex,),
     ) as cursor:
         row = await cursor.fetchone()
 
@@ -442,7 +442,7 @@ FROM
 WHERE
     uuid = ?
         """,
-        (uuid,),
+        (uuid.hex,),
     ) as cursor:
         row = await cursor.fetchone()
 
@@ -466,7 +466,7 @@ async def test_update(client: testing.QuartClient, db: Connection) -> None:
             auth=Authorization("bearer", token="create"),
         )
     url = response.headers["Location"]
-    uuid = urllib.parse.urlparse(url).path.split("/")[-1]
+    uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     with freeze_time("2024-01-02 00:00:00"):
         response = await client.post(
@@ -498,7 +498,7 @@ FROM
 WHERE
     uuid = ?
         """,
-        (uuid,),
+        (uuid.hex,),
     ) as cursor:
         row = await cursor.fetchone()
 

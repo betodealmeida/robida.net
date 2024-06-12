@@ -47,7 +47,7 @@ async def upload() -> Response:
         )
 
     uuid = uuid4()
-    file_path = Path(current_app.config["MEDIA"]) / uuid.hex
+    file_path = Path(current_app.config["MEDIA"]) / str(uuid)
     file = files["file"]
 
     async with aiofiles.open(file_path, "wb") as f:
@@ -57,7 +57,7 @@ async def upload() -> Response:
     response.status_code = 201
     response.headers["Location"] = url_for(
         "media.download",
-        filename=uuid.hex,
+        filename=str(uuid),
         _external=True,
     )
 

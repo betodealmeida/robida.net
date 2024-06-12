@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>{{ hfeed.properties.url[0] }}</id>
+    <title>{{ hfeed.properties.name[0] }}</title>
+    <updated>{{ hfeed.properties.published[0] }}</updated>
+
+    {% for link in links %}
+    <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint, _external=True) }}" />
+    {% endfor %}
+
+    {% for child in hfeed.children %}
+    <entry>
+        <id>{{ child.properties.url[0] }}</id>
+        <link
+            rel="alternate"
+            type="text/html"
+            href="{{ child.properties.url[0] }}"
+        />
+        <updated>{{ child.properties.published[0] }}</updated>
+
+        {% if child.properties.content is mapping %}
+        <content type="html">
+            <![CDATA[{{ child.properties.content[0].html | safe }}]]>
+        </content>
+        {% else %}
+        <content type="text">{{ child.properties.content[0] }}</content>
+        {% endif %}
+
+        {% if child.properties.name %}
+        <title>{{ child.properties.name[0] }}</title>
+        {% endif %}
+
+        {% if child.properties.summary %}
+        {% if child.properties.summary is mapping %}
+        <summary type="html">
+            <![CDATA[{{ child.properties.summary[0].html | safe }}]]>
+        </summary>
+        {% else %}
+        <summary type="text">
+            {{ child.properties.summary[0] }}
+        </summary>
+        {% endif %}
+        {% endif %}
+
+        {% for category in child.properties.category or [] %}
+        <category term="{{ category }}" />
+        {% endfor %}
+
+        {% if child.properties.author %}
+        {% if child.properties.author[0] is mapping %}
+        {% set hcard = child.properties.author[0] %}
+        {% else %}
+        {% set hcard = fetch_hcard(child.properties.author[0]) %}
+        {% endif %}
+        <author>
+            {% if hcard.properties.name %}
+            <name>{{ hcard.properties.name[0] }}</name>
+            {% endif %}
+            {% if hcard.properties.email %}
+            <email>{{ hcard.properties.email[0] }}</email>
+            {% endif %}
+        </author>
+        {% endif %}
+    </entry>
+    {% endfor %}
+</feed>

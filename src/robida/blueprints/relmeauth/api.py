@@ -13,12 +13,12 @@ from .models import LoginRequest
 from .providers.asf import ASFProvider
 from .providers.email import EmailProvider
 
+blueprint = Blueprint("relmeauth", __name__, url_prefix="/")
+
 providers = [
     ASFProvider,
     EmailProvider,
 ]
-
-blueprint = Blueprint("relmeauth", __name__, url_prefix="/")
 
 
 @blueprint.route("/login", methods=["GET"])

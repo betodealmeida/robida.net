@@ -1,0 +1,10 @@
+{% import 'macros/feed/article.html' as article_macros %}
+{% import 'macros/feed/note.html' as note_macros %}
+
+{% macro h_entry(data) %}
+    {% if data.properties.name %}
+        {{ article_macros.article(data) }}
+    {% else %}
+        {{ note_macros.note(data) }}
+    {% endif %}
+{% endmacro %}

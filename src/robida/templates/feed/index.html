@@ -1,0 +1,7 @@
+{% import 'macros/feed/h-feed.html' as feed_macros %}
+
+{% extends "base.html" %}
+
+{% block content %}
+    {{ feed_macros.h_feed(hfeed) }}
+{% endblock %}

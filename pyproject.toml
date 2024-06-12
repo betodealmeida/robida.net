@@ -39,6 +39,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 start = "robida.main:run"
 init_db = "robida.main:init_db_sync"
+load_entries = "robida.main:load_entries_sync"
 
 [tool.flake8]
 max-line-length = 90
