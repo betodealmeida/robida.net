@@ -13,6 +13,9 @@ CREATE INDEX idx_entries_author ON entries((author));
 CREATE INDEX idx_entries_location ON entries((location));
 CREATE INDEX idx_entries_in_reply_to ON entries((content->>'$.properties.in-reply-to[0]'));
 
+DROP TABLE IF EXISTS documents;
+CREATE VIRTUAL TABLE documents USING fts5(uuid, content);
+
 DROP TABLE IF EXISTS oauth_authorization_codes;
 CREATE TABLE oauth_authorization_codes(
     code TEXT PRIMARY KEY,

@@ -14,7 +14,6 @@ from .helpers import (
     build_jsonfeed,
     get_entries,
     hfeed_from_entries,
-    iso_to_rfc822,
     make_conditional_response,
     reformat_html,
 )
@@ -75,7 +74,11 @@ async def html_index(query_args: FeedRequest) -> Response:
         return response
 
     hfeed = hfeed_from_entries(entries, url_for("feed.html_index", _external=True))
-    html = await render_template("feed/index.html", hfeed=hfeed)
+    html = await render_template(
+        "feed/index.html",
+        hfeed=hfeed,
+        title=f'h-feed for {current_app.config["SITE_NAME"]}',
+    )
     response.set_data(reformat_html(html))
 
     # Only set the content to `text/mf2+html` if it's explicitly requested, otherwise the
@@ -104,6 +107,15 @@ async def rss_xslt() -> Response:
     return Response(xslt, content_type="application/xslt+xml")
 
 
+@blueprint.route("/atom.xslt", methods=["GET"])
+async def atom_xslt() -> Response:
+    """
+    Return an XSLT stylesheet for Atom.
+    """
+    xslt = await render_template("feed/atom.xslt")
+    return Response(xslt, content_type="application/xslt+xml")
+
+
 @blueprint.route("/feed.rss", methods=["GET"])
 @validate_querystring(FeedRequest)
 async def rss_index(query_args: FeedRequest) -> Response:
@@ -124,7 +136,7 @@ async def rss_index(query_args: FeedRequest) -> Response:
     xml = await render_template(
         "feed/rss.xml",
         hfeed=hfeed,
-        iso_to_rfc822=iso_to_rfc822,
+        title=f'RSS 2.0 feed for {current_app.config["SITE_NAME"]}',
     )
     response.set_data(xml)
 
@@ -162,7 +174,11 @@ async def atom_index(query_args: FeedRequest) -> Response:
         return response
 
     hfeed = hfeed_from_entries(entries, url_for("feed.atom_index", _external=True))
-    xml = await render_template("feed/atom.xml", hfeed=hfeed)
+    xml = await render_template(
+        "feed/atom.xml",
+        hfeed=hfeed,
+        title=f'Atom feed for {current_app.config["SITE_NAME"]}',
+    )
     response.set_data(xml)
 
     # Only set the content to `application/atom+xml` if it's explicitly requested,

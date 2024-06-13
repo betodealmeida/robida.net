@@ -1,29 +1,11 @@
-:root {
-  --accent: #456;
+p.p-summary {
+    font-style: italic;
 }
 
-.copyright {
+article footer {
+    font-size: 0.875em;
+}
+
+a.copyright {
     text-decoration: none;
-}
-
-.copyright img {
-    height: 1.0em;
-}
-
-.word-cloud {
-    font-size: 1.2em;
-    font-weight: bold;
-    text-transform: lowercase;
-}
-
-a.word-cloud[href*="//"] {
-    position: relative;
-    display: inline-block;
-    padding-right: 1.0ex;
-}
-
-a.word-cloud[href*="//"]::after {
-    content: '↗';
-    position: absolute;
-    font-size: 0.8em;
 }

@@ -119,7 +119,7 @@ INSERT INTO entries (
     content,
     created_at,
     last_modified_at
-) VALUES (?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?);
                 """,
                 (
                     entry.uuid.hex,
@@ -128,6 +128,15 @@ INSERT INTO entries (
                     entry.content.model_dump_json(exclude_unset=True),
                     entry.created_at,
                     entry.last_modified_at,
+                ),
+            )
+            await db.execute(
+                """
+INSERT INTO documents (uuid, content) VALUES (?, ?);
+                """,
+                (
+                    entry.uuid.hex,
+                    entry.content.model_dump_json(exclude_unset=True),
                 ),
             )
         await db.commit()

@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
+<?xml-stylesheet type="text/xsl" href="{{ url_for('feed.atom_xslt', _external=True) }}"?>
+
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:extensions="https://robida.net/atom/extensions">
     <id>{{ hfeed.properties.url[0] }}</id>
     <title>{{ hfeed.properties.name[0] }}</title>
+    <subtitle>{{ hfeed.properties.summary[0] }}</subtitle>
+    <extensions:title>{{ title }}</extensions:title>
     <updated>{{ hfeed.properties.published[0] }}</updated>
 
     {% for link in links %}
@@ -17,8 +21,10 @@
             href="{{ child.properties.url[0] }}"
         />
         <updated>{{ child.properties.published[0] }}</updated>
+        <extensions:type_emoji>{{ get_type_emoji(child) }}</extensions:type_emoji>
+        <extensions:updated>{{ iso_to_rfc822(child.properties.published[0]) }}</extensions:updated>
 
-        {% if child.properties.content is mapping %}
+        {% if child.properties.content[0] is mapping %}
         <content type="html">
             <![CDATA[{{ child.properties.content[0].html | safe }}]]>
         </content>
@@ -31,7 +37,7 @@
         {% endif %}
 
         {% if child.properties.summary %}
-        {% if child.properties.summary is mapping %}
+        {% if child.properties.summary[0] is mapping %}
         <summary type="html">
             <![CDATA[{{ child.properties.summary[0].html | safe }}]]>
         </summary>
@@ -55,6 +61,9 @@
         <author>
             {% if hcard.properties.name %}
             <name>{{ hcard.properties.name[0] }}</name>
+            {% endif %}
+            {% if hcard.properties.url %}
+            <uri>{{ hcard.properties.url[0] }}</uri>
             {% endif %}
             {% if hcard.properties.email %}
             <email>{{ hcard.properties.email[0] }}</email>

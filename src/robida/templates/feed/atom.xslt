@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet
     version="1.1"
-    xmlns:extensions="https://robida.net/rss/extensions"
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:extensions="https://robida.net/atom/extensions"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 >
     <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
-    <xsl:template match="/rss/channel">
-        <html>
+    <xsl:template match="/atom:feed">
+        <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
             <head>
                 <meta charset="UTF-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -71,12 +72,12 @@
                     <div class="h-feed">
                         <hgroup>
                             <h1 class="p-name">
-                                <a href="{link}"><xsl:value-of select="title"/></a>
+                                <a href="{atom:id}"><xsl:value-of select="atom:title"/></a>
                             </h1>
-                            <p class="p-summary"><xsl:value-of select="description"/></p>
+                            <p class="p-summary"><xsl:value-of select="atom:subtitle"/></p>
                         </hgroup>
 
-                        <xsl:apply-templates select="item"/>
+                        <xsl:apply-templates select="atom:entry"/>
                     </div>
                 </main>
 
@@ -107,28 +108,28 @@
         </html>
     </xsl:template>
 
-    <xsl:template match="item">
+    <xsl:template match="atom:entry">
         <article class="h-entry">
             <xsl:choose>
-                <xsl:when test="title">
+                <xsl:when test="atom:title">
                     <!-- article -->
                     <header>
                         <hgroup>
-                            <h1 class="p-name"><xsl:value-of select="title"/></h1>
-                            <xsl:if test="extensions:summary">
-                                <p class="p-summary"><xsl:value-of select="extensions:summary"/></p>
+                            <h1 class="p-name"><xsl:value-of select="atom:title"/></h1>
+                            <xsl:if test="atom:summary">
+                                <p class="p-summary"><xsl:value-of select="atom:summary"/></p>
                             </xsl:if>
                         </hgroup>
                     </header>
 
                     <div class="e-content safe">
-                        <xsl:value-of select="description" disable-output-escaping="yes"/>
+                        <xsl:value-of select="atom:content" disable-output-escaping="yes"/>
                     </div>
                 </xsl:when>
                 <xsl:otherwise>
                     <!-- note -->
                     <p class="p-content e-content">
-                        <xsl:value-of select="description"/>
+                        <xsl:value-of select="atom:content"/>
                     </p>
                 </xsl:otherwise>
             </xsl:choose>
@@ -138,11 +139,11 @@
                     <span class="safe">
                         <xsl:value-of select="extensions:type_emoji" disable-output-escaping="yes"/>
                     </span>
-                    <xsl:apply-templates select="extensions:author"/>
+                    <xsl:apply-templates select="atom:author"/>
                     @
-                    <a href="{link}" class="u-url">
-                        <time class="dt-published" datetime="{extensions:last_modified_at}">
-                            <xsl:value-of select="pubDate"/>
+                    <a href="{atom:id}" class="u-url">
+                        <time class="dt-published" datetime="{atom:updated}">
+                            <xsl:value-of select="extensions:updated"/>
                         </time>
                         ⚓
                     </a>
@@ -151,9 +152,9 @@
         </article>
     </xsl:template>
 
-    <xsl:template match="extensions:author">
-        Published by <a class="h-card" href="{extensions:url}">
-            <xsl:value-of select="extensions:name"/>
+    <xsl:template match="atom:author">
+        Published by <a class="h-card" href="{atom:uri}">
+            <xsl:value-of select="atom:name"/>
         </a>
     </xsl:template>
 </xsl:stylesheet>

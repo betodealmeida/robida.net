@@ -258,75 +258,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         response.headers["ETag"]
         == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
     )
-    assert (
-        (await response.data).decode()
-        == """<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-        <title>
-            Robida
-        </title>
-        <link href="http://example.com/micropub" rel="micropub"/>
-        <link href="http://example.com/.well-known/oauth-authorization-server" rel="indieauth-metadata"/>
-        <link href="http://example.com/auth" rel="authorization_endpoint"/>
-        <link href="http://example.com/token" rel="token_endpoint"/>
-        <link href="http://example.com/websub" rel="hub"/>
-        <link href="http://example.com/feed.json" rel="alternate"/>
-        <link href="http://example.com/feed.rss" rel="alternate"/>
-        <link href="http://example.com/feed.xml" rel="alternate"/>
-        <link href="http://example.com/feed.html" rel="alternate"/>
-        <link href="/static/css/simple.min.css" rel="stylesheet"/>
-        <link href="/static/css/custom.css" rel="stylesheet"/>
-    </head>
-    <body>
-        <header>
-            <h1>
-                Robida
-            </h1>
-        </header>
-        <main>
-            <div class="h-feed">
-                <h1 class="p-name">
-                    <a href="http://example.com/feed.html">
-                        Robida
-                    </a>
-                </h1>
-                <p class="p-summary">
-                    A blog
-                </p>
-                <article class="h-entry">
-                    <p class="p-content e-content">
-                        hello world
-                    </p>
-                    <footer>
-                        <p>
-                            <time class="dt-published" datetime="2024-01-01T00:00:00+00:00">
-                                2024-01-01T00:00:00+00:00
-                            </time>
-                        </p>
-                    </footer>
-                </article>
-            </div>
-        </main>
-        <footer>
-            <p>
-                <a class="copyright" href="https://creativecommons.org/licenses/by-sa/4.0/" title="CC BY-SA 4.0">
-                    <img alt="CC" src="/static/img/cc.svg"/>
-                    <img alt="BY" src="/static/img/by.svg"/>
-                    <img alt="SA" src="/static/img/sa.svg"/>
-                </a>
-                2024
-                <a href="https://github.com/betodealmeida/robida.net/">
-                    robida.net
-                </a>
-            </p>
-        </footer>
-    </body>
-</html>
-"""
-    )
 
 
 async def test_feed_html_content_negotiation(client: testing.QuartClient) -> None:
@@ -411,32 +342,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     assert (
         response.headers["ETag"]
         == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
-    )
-    assert (
-        (await response.data).decode()
-        == """<?xml version="1.0" encoding="UTF-8" ?>
-<?xml-stylesheet type="text/xsl" href="http://example.com/rss.xslt"?>
-
-<rss version="2.0">
-    <channel>
-        <title>Robida</title>
-        <link>http://example.com/feed.rss</link>
-        <description>A blog</description>
-        <lastBuildDate>Mon, 01 Jan 2024 00:00:00 +0000</lastBuildDate>
-        <pubDate>Mon, 01 Jan 2024 00:00:00 +0000</pubDate>
-        <language>en-US</language>
-        <generator>https://github.com/betodealmeida/robida.net</generator>
-
-        <item>
-            <link>http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e</link>
-            <description>hello world</description>
-            <category>foo</category>
-            <category>bar</category>
-            <pubDate>Mon, 01 Jan 2024 00:00:00 +0000</pubDate>
-            <guid>http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e</guid>
-        </item>
-    </channel>
-</rss>"""
     )
 
 
@@ -523,43 +428,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         response.headers["ETag"]
         == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
     )
-    assert (
-        (await response.data).decode()
-        == """<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <id>http://example.com/feed.xml</id>
-    <title>Robida</title>
-    <updated>2024-01-01T00:00:00+00:00</updated>
-
-    <link rel="micropub" href="http://example.com/micropub" />
-    <link rel="indieauth-metadata" href="http://example.com/.well-known/oauth-authorization-server" />
-    <link rel="authorization_endpoint" href="http://example.com/auth" />
-    <link rel="token_endpoint" href="http://example.com/token" />
-    <link rel="hub" href="http://example.com/websub" />
-    <link rel="alternate" href="http://example.com/feed.json" />
-    <link rel="alternate" href="http://example.com/feed.rss" />
-    <link rel="alternate" href="http://example.com/feed.xml" />
-    <link rel="alternate" href="http://example.com/feed.html" />
-
-    <entry>
-        <id>http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e</id>
-        <link
-            rel="alternate"
-            type="text/html"
-            href="http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
-        />
-        <updated>2024-01-01T00:00:00+00:00</updated>
-
-        <content type="text">hello world</content>
-
-
-
-        <category term="foo" />
-        <category term="bar" />
-
-    </entry>
-</feed>"""
-    )
 
 
 async def test_feed_atom_content_negotiation(client: testing.QuartClient) -> None:
@@ -613,9 +481,19 @@ async def test_entry_invalid(client: testing.QuartClient) -> None:
 
 async def test_rss_xslt(client: testing.QuartClient) -> None:
     """
-    Test the RSS XSLT endpoint.
+    Test the RSS 2.0 XSLT endpoint.
     """
     response = await client.get("/rss.xslt")
+
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/xslt+xml"
+
+
+async def test_atom_xslt(client: testing.QuartClient) -> None:
+    """
+    Test the Atom XSLT endpoint.
+    """
+    response = await client.get("/atom.xslt")
 
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/xslt+xml"

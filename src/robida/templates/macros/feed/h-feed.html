@@ -2,13 +2,14 @@
 
 {% macro h_feed(data) %}
 <div class="h-feed">
-    <h1 class="p-name">
-        <a href="{{ data.properties.url[0] }}">
-            {{ data.properties.name[0] }}
-        </a>
-    </h1>
-
-    <p class="p-summary">{{ data.properties.summary[0] }}</p>
+    <hgroup>
+        <h1 class="p-name">
+            <a href="{{ data.properties.url[0] }}">
+                {{ data.properties.name[0] }}
+            </a>
+        </h1>
+        <p class="p-summary">{{ data.properties.summary[0] }}</p>
+    </hgroup>
 
     {% for child in data.children %}
         {{ entry_macros.h_entry(child) }}
