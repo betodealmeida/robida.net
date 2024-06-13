@@ -53,6 +53,34 @@ async def test_load_entries(current_app: Quart) -> None:
             "last_modified_at": "2024-01-01 00:00:00+00:00",
         },
         {
+            "uuid": "37c9ed455c0c43e4b0880e904ed849d7",
+            "author": "http://example.com/",
+            "location": "http://example.com/feed/37c9ed45-5c0c-43e4-b088-0e904ed849d7",
+            "content": json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["Hello, world!"],
+                        "published": ["2024-01-01T00:00:00+00:00"],
+                        "author": [
+                            {
+                                "type": ["h-card"],
+                                "properties": {
+                                    "name": ["Beto Dealmeida"],
+                                    "url": ["http://example.com/"],
+                                },
+                            }
+                        ],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "read": 0,
+            "deleted": 1,
+            "created_at": "2024-01-01 00:00:00+00:00",
+            "last_modified_at": "2024-01-01 00:00:00+00:00",
+        },
+        {
             "uuid": "8bf10ecebe184b96af9104e5c2a931ad",
             "author": "http://example.com/",
             "location": "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad",

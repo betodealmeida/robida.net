@@ -185,6 +185,46 @@ OFFSET
     ]
 
 
+async def get_entry(uuid: UUID) -> Entry | None:
+    """
+    Load a given entry.
+    """
+    async with get_db(current_app) as db:
+        async with db.execute(
+            """
+SELECT
+    uuid,
+    author,
+    location,
+    content,
+    read,
+    deleted,
+    created_at,
+    last_modified_at
+FROM
+    entries
+WHERE
+    uuid >= ?
+            """,
+            (uuid.hex,),
+        ) as cursor:
+            row = await cursor.fetchone()
+
+    if row is None:
+        return None
+
+    return Entry(
+        uuid=UUID(row["uuid"]),
+        author=row["author"],
+        location=row["location"],
+        content=json.loads(row["content"]),
+        read=row["read"],
+        deleted=row["deleted"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        last_modified_at=datetime.fromisoformat(row["last_modified_at"]),
+    )
+
+
 def generate_etag(entries: list[Entry]) -> str:
     """
     Compute ETag for entries.
@@ -319,12 +359,6 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
         if entries
         else datetime.now(timezone.utc)
     )
-    for entry in entries:
-        entry.content.properties.setdefault("url", [entry.location])
-        entry.content.properties.setdefault(
-            "published",
-            [entry.last_modified_at.isoformat()],
-        )
 
     return {
         "type": ["h-feed"],
@@ -347,5 +381,31 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
                 }
             ],
         },
-        "children": [entry.content.model_dump() for entry in entries],
+        "children": [hentry_from_entry(entry) for entry in entries],
     }
+
+
+def hentry_from_entry(entry: Entry) -> dict[str, Any]:
+    """
+    Build an hn-entry from an entry.
+    """
+    entry.content.properties.setdefault("url", [entry.location])
+    entry.content.properties.setdefault(
+        "published",
+        [entry.last_modified_at.isoformat()],
+    )
+
+    return entry.content.model_dump()
+
+
+def get_title(hentry: dict[str, Any]) -> str:
+    """
+    Get the title of an h-entry.
+    """
+    if name := hentry["properties"].get("name"):
+        return name[0]
+
+    if content := hentry["properties"].get("content"):
+        return content[0]["value"] if isinstance(content[0], dict) else content[0]
+
+    return "Untitled"
