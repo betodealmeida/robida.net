@@ -16,6 +16,7 @@ from robida.blueprints.feed.helpers import (
     build_jsonfeed_item,
     get_entries,
     get_entry_graph,
+    get_title,
     make_conditional_response,
     render_microformat,
 )
@@ -379,3 +380,25 @@ async def test_render_microformat(httpx_mock: HTTPXMock, current_app: Quart) -> 
 </article>
 """
     )
+
+
+async def test_get_title() -> None:
+    """
+    Test the `get_title` helper function.
+    """
+
+    assert get_title({"properties": {"name": ["Hello, World!"]}}) == "Hello, World!"
+    assert get_title({"properties": {"content": ["Hello, World!"]}}) == "Hello, World!"
+    assert (
+        get_title(
+            {
+                "properties": {
+                    "content": [
+                        {"value": "Hello, World!", "html": "<h1>Hello, world!</h1>"}
+                    ]
+                }
+            }
+        )
+        == "Hello, World!"
+    )
+    assert get_title({"properties": {}}) == "Untitled"

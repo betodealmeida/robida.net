@@ -13,6 +13,9 @@ from quart_schema import validate_querystring
 from .helpers import (
     build_jsonfeed,
     get_entries,
+    get_entry,
+    get_title,
+    hentry_from_entry,
     hfeed_from_entries,
     make_conditional_response,
     reformat_html,
@@ -233,4 +236,26 @@ async def entry(uuid: UUID) -> dict:
     """
     Load a single entry.
     """
-    return {"entry": uuid.hex}
+    # pylint: disable=redefined-outer-name
+    entry = await get_entry(uuid)
+
+    if entry is None:
+        return Response(status=404)
+
+    if entry.deleted:
+        return Response(status=410)
+
+    response = make_conditional_response([entry])
+    if response.status_code == 304:
+        return response
+
+    hentry = hentry_from_entry(entry)
+    title = get_title(hentry)
+    html = await render_template(
+        "feed/entry.html",
+        hentry=hentry,
+        title=f'{title} — {current_app.config["SITE_NAME"]}',
+    )
+    response.set_data(reformat_html(html))
+
+    return response

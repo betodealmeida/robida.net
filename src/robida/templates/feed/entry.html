@@ -1,0 +1,7 @@
+{% import 'macros/feed/h-entry.html' as entry_macros %}
+
+{% extends "base.html" %}
+
+{% block content %}
+    {{ entry_macros.h_entry(hentry) }}
+{% endblock %}

@@ -66,6 +66,33 @@ async def load_entries(app: Quart) -> None:
             ),
         )
 
+        deleted = Entry(
+            uuid=UUID("37c9ed45-5c0c-43e4-b088-0e904ed849d7"),
+            author=url_for("homepage.index", _external=True),
+            location=url_for(
+                "feed.entry",
+                uuid="37c9ed45-5c0c-43e4-b088-0e904ed849d7",
+                _external=True,
+            ),
+            content=Microformats2(
+                type=["h-entry"],
+                properties={
+                    "content": ["Hello, world!"],
+                    "published": [datetime.now(timezone.utc).isoformat()],
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "properties": {
+                                "name": [app.config["NAME"]],
+                                "url": [url_for("homepage.index", _external=True)],
+                            },
+                        }
+                    ],
+                },
+            ),
+            deleted=True,
+        )
+
         html = """
     <p>
         This blog runs a custom-built Python web framework called
@@ -106,7 +133,7 @@ async def load_entries(app: Quart) -> None:
             ),
         )
 
-    entries = [note, article]
+    entries = [note, deleted, article]
 
     async with get_db(app) as db:
         for entry in entries:
@@ -117,15 +144,17 @@ INSERT INTO entries (
     author,
     location,
     content,
+    deleted,
     created_at,
     last_modified_at
-) VALUES (?, ?, ?, ?, ?, ?);
+) VALUES (?, ?, ?, ?, ?, ?, ?);
                 """,
                 (
                     entry.uuid.hex,
                     entry.author,
                     entry.location,
                     entry.content.model_dump_json(exclude_unset=True),
+                    entry.deleted,
                     entry.created_at,
                     entry.last_modified_at,
                 ),
