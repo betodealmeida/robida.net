@@ -11,16 +11,17 @@ from quart import Quart, Response, g, request, url_for
 from quart_schema import QuartSchema
 
 from robida.blueprints.feed import api as feed
-from robida.blueprints.feed.helpers import fetch_hcard
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
 from robida.blueprints.relmeauth import api as relmeauth
+from robida.blueprints.search import api as search
 from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
 from robida.constants import links
 from robida.db import init_db, load_entries
+from robida.helpers import fetch_hcard, get_type_emoji, iso_to_rfc822
 
 quart_schema = QuartSchema()
 
@@ -49,12 +50,20 @@ def create_app(
     app.register_blueprint(media.blueprint)
     app.register_blueprint(micropub.blueprint)
     app.register_blueprint(relmeauth.blueprint)
+    app.register_blueprint(search.blueprint)
     app.register_blueprint(websub.blueprint)
     app.register_blueprint(wellknown.blueprint)
 
     app.jinja_env.trim_blocks = True
     app.jinja_env.lstrip_blocks = True
     app.jinja_env.enable_async = True
+    app.jinja_env.globals.update(
+        {
+            "fetch_hcard": fetch_hcard,
+            "iso_to_rfc822": iso_to_rfc822,
+            "get_type_emoji": get_type_emoji,
+        }
+    )
 
     # create MEDIA directory
     if not Path(app.config["MEDIA"]).exists():
@@ -67,17 +76,18 @@ def create_app(
         """
         authorization = request.headers.get("Authorization")
 
-        if authorization and authorization.startswith("Bearer "):
-            g.access_token = authorization.split(" ", 1)[1]
-        else:
-            g.access_token = None
+        g.access_token = (
+            authorization.split(" ", 1)[1]
+            if authorization and authorization.startswith("Bearer ")
+            else None
+        )
 
     @app.context_processor
     def inject_config() -> dict[str, Any]:
         """
         Inject app config (and more) into all templates.
         """
-        return {"config": app.config, "links": links, "fetch_hcard": fetch_hcard}
+        return {"config": app.config, "links": links}
 
     @app.after_request
     def add_links(response: Response) -> Response:

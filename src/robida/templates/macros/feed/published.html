@@ -1,0 +1,5 @@
+{% macro published(data) %}
+<time class="dt-published" datetime="{{ data }}">
+    {{ iso_to_rfc822(data) }}
+</time>
+{% endmacro %}

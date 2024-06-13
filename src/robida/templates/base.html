@@ -5,14 +5,27 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{{ title|default(config.SITE_NAME) }}</title>
         {% for link in links %}
-        <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint, _external=True) }}">
+        <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint) }}">
         {% endfor %}
-        <link rel="stylesheet" href="{{ url_for("static", filename="css/simple.min.css") }}">
-        <link rel="stylesheet" href="{{ url_for("static", filename="css/custom.css") }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/pico.fluid.classless.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
     </head>
     <body>
         <header>
-            <h1>{{ title|default(config.SITE_NAME) }}</h1>
+            <nav>
+                <ul>
+                    <li>
+                        <strong>
+                            <a href="{{ url_for('homepage.index') }}">Home</a>
+                        </strong>
+                    </li>
+                </ul>
+                <ul>
+                    <li><a href="{{ url_for('feed.index') }}">Feed</a></li>
+                    <li><a href="{{ url_for('feed.entry', uuid='8bf10ece-be18-4b96-af91-04e5c2a931ad') }}">About</a></li>
+                    <li><a href="https://github.com/betodealmeida/robida.net/">Source</a></li>
+                </ul>
+            </nav>
         </header>
 
         <main>
@@ -21,17 +34,25 @@
 
         <footer>
             <p>
+                <form role="search" method="GET" action="/search">
+                    <input name="q" type="search"/>
+                    <input type="submit" value="Search"/>
+                </form>
+            </p>
+            <p style="text-align: center;">
+                🍃
                 <a
                     class="copyright"
                     href="https://creativecommons.org/licenses/by-sa/4.0/"
                     title="CC BY-SA 4.0"
                 >
-                    <img src="/static/img/cc.svg" alt="CC">
-                    <img src="/static/img/by.svg" alt="BY">
-                    <img src="/static/img/sa.svg" alt="SA">
+                    <img src="/static/img/cc.svg" alt="CC" style="height: 1.0em;"/>
+                    <img src="/static/img/by.svg" alt="BY" style="height: 1.0em;"/>
+                    <img src="/static/img/sa.svg" alt="SA" style="height: 1.0em;"/>
                 </a>
                 2024
                 <a href="https://github.com/betodealmeida/robida.net/">robida.net</a>
+                🍃
             </p>
         </footer>
     </body>

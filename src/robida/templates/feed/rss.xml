@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<?xml-stylesheet type="text/xsl" href="{{ url_for("feed.rss_xslt", _external=True) }}"?>
+<?xml-stylesheet type="text/xsl" href="{{ url_for('feed.rss_xslt', _external=True) }}"?>
 
-<rss version="2.0">
+<rss version="2.0" xmlns:extensions="https://robida.net/rss/extensions">
     <channel>
         <title>{{ hfeed.properties.name[0] }}</title>
         <link>{{ hfeed.properties.url[0] }}</link>
@@ -13,21 +13,62 @@
 
         {% for child in hfeed.children %}
         <item>
+            <link>{{ child.properties.url[0] }}</link>
+            <pubDate>{{ iso_to_rfc822(child.properties.published[0]) }}</pubDate>
+            <guid>{{ child.properties.url[0] }}</guid>
+
             {% if child.properties.name %}
             <title>{{ child.properties.name[0] }}</title>
             {% endif %}
-            <link>{{ child.properties.url[0] }}</link>
+
             {% if child.properties.content[0] is mapping %}
             <description><![CDATA[{{ child.properties.content[0].html | safe }}]]></description>
             {% else %}
             <description>{{ child.properties.content[0] }}</description>
             {% endif %}
+
             {% for category in child.properties.category or [] %}
             <category>{{ category }}</category>
             {% endfor %}
-            <pubDate>{{ iso_to_rfc822(child.properties.published[0]) }}</pubDate>
-            <guid>{{ child.properties.url[0] }}</guid>
+
+            <!--
+                RSS 2.0 Extensions
+
+                These are used by the XSLT file to render a page similar to the h-feed.
+            -->
+            {% if child.properties.summary %}
+            {% if child.properties.summary[0] is mapping %}
+            <extensions:summary>
+                <![CDATA[{{ child.properties.summary[0].html | safe }}]]>
+            </extensions:summary>
+            {% else %}
+            <extensions:summary>{{ child.properties.summary[0] }}</extensions:summary>
+            {% endif %}
+            {% endif %}
+            <extensions:last_modified_at>{{ child.properties.published[0] }}</extensions:last_modified_at>
+            <extensions:type_emoji>{{ get_type_emoji(child) }}</extensions:type_emoji>
+            {% if child.properties.author %}
+            {% if child.properties.author[0] is mapping %}
+            {% set hcard = child.properties.author[0] %}
+            {% else %}
+            {% set hcard = fetch_hcard(child.properties.author[0]) %}
+            {% endif %}
+            <extensions:author>
+                {% if hcard.properties.name %}
+                <extensions:name>
+                    {{ hcard.properties.name[0] }}
+                </extensions:name>
+                {% endif %}
+                {% if hcard.properties.url %}
+                <extensions:url>
+                    {{ hcard.properties.url[0] }}
+                </extensions:url>
+                {% endif %}
+            </extensions:author>
+            {% endif %}
         </item>
         {% endfor %}
+
+        <extensions:title>{{ title }}</extensions:title>
     </channel>
 </rss>

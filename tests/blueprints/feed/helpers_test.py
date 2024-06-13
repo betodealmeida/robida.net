@@ -14,7 +14,6 @@ from werkzeug.datastructures import Headers
 
 from robida.blueprints.feed.helpers import (
     build_jsonfeed_item,
-    fetch_hcard,
     get_entries,
     get_entry_graph,
     make_conditional_response,
@@ -364,30 +363,19 @@ async def test_render_microformat(httpx_mock: HTTPXMock, current_app: Quart) -> 
     </p>
     <footer>
         <p>
+            <span title="A note (h-entry)">
+                🗒️
+            </span>
             Published by
             <a class="h-card" href="https://tantek.com/">
                 Tantek Çelik
             </a>
+            @
             <time class="dt-published" datetime="2013-03-07">
-                2013-03-07
+                Thu, 07 Mar 2013 00:00:00
             </time>
         </p>
     </footer>
 </article>
 """
     )
-
-
-async def test_fetch_hcard_not_found(httpx_mock: HTTPXMock) -> None:
-    """
-    Test the `render_microformat` function when the h-card is not found.
-    """
-    httpx_mock.add_response(url="https://tantek.com/", status_code=404)
-
-    assert await fetch_hcard("https://tantek.com/") == {
-        "type": ["h-card"],
-        "properties": {
-            "name": ["https://tantek.com/"],
-            "url": ["https://tantek.com/"],
-        },
-    }

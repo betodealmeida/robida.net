@@ -1,14 +1,19 @@
 {% import 'macros/feed/author.html' as author_macros %}
+{% import 'macros/feed/published.html' as published_macros %}
 
 {% macro article(data) %}
 <article class="h-entry">
-    {% if data.properties.name %}
-    <h1 class="p-name">{{ data.properties.name[0] }}</h1>
-    {% endif %}
+    <header>
+        <hgroup>
+        {% if data.properties.name %}
+        <h1 class="p-name">{{ data.properties.name[0] }}</h1>
+        {% endif %}
 
-    {% if data.properties.summary %}
-    <p class="p-summary">{{ data.properties.summary[0] }}</p>
-    {% endif %}
+        {% if data.properties.summary %}
+        <p class="p-summary">{{ data.properties.summary[0] }}</p>
+        {% endif %}
+        </hgroup>
+    </header>
 
     {% if data.properties.content %}
         <div class="e-content">
@@ -22,11 +27,18 @@
     <footer>
         <p>
             {% if data.properties.author %}
+            {{ get_type_emoji(data) | safe }}
             Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
             {% endif %}
-            <time class="dt-published" datetime="{{ data.properties.published[0] }}">
-                {{ data.properties.published[0] }}
-            </time>
+            @
+            {% if data.properties.url %}
+            <a href="{{ data.properties.url[0] }}" class="u-url">
+            {{ published_macros.published(data.properties.published[0]) }}
+            ⚓
+            </a>
+            {% else %}
+            {{ published_macros.published(data.properties.published[0]) }}
+            {% endif %}
         </p>
     </footer>
 </article>

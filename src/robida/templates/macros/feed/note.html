@@ -1,10 +1,11 @@
 {% import 'macros/feed/author.html' as author_macros %}
+{% import 'macros/feed/published.html' as published_macros %}
 
 {% macro note(data) %}
 <article class="h-entry">
     <p class="p-content e-content">
         {% if data.properties.content[0] is mapping %}
-            {# ignore HTML #}
+            {# ignore HTML? #}
             {{ data.properties.content[0].value }}
         {% else %}
             {{ data.properties.content[0] }}
@@ -13,11 +14,18 @@
     <footer>
         <p>
             {% if data.properties.author %}
+            {{ get_type_emoji(data) | safe }}
             Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
             {% endif %}
-            <time class="dt-published" datetime="{{ data.properties.published[0] }}">
-                {{ data.properties.published[0] }}
-            </time>
+            @
+            {% if data.properties.url %}
+            <a href="{{ data.properties.url[0] }}" class="u-url">
+            {{ published_macros.published(data.properties.published[0]) }}
+            ⚓
+            </a>
+            {% else %}
+            {{ published_macros.published(data.properties.published[0]) }}
+            {% endif %}
         </p>
     </footer>
 </article>

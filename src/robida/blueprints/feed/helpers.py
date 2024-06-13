@@ -9,8 +9,6 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-import httpx
-import mf2py
 from bs4 import BeautifulSoup
 from bs4.formatter import HTMLFormatter
 from quart import Response, current_app, request
@@ -18,7 +16,7 @@ from quart.helpers import url_for
 
 from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
-from robida.helpers import extract_text_from_html
+from robida.helpers import extract_text_from_html, fetch_hcard
 from robida.models import Entry
 
 from .models import (
@@ -99,26 +97,6 @@ async def get_entry_graph(db, entry_uuid):
             entry["children"].append(reply)
 
     return root
-
-
-async def fetch_hcard(url: str) -> dict[str, Any]:
-    """
-    Fetch an h-card from an URL.
-    """
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
-        html = mf2py.Parser(response.content.decode())
-
-    if cards := html.to_dict(filter_by_type="h-card"):
-        return cards[0]
-
-    return {
-        "type": ["h-card"],
-        "properties": {
-            "name": [url],
-            "url": [url],
-        },
-    }
 
 
 async def render_microformat(data: dict[str, Any]) -> str:
@@ -371,10 +349,3 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
         },
         "children": [entry.content.model_dump() for entry in entries],
     }
-
-
-def iso_to_rfc822(iso: str) -> str:
-    """
-    Convert an ISO 8601 date to RFC 822.
-    """
-    return datetime.fromisoformat(iso).strftime("%a, %d %b %Y %H:%M:%S %z")
