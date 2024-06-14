@@ -9,9 +9,8 @@ CREATE TABLE entries(
     created_at TIMESTAMP,
     last_modified_at TIMESTAMP
 );
-CREATE INDEX idx_entries_author ON entries((author));
-CREATE INDEX idx_entries_location ON entries((location));
-CREATE INDEX idx_entries_in_reply_to ON entries((content->>'$.properties.in-reply-to[0]'));
+CREATE INDEX idx_entries_author ON entries(author);
+CREATE INDEX idx_entries_location ON entries(location);
 
 DROP TABLE IF EXISTS documents;
 CREATE VIRTUAL TABLE documents USING fts5(uuid, content);
@@ -49,4 +48,45 @@ CREATE TABLE websub_publisher (
     secret TEXT,
     last_delivery_at TIMESTAMP,
     UNIQUE(callback, topic)
+);
+
+DROP TABLE IF EXISTS incoming_webmentions;
+CREATE TABLE incoming_webmentions (
+    uuid TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    target TEXT NOT NULL,
+    vouch TEXT,
+    status TEXT NOT NULL,
+    message TEXT,
+    content TEXT,
+    created_at TIMESTAMP,
+    last_modified_at TIMESTAMP,
+    UNIQUE(source, target)
+);
+CREATE INDEX idx_incoming_webmentions_source ON incoming_webmentions(source);
+CREATE INDEX idx_incoming_webmentions_target ON incoming_webmentions(target);
+CREATE INDEX idx_incoming_webmentions_status ON incoming_webmentions(status);
+
+DROP TABLE IF EXISTS outgoing_webmentions;
+CREATE TABLE outgoing_webmentions (
+    uuid TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    target TEXT NOT NULL,
+    vouch TEXT,
+    status TEXT NOT NULL,
+    message TEXT,
+    content TEXT,
+    created_at TIMESTAMP,
+    last_modified_at TIMESTAMP,
+    UNIQUE(source, target)
+);
+CREATE INDEX idx_outgoing_webmentions_source ON outgoing_webmentions(source);
+CREATE INDEX idx_outgoing_webmentions_target ON outgoing_webmentions(target);
+CREATE INDEX idx_outgoing_webmentions_status ON outgoing_webmentions(status);
+
+DROP TABLE IF EXISTS trusted_domains;
+CREATE TABLE trusted_domains (
+    domain TEXT PRIMARY KEY,
+    created_at TIMESTAMP,
+    UNIQUE(domain)
 );

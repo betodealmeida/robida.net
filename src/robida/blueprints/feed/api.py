@@ -7,13 +7,17 @@ Feed for entries.
 from uuid import UUID
 
 from quart import Blueprint, Response, current_app, render_template, request
-from quart.helpers import url_for
+from quart.helpers import redirect, url_for
 from quart_schema import validate_querystring
+
+from robida.constants import MAX_PAGE_SIZE
 
 from .helpers import (
     build_jsonfeed,
     get_entries,
     get_entry,
+    get_feed_next_url,
+    get_feed_previous_url,
     get_title,
     hentry_from_entry,
     hfeed_from_entries,
@@ -66,11 +70,19 @@ async def html_index(query_args: FeedRequest) -> Response:
 
     http://microformats.org/wiki/h-feed
     """
+    if query_args.page_size > MAX_PAGE_SIZE:
+        return redirect(
+            url_for("feed.html_index", page=query_args.page, page_size=MAX_PAGE_SIZE)
+        )
+
     entries = await get_entries(
         query_args.since,
-        page=query_args.page - 1,
-        page_size=query_args.page_size or int(current_app.config["PAGE_SIZE"]),
+        offset=query_args.page_size * (query_args.page - 1),
+        limit=query_args.page_size + 1,
     )
+    next_url = get_feed_next_url("feed.html_index", query_args, len(entries))
+    previous_url = get_feed_previous_url("feed.html_index", query_args)
+    entries = entries[: query_args.page_size]
 
     response = make_conditional_response(entries)
     if response.status_code == 304:
@@ -81,6 +93,8 @@ async def html_index(query_args: FeedRequest) -> Response:
         "feed/index.html",
         hfeed=hfeed,
         title=f'h-feed for {current_app.config["SITE_NAME"]}',
+        next_url=next_url,
+        previous_url=previous_url,
     )
     response.set_data(reformat_html(html))
 
@@ -125,11 +139,24 @@ async def rss_index(query_args: FeedRequest) -> Response:
     """
     Return an RSS feed.
     """
+    if query_args.page_size > MAX_PAGE_SIZE:
+        return redirect(
+            url_for("feed.rss_index", page=query_args.page, page_size=MAX_PAGE_SIZE)
+        )
+
     entries = await get_entries(
         query_args.since,
-        page=query_args.page - 1,
-        page_size=query_args.page_size or int(current_app.config["PAGE_SIZE"]),
+        offset=query_args.page_size * (query_args.page - 1),
+        limit=query_args.page_size + 1,
     )
+    next_url = get_feed_next_url(
+        "feed.rss_index",
+        query_args,
+        len(entries),
+        external=True,
+    )
+    previous_url = get_feed_previous_url("feed.rss_index", query_args, external=True)
+    entries = entries[: query_args.page_size]
 
     response = make_conditional_response(entries)
     if response.status_code == 304:
@@ -140,6 +167,8 @@ async def rss_index(query_args: FeedRequest) -> Response:
         "feed/rss.xml",
         hfeed=hfeed,
         title=f'RSS 2.0 feed for {current_app.config["SITE_NAME"]}',
+        next_url=next_url,
+        previous_url=previous_url,
     )
     response.set_data(xml)
 
@@ -166,11 +195,19 @@ async def atom_index(query_args: FeedRequest) -> Response:
     """
     Return an Atom feed.
     """
+    if query_args.page_size > MAX_PAGE_SIZE:
+        return redirect(
+            url_for("feed.atom_index", page=query_args.page, page_size=MAX_PAGE_SIZE)
+        )
+
     entries = await get_entries(
         query_args.since,
-        page=query_args.page - 1,
-        page_size=query_args.page_size or int(current_app.config["PAGE_SIZE"]),
+        offset=query_args.page_size * (query_args.page - 1),
+        limit=query_args.page_size + 1,
     )
+    next_url = get_feed_next_url("feed.atom_index", query_args, len(entries))
+    previous_url = get_feed_previous_url("feed.atom_index", query_args)
+    entries = entries[: query_args.page_size]
 
     response = make_conditional_response(entries)
     if response.status_code == 304:
@@ -181,6 +218,8 @@ async def atom_index(query_args: FeedRequest) -> Response:
         "feed/atom.xml",
         hfeed=hfeed,
         title=f'Atom feed for {current_app.config["SITE_NAME"]}',
+        next_url=next_url,
+        previous_url=previous_url,
     )
     response.set_data(xml)
 
@@ -209,17 +248,29 @@ async def json_index(query_args: FeedRequest) -> Response:
 
     https://www.jsonfeed.org/version/1.1/
     """
+    if query_args.page_size > MAX_PAGE_SIZE:
+        return redirect(
+            url_for("feed.json_index", page=query_args.page, page_size=MAX_PAGE_SIZE)
+        )
+
     entries = await get_entries(
         query_args.since,
-        page=query_args.page - 1,
-        page_size=query_args.page_size or int(current_app.config["PAGE_SIZE"]),
+        offset=query_args.page_size * (query_args.page - 1),
+        limit=query_args.page_size + 1,
     )
+    next_url = get_feed_next_url(
+        "feed.json_index",
+        query_args,
+        len(entries),
+        external=True,
+    )
+    entries = entries[: query_args.page_size]
 
     response = make_conditional_response(entries)
     if response.status_code == 304:
         return response
 
-    feed = build_jsonfeed(entries, query_args)
+    feed = build_jsonfeed(entries, next_url)
     response.set_data(feed.model_dump_json(exclude_unset=True))
     response.headers.update(
         {
@@ -243,7 +294,19 @@ async def entry(uuid: UUID) -> dict:
         return Response(status=404)
 
     if entry.deleted:
-        return Response(status=410)
+        html = await render_template(
+            "feed/entry.html",
+            hentry={
+                "type": ["h-entry"],
+                "properties": {
+                    "name": ["Entry deleted"],
+                    "content": ["This entry has been deleted. 🗑️"],
+                    "published": [entry.last_modified_at.isoformat()],
+                },
+            },
+            title=f'Entry deleted — {current_app.config["SITE_NAME"]}',
+        )
+        return Response(html, status=410)
 
     response = make_conditional_response([entry])
     if response.status_code == 304:

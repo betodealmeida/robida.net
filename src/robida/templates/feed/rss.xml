@@ -70,5 +70,11 @@
         {% endfor %}
 
         <extensions:title>{{ title }}</extensions:title>
+        {% if next_url %}
+        <extensions:next_url>{{ next_url }}</extensions:next_url>
+        {% endif %}
+        {% if previous_url %}
+        <extensions:previous_url>{{ previous_url }}</extensions:previous_url>
+        {% endif %}
     </channel>
 </rss>

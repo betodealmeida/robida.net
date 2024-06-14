@@ -4,7 +4,7 @@ Tests for the generic helper functions.
 
 from pytest_httpx import HTTPXMock
 
-from robida.helpers import fetch_hcard, get_type_emoji
+from robida.helpers import fetch_hcard, get_type_emoji, iso_to_rfc822, rfc822_to_iso
 
 
 async def test_fetch_hcard_not_found(httpx_mock: HTTPXMock) -> None:
@@ -29,13 +29,53 @@ async def test_get_type_emoji() -> None:
 
     assert (
         get_type_emoji({"type": ["h-entry"], "properties": {"name": ["A title"]}})
-        == '<span title="An article (h-entry)">📝</span>'
+        == '<span title="An article (h-entry)">📄</span>'
+    )
+    assert (
+        get_type_emoji(
+            {
+                "type": ["h-entry"],
+                "properties": {
+                    "in-reply-to": "http://example.com/",
+                    "name": ["A title"],
+                },
+            }
+        )
+        == '<span title="A reply (h-entry)">💬</span>'
     )
     assert (
         get_type_emoji({"type": ["h-entry"], "properties": {}})
-        == '<span title="A note (h-entry)">🗒️</span>'
+        == '<span title="A note (h-entry)">📔</span>'
     )
     assert (
         get_type_emoji({"type": ["h-new"], "properties": {}})
         == '<span title="A generic post">📝</span>'
+    )
+
+
+async def test_iso_to_rfc822() -> None:
+    """
+    Test the `iso_to_rfc822` function.
+    """
+    assert iso_to_rfc822("2022-01-01T00:00:00Z") == "Sat, 01 Jan 2022 00:00:00 +0000"
+    assert (
+        iso_to_rfc822("2022-01-01T00:00:00+00:00") == "Sat, 01 Jan 2022 00:00:00 +0000"
+    )
+    assert (
+        iso_to_rfc822("2022-01-01T00:00:00+01:00") == "Sat, 01 Jan 2022 00:00:00 +0100"
+    )
+
+
+async def test_rfc822_to_iso() -> None:
+    """
+    Test the `rfc822_to_iso` function.
+    """
+    assert (
+        rfc822_to_iso("Sat, 01 Jan 2022 00:00:00 +0000") == "2022-01-01T00:00:00+00:00"
+    )
+    assert (
+        rfc822_to_iso("Sat, 01 Jan 2022 00:00:00 +0000") == "2022-01-01T00:00:00+00:00"
+    )
+    assert (
+        rfc822_to_iso("Sat, 01 Jan 2022 00:00:00 +0100") == "2022-01-01T00:00:00+01:00"
     )

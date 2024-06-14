@@ -18,7 +18,7 @@ from quart import (
     jsonify,
     request,
 )
-from quart.helpers import make_response, safe_join, send_from_directory, url_for
+from quart.helpers import safe_join, send_from_directory, url_for
 
 from robida.blueprints.indieauth.helpers import requires_scope
 from robida.blueprints.micropub.api import ErrorType
@@ -53,15 +53,12 @@ async def upload() -> Response:
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(file.read())
 
-    response = await make_response("")
-    response.status_code = 201
-    response.headers["Location"] = url_for(
-        "media.download",
-        filename=str(uuid),
-        _external=True,
+    return Response(
+        status=201,
+        headers={
+            "Location": url_for("media.download", filename=str(uuid), _external=True),
+        },
     )
-
-    return response
 
 
 @blueprint.route("/<filename>", methods=["GET"])

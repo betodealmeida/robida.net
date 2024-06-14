@@ -9,3 +9,8 @@ article footer {
 a.copyright {
     text-decoration: none;
 }
+
+footer.pagination {
+    display: flex;
+    justify-content: space-between;
+}

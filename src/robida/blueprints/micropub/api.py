@@ -20,10 +20,11 @@ from quart import (
     jsonify,
     request,
 )
-from quart.helpers import make_response, url_for
+from quart.helpers import url_for
 from werkzeug.datastructures import MultiDict
 
 from robida.blueprints.indieauth.helpers import requires_scope
+from robida.blueprints.webmention.helpers import send_webmentions
 from robida.db import get_db
 from robida.models import Microformats2
 
@@ -90,7 +91,7 @@ WHERE
             ) as cursor:
                 row = await cursor.fetchone()
 
-        data = Microformats2.parse_raw(row["content"])
+        data = Microformats2.model_validate_json(row["content"])
 
         properties = request.args.getlist("properties[]")
         if not properties:
@@ -218,11 +219,9 @@ INSERT INTO documents (uuid, content) VALUES (?, ?);
         )
         await db.commit()
 
-    response = await make_response("")
-    response.status_code = 201
-    response.headers["Location"] = url
+    current_app.add_background_task(send_webmentions, url, data)
 
-    return response
+    return Response(status=201, headers={"Location": url})
 
 
 @requires_scope("update")
@@ -247,7 +246,10 @@ WHERE
         ) as cursor:
             row = await cursor.fetchone()
 
-    data = Microformats2.parse_raw(row["content"])
+    if row is None:
+        return Response(status=404)
+
+    data = Microformats2.model_validate_json(row["content"])
 
     if "replace" in payload:
         for key, value in payload["replace"].items():
@@ -283,11 +285,12 @@ WHERE
         )
         await db.commit()
 
-    response = await make_response("")
-    response.status_code = 204
-    response.headers["Location"] = url_for("feed.entry", uuid=str(uuid), _external=True)
+    current_app.add_background_task(send_webmentions, url, data)
 
-    return response
+    return Response(
+        status=204,
+        headers={"Location": url_for("feed.entry", uuid=str(uuid), _external=True)},
+    )
 
 
 @requires_scope("delete")
@@ -297,6 +300,26 @@ async def delete(payload) -> Response:
     """
     url = payload["url"]
     uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
+
+    async with get_db(current_app) as db:
+        async with db.execute(
+            """
+SELECT
+    content
+FROM
+    entries
+WHERE
+    uuid = ?
+        """,
+            (uuid.hex,),
+        ) as cursor:
+            row = await cursor.fetchone()
+
+    if row is None:
+        return Response(status=404)
+
+    data = Microformats2.model_validate_json(row["content"])
+    current_app.add_background_task(send_webmentions, url, data)
 
     async with get_db(current_app) as db:
         await db.execute(
@@ -312,7 +335,7 @@ WHERE
         )
         await db.commit()
 
-    return await make_response("", 204)
+    return Response(status=204)
 
 
 @requires_scope("undelete")
@@ -337,4 +360,4 @@ WHERE
         )
         await db.commit()
 
-    return await make_response("", 204)
+    return Response(status=204)

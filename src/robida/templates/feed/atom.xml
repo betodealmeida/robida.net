@@ -6,6 +6,12 @@
     <title>{{ hfeed.properties.name[0] }}</title>
     <subtitle>{{ hfeed.properties.summary[0] }}</subtitle>
     <extensions:title>{{ title }}</extensions:title>
+    {% if next_url %}
+    <extensions:next_url>{{ next_url }}</extensions:next_url>
+    {% endif %}
+    {% if previous_url %}
+    <extensions:previous_url>{{ previous_url }}</extensions:previous_url>
+    {% endif %}
     <updated>{{ hfeed.properties.published[0] }}</updated>
 
     {% for link in links %}

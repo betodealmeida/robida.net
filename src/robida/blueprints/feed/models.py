@@ -9,7 +9,7 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SerializationInfo, field_serializer
-
+from quart import current_app
 
 JSON_FEED_VERSION = "https://jsonfeed.org/version/1.1"
 
@@ -22,7 +22,14 @@ class FeedRequest:
 
     since: str | None = None
     page: int = 1
-    page_size: int | None = None
+    page_size: int = -1
+
+    def __post_init__(self):
+        """
+        Set default page size.
+        """
+        if self.page_size == -1:
+            self.page_size = int(current_app.config["PAGE_SIZE"])
 
 
 class JSONFeedAuthor(BaseModel):

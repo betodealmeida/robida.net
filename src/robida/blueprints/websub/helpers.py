@@ -72,7 +72,7 @@ INSERT INTO websub_publisher (
     last_delivery_at
 )
 VALUES (?, ?, ?, ?, ?)
-ON CONFLICT(callback, topic) DO UPDATE SET
+ON CONFLICT (callback, topic) DO UPDATE SET
     callback = EXCLUDED.callback,
     topic = EXCLUDED.topic,
     expires_at = EXCLUDED.expires_at,

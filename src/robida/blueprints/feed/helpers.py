@@ -17,7 +17,7 @@ from quart.helpers import url_for
 from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
 from robida.helpers import extract_text_from_html, fetch_hcard
-from robida.models import Entry
+from robida.models import Entry, Microformats2
 
 from .models import (
     FeedRequest,
@@ -28,24 +28,22 @@ from .models import (
 )
 
 
-GRAPH_QUERY = """
-WITH RECURSIVE reply_graph AS (
+ENTRY_WITH_CHILDREN = """
+WITH RECURSIVE linked_entries AS (
     SELECT
-        uuid,
-        author,
-        location,
-        content,
-        read,
-        deleted,
-        created_at,
-        last_modified_at,
-        content->>'$.properties.in-reply-to[0]' AS in_reply_to
-    FROM
-        entries
-    WHERE
-        uuid = ?
+        e.uuid,
+        e.author,
+        e.location,
+        e.content,
+        e.read,
+        e.deleted,
+        e.created_at,
+        e.last_modified_at,
+        NULL AS target
+    FROM entries e
+    WHERE e.uuid = ?
 
-    UNION ALL
+    UNION
 
     SELECT
         e.uuid,
@@ -56,45 +54,71 @@ WITH RECURSIVE reply_graph AS (
         e.deleted,
         e.created_at,
         e.last_modified_at,
-        e.content->>'$.properties.in-reply-to[0]' AS in_reply_to
-    FROM
-        entries e
-    INNER JOIN
-        reply_graph rg
-    ON
-        e.content->>'$.properties.in-reply-to[0]' = rg.location
+        iw.target AS target
+    FROM entries e
+    JOIN incoming_webmentions iw ON e.location = iw.source
+    JOIN linked_entries le ON iw.target = le.location
+    WHERE iw.status = 'success'
+
+    UNION
+
+    SELECT
+        e.uuid,
+        e.author,
+        e.location,
+        e.content,
+        e.read,
+        e.deleted,
+        e.created_at,
+        e.last_modified_at,
+        ow.target AS target
+    FROM entries e
+    JOIN outgoing_webmentions ow ON e.location = ow.source
+    JOIN linked_entries le ON ow.target = le.location
+    WHERE ow.status = 'success'
 )
-SELECT
-    *
-FROM
-    reply_graph;
+SELECT * FROM linked_entries;
 """
 
 
-async def get_entry_graph(db, entry_uuid):
+async def get_entry(uuid: UUID) -> Entry | None:
     """
-    Get the graph of an entry.
+    Return an entry with all its replies.
     """
-    async with db.execute(GRAPH_QUERY, (entry_uuid,)) as cursor:
-        rows = await cursor.fetchall()
+    async with get_db(current_app) as db:
+        async with db.execute(ENTRY_WITH_CHILDREN, (uuid.hex,)) as cursor:
+            rows = await cursor.fetchall()
 
-    replies = defaultdict(list)
+    if not rows:
+        return None
+
+    reply_map = defaultdict(list)
     for row in rows:
-        replies[row["in_reply_to"]].append(
-            (
-                row["location"],
-                json.loads(row["content"]),
+        reply_map[row["target"]].append(
+            Entry(
+                uuid=UUID(row["uuid"]),
+                author=row["author"],
+                location=row["location"],
+                content=Microformats2(**json.loads(row["content"])),
+                read=row["read"],
+                deleted=row["deleted"],
+                created_at=datetime.fromisoformat(row["created_at"]),
+                last_modified_at=datetime.fromisoformat(row["last_modified_at"]),
             )
         )
 
-    root = rows[0]["location"], json.loads(rows[0]["content"])
+    root = reply_map[None][0]
     queue = [root]
+    seen = set()
     while queue:
-        location, entry = queue.pop(0)
-        entry.setdefault("children", [])
-        for location, reply in replies[location]:
-            queue.append((location, reply))
-            entry["children"].append(reply)
+        entry = queue.pop(0)
+        if entry.uuid in seen:
+            continue
+        seen.add(entry.uuid)
+
+        replies = reply_map[entry.location]
+        entry.content.children.extend(reply.content for reply in replies)
+        queue.extend(replies)
 
     return root
 
@@ -126,15 +150,12 @@ def reformat_html(html: str) -> str:
 
 async def get_entries(
     since: str | None = None,
-    page: int = 0,
-    page_size: int = MAX_PAGE_SIZE,
+    offset: int = 0,
+    limit: int = MAX_PAGE_SIZE,
 ) -> list[Entry]:
     """
     Load all the entries.
     """
-    # make sure the page size is within sane limits
-    page_size = min(page_size, MAX_PAGE_SIZE)
-
     async with get_db(current_app) as db:
         async with db.execute(
             """
@@ -164,8 +185,8 @@ OFFSET
                 since or "1970-01-01 00:00:00+00:00",
                 url_for("homepage.index", _external=True),
                 False,
-                page_size,
-                page * page_size,
+                limit,
+                offset,
             ),
         ) as cursor:
             rows = await cursor.fetchall()
@@ -175,7 +196,7 @@ OFFSET
             uuid=UUID(row["uuid"]),
             author=row["author"],
             location=row["location"],
-            content=json.loads(row["content"]),
+            content=Microformats2(**json.loads(row["content"])),
             read=row["read"],
             deleted=row["deleted"],
             created_at=datetime.fromisoformat(row["created_at"]),
@@ -183,46 +204,6 @@ OFFSET
         )
         for row in rows
     ]
-
-
-async def get_entry(uuid: UUID) -> Entry | None:
-    """
-    Load a given entry.
-    """
-    async with get_db(current_app) as db:
-        async with db.execute(
-            """
-SELECT
-    uuid,
-    author,
-    location,
-    content,
-    read,
-    deleted,
-    created_at,
-    last_modified_at
-FROM
-    entries
-WHERE
-    uuid >= ?
-            """,
-            (uuid.hex,),
-        ) as cursor:
-            row = await cursor.fetchone()
-
-    if row is None:
-        return None
-
-    return Entry(
-        uuid=UUID(row["uuid"]),
-        author=row["author"],
-        location=row["location"],
-        content=json.loads(row["content"]),
-        read=row["read"],
-        deleted=row["deleted"],
-        created_at=datetime.fromisoformat(row["created_at"]),
-        last_modified_at=datetime.fromisoformat(row["last_modified_at"]),
-    )
 
 
 def generate_etag(entries: list[Entry]) -> str:
@@ -313,7 +294,7 @@ def build_jsonfeed_item(entry: Entry) -> JSONFeedItem:
     return item
 
 
-def build_jsonfeed(entries: list[Entry], query_args: FeedRequest) -> JSONFeed:
+def build_jsonfeed(entries: list[Entry], next_url: str | None) -> JSONFeed:
     """
     Build a JSON Feed entry.
     """
@@ -330,13 +311,7 @@ def build_jsonfeed(entries: list[Entry], query_args: FeedRequest) -> JSONFeed:
             "that supports the JSON Feed format. To add this feed to your reader, copy "
             f"the following URL — {feed_url} — and add it your reader."
         ),
-        next_url=url_for(
-            "feed.json_index",
-            since=query_args.since,
-            page=query_args.page + 1,
-            page_size=query_args.page_size,
-            _external=True,
-        ),
+        next_url=next_url,
         authors=[
             JSONFeedAuthor(
                 name=current_app.config["NAME"],
@@ -387,7 +362,7 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
 
 def hentry_from_entry(entry: Entry) -> dict[str, Any]:
     """
-    Build an hn-entry from an entry.
+    Build an h-entry from an entry.
     """
     entry.content.properties.setdefault("url", [entry.location])
     entry.content.properties.setdefault(
@@ -409,3 +384,58 @@ def get_title(hentry: dict[str, Any]) -> str:
         return content[0]["value"] if isinstance(content[0], dict) else content[0]
 
     return "Untitled"
+
+
+def get_feed_next_url(
+    endpoint: str,
+    query_args: FeedRequest,
+    count: int,
+    external: bool = False,
+) -> str:
+    """
+    Build the `next_url` for a feed page.
+    """
+    next_page_size = (
+        None
+        if query_args.page_size == int(current_app.config["PAGE_SIZE"])
+        else query_args.page_size
+    )
+
+    return (
+        url_for(
+            endpoint,
+            since=query_args.since,
+            page=query_args.page + 1,
+            page_size=next_page_size,
+            _external=external,
+        )
+        if count > query_args.page_size
+        else None
+    )
+
+
+def get_feed_previous_url(
+    endpoint: str,
+    query_args: FeedRequest,
+    external: bool = False,
+) -> str:
+    """
+    Build the `previous_url` for a feed page.
+    """
+    previous_page_size = (
+        None
+        if query_args.page_size == int(current_app.config["PAGE_SIZE"])
+        else query_args.page_size
+    )
+
+    return (
+        url_for(
+            endpoint,
+            since=query_args.since,
+            page=query_args.page - 1,
+            page_size=previous_page_size,
+            _external=external,
+        )
+        if query_args.page > 1
+        else None
+    )

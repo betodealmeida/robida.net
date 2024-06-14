@@ -2,7 +2,9 @@
 Helper functions for searching.
 """
 
+import sqlite3
 import json
+import re
 from datetime import datetime
 from uuid import UUID
 
@@ -13,21 +15,7 @@ from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
 from robida.models import Entry
 
-
-async def search_entries(
-    needle: str,
-    page: int = 0,
-    page_size: int = MAX_PAGE_SIZE,
-) -> list[Entry]:
-    """
-    Load all the entries.
-    """
-    # make sure the page size is within sane limits
-    page_size = min(page_size, MAX_PAGE_SIZE)
-
-    async with get_db(current_app) as db:
-        async with db.execute(
-            """
+SEARCH_QUERY = """
 SELECT
     entries.uuid,
     entries.author,
@@ -53,16 +41,47 @@ LIMIT
     ?
 OFFSET
     ?
-            """,
-            (
-                url_for("homepage.index", _external=True),
-                False,
-                needle,
-                page_size,
-                page * page_size,
-            ),
-        ) as cursor:
-            rows = await cursor.fetchall()
+            """
+
+
+async def search_entries(
+    needle: str,
+    page: int = 0,
+    page_size: int = MAX_PAGE_SIZE,
+) -> list[Entry]:
+    """
+    Load all the entries.
+    """
+    # make sure the page size is within sane limits
+    page_size = min(page_size, MAX_PAGE_SIZE)
+
+    async with get_db(current_app) as db:
+        try:
+            async with db.execute(
+                SEARCH_QUERY,
+                (
+                    url_for("homepage.index", _external=True),
+                    False,
+                    needle,
+                    page_size,
+                    page * page_size,
+                ),
+            ) as cursor:
+                rows = await cursor.fetchall()
+        except sqlite3.OperationalError:
+            # fallback to a simpler query
+            simple_needle = re.sub(r"[^\w\s]", " ", needle)
+            async with db.execute(
+                SEARCH_QUERY,
+                (
+                    url_for("homepage.index", _external=True),
+                    False,
+                    simple_needle,
+                    page_size,
+                    page * page_size,
+                ),
+            ) as cursor:
+                rows = await cursor.fetchall()
 
     return [
         Entry(

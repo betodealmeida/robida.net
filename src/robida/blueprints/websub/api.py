@@ -20,7 +20,7 @@ MAX_LEASE = timedelta(days=365)
 
 
 @blueprint.route("", methods=["POST"])
-@validate_request(SubscriptionRequest, source=DataSource)
+@validate_request(SubscriptionRequest, source=DataSource.FORM)
 async def hub(data: SubscriptionRequest) -> Response:
     """
     WebSub hub endpoint.
@@ -30,11 +30,12 @@ async def hub(data: SubscriptionRequest) -> Response:
         return await make_response(f"Only URLs in {baseurl} are supported", 400)
 
     current_app.add_background_task(validate_subscription, data)
-    return await make_response("", 202)
+
+    return Response(status=202)
 
 
 @blueprint.route("/publish", methods=["POST"])
-@validate_request(PublishRequest, source=DataSource)
+@validate_request(PublishRequest, source=DataSource.FORM)
 async def publish(data: PublishRequest) -> Response:
     """
     WebSub publish endpoint.
@@ -44,4 +45,5 @@ async def publish(data: PublishRequest) -> Response:
         urls.append(url)
 
     current_app.add_background_task(distribute_content, urls)
-    return await make_response("", 202)
+
+    return Response(status=202)

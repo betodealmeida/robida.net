@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import dotenv_values
-from quart import Quart, Response, g, request, url_for
+from quart import Quart, Response, g, request, session, url_for
 from quart_schema import QuartSchema
 
 from robida.blueprints.feed import api as feed
@@ -17,6 +17,7 @@ from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
 from robida.blueprints.relmeauth import api as relmeauth
 from robida.blueprints.search import api as search
+from robida.blueprints.webmention import api as webmention
 from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
 from robida.constants import links
@@ -51,6 +52,7 @@ def create_app(
     app.register_blueprint(micropub.blueprint)
     app.register_blueprint(relmeauth.blueprint)
     app.register_blueprint(search.blueprint)
+    app.register_blueprint(webmention.blueprint)
     app.register_blueprint(websub.blueprint)
     app.register_blueprint(wellknown.blueprint)
 
@@ -87,7 +89,7 @@ def create_app(
         """
         Inject app config (and more) into all templates.
         """
-        return {"config": app.config, "links": links}
+        return {"config": app.config, "session": session, "links": links}
 
     @app.after_request
     def add_links(response: Response) -> Response:

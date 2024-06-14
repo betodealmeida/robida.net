@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 from aiosqlite.core import Connection
+from _pytest._py.path import LocalPath
 from quart import Quart, testing
 
 from robida.blueprints.indieauth.helpers import get_scopes
@@ -15,7 +16,7 @@ from robida.main import create_app, init_db
 
 
 @pytest.fixture(name="current_app")
-async def app(tmpdir) -> Quart:
+async def app(tmpdir: LocalPath) -> Quart:
     """
     Create and configure a new app instance for each test.
     """

@@ -70,21 +70,47 @@
 
                 <main>
                     <div class="h-feed">
-                        <hgroup>
-                            <h1 class="p-name">
-                                <a href="{atom:id}"><xsl:value-of select="atom:title"/></a>
-                            </h1>
-                            <p class="p-summary"><xsl:value-of select="atom:subtitle"/></p>
-                        </hgroup>
+                        <header>
+                            <hgroup>
+                                <h1 class="p-name">
+                                    <a href="{atom:id}"><xsl:value-of select="atom:title"/></a>
+                                </h1>
+                                <p class="p-summary"><xsl:value-of select="atom:subtitle"/></p>
+                            </hgroup>
+                        </header>
 
                         <xsl:apply-templates select="atom:entry"/>
                     </div>
+
+                    <footer class="pagination">
+                        <xsl:choose>
+                            <xsl:when test="extensions:previous_url">
+                                <a href="{extensions:previous_url}">« Previous</a>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <span/>
+                            </xsl:otherwise>
+                        </xsl:choose>
+
+                        <xsl:choose>
+                            <xsl:when test="extensions:next_url">
+                                <a href="{extensions:next_url}">Next »</a>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <span/>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </footer>
                 </main>
 
                 <footer>
                     <p>
                         <form role="search" method="GET" action="/search">
-                            <input name="q" type="search"/>
+                            <input
+                                name="q"
+                                type="search"
+                                placeholder="Try: python OR Flask, NEAR(like, entry), vegan AND recipes"
+                            />
                             <input type="submit" value="Search"/>
                         </form>
                     </p>
