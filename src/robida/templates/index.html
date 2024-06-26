@@ -3,7 +3,9 @@
 {% block content %}
 <h2>Heya!</h2>
 
-<p>My name is <strong class="word-cloud">{{ config.NAME }}</strong>. I'm a <a rel="me" class="word-cloud" href="https://thefishermenandthepriestess.com/">musician</a> 🎸 and an <a rel="me" class="word-cloud" href="https://home.apache.org/phonebook.html?uid=beto">Apache PMC member</a>, passionate about <a class="word-cloud" href="https://www.vegansociety.com/go-vegan/definition-veganism">veganism</a>, <a class="word-cloud" href="https://www.gnu.org/software/">free software</a>, and the <a href="https://indieweb.org/">IndieWeb</a>.</p>
+<div class="h-card">
+    <p>My name is <strong class="word-cloud"><a class="u-url p-name" href="{{ url_for('homepage.index', _external=True) }}">{{ config.NAME }}</strong></a> <a rel="me" class="u-email" href="mailto:{{ config.EMAIL }}">📧</a>. <span class="p-note">I'm a <a rel="me" class="word-cloud" href="https://thefishermenandthepriestess.com/">musician</a> 🎸 and an <a rel="me" class="word-cloud" href="https://home.apache.org/phonebook.html?uid=beto">Apache PMC member</a>, passionate about <a class="word-cloud" href="https://www.vegansociety.com/go-vegan/definition-veganism">veganism</a>, <a class="word-cloud" href="https://www.gnu.org/software/">free software</a>, and the <a href="https://indieweb.org/">IndieWeb</a>.</span></p>
 
-<p>This is my <mark>very minimal website</mark>. You can see my <a href="{{ url_for('feed.html_index') }}">latest posts</a> (also available as <a href="{{ url_for('feed.rss_index') }}">RSS 2.0</a>, <a href="{{ url_for('feed.atom_index') }}">Atom</a>, <a href="{{ url_for('feed.json_index') }}">JSON Feed</a>, or <a href="https://www.w3.org/TR/websub/">WebSub</a>). You can leave a comment by posting a <a href="https://www.w3.org/TR/webmention/">WebMention</a>.</p>
+    <p>This is my <mark>very minimal website</mark>. You can see my <a href="{{ url_for('feed.html_index') }}">latest posts</a> (also available as <a href="{{ url_for('feed.rss_index') }}">RSS 2.0</a>, <a href="{{ url_for('feed.atom_index') }}">Atom</a>, <a href="{{ url_for('feed.json_index') }}">JSON Feed</a>, or <a href="https://www.w3.org/TR/websub/">WebSub</a>). You can leave a comment by posting a <a href="https://www.w3.org/TR/webmention/">WebMention</a>.</p>
+</div>
 {% endblock %}

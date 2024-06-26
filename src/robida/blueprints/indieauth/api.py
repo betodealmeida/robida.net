@@ -361,13 +361,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     if "profile" not in scopes:
         return AccessTokenResponse(**parameters)
 
-    parameters["profile"] = {
-        "name": current_app.config["NAME"],
-        "url": url_for("homepage.index", _external=True),
-        "photo": url_for("static", filename="photo.jpg", _external=True),
-    }
+    parameters["profile"] = ProfileResponse(
+        name=current_app.config["NAME"],
+        url=url_for("homepage.index", _external=True),
+        photo=url_for("static", filename="photo.jpg", _external=True),
+    )
     if "email" in scopes:
-        parameters["profile"]["email"] = current_app.config["EMAIL"]
+        parameters["profile"].email = current_app.config["EMAIL"]
 
     return AccessTokenWithProfileResponse(**parameters)
 
@@ -508,7 +508,8 @@ WHERE
         )
 
         await db.commit()
-    return await make_response("", 200)
+
+    return Response(status=200)
 
 
 @blueprint.route("/userinfo", methods=["GET"])

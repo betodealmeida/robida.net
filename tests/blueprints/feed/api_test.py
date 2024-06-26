@@ -5,19 +5,19 @@ Test the feed endpoints.
 import json
 
 import mf2py
+from aiosqlite import Connection
 from freezegun import freeze_time
 from quart import Quart, testing
 
-from robida.db import get_db, load_entries
+from robida.db import load_entries
 
 
-async def test_feed_json(client: testing.QuartClient, current_app: Quart) -> None:
+async def test_feed_json(db: Connection, client: testing.QuartClient) -> None:
     """
     Test the JSON Feed endpoint.
     """
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO entries (
     uuid,
     author,
@@ -29,28 +29,28 @@ INSERT INTO entries (
     last_modified_at
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "92cdeabd827843ad871d0214dcb2d12e",
-                "http://example.com/",
-                "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                json.dumps(
-                    {
-                        "type": ["h-entry"],
-                        "properties": {
-                            "content": ["hello world"],
-                            "category": ["foo", "bar"],
-                        },
+        """,
+        (
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
                     },
-                    separators=(",", ":"),
-                ),
-                False,
-                False,
-                "2024-01-01 00:00:00+00:00",
-                "2024-01-01 00:00:00+00:00",
+                },
+                separators=(",", ":"),
             ),
-        )
-        await db.commit()
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
 
     response = await client.get("/feed.json")
 
@@ -75,7 +75,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "that supports the JSON Feed format. To add this feed to your reader, copy "
             "the following URL — http://example.com/feed.json — and add it your reader."
         ),
-        "next_url": "http://example.com/feed.json?page=2",
         "authors": [
             {
                 "name": "Beto Dealmeida",
@@ -84,6 +83,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             }
         ],
         "language": "en-US",
+        "next_url": None,
         "hubs": ["http://example.com/websub"],
         "items": [
             {
@@ -136,15 +136,13 @@ async def test_feed_json_conditional_get(client: testing.QuartClient) -> None:
 
 
 async def test_feed_json_pagination(
-    client: testing.QuartClient,
-    current_app: Quart,
+    db: Connection, client: testing.QuartClient
 ) -> None:
     """
     Test the JSON Feed pagination
     """
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO entries (
     uuid,
     author,
@@ -158,62 +156,69 @@ INSERT INTO entries (
 VALUES
 (?, ?, ?, ?, ?, ?, ?, ?),
 (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "92cdeabd827843ad871d0214dcb2d12e",
-                "http://example.com/",
-                "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                json.dumps(
-                    {
-                        "type": ["h-entry"],
-                        "properties": {
-                            "content": ["hello world"],
-                            "category": ["foo", "bar"],
-                        },
+        """,
+        (
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
                     },
-                    separators=(",", ":"),
-                ),
-                False,
-                False,
-                "2024-01-01 00:00:00+00:00",
-                "2024-01-01 00:00:00+00:00",
-                "d2f5229639d946e1a6c539e33d119403",
-                "http://example.com/",
-                "http://example.com/feed/d2f52296-39d9-46e1-a6c5-39e33d119403",
-                json.dumps(
-                    {
-                        "type": ["h-entry"],
-                        "properties": {
-                            "content": ["hello world"],
-                            "category": ["foo", "bar"],
-                        },
-                    },
-                    separators=(",", ":"),
-                ),
-                False,
-                True,
-                "2024-01-02 00:00:00+00:00",
-                "2024-01-02 00:00:00+00:00",
+                },
+                separators=(",", ":"),
             ),
-        )
-        await db.commit()
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+            "d2f5229639d946e1a6c539e33d119403",
+            "http://example.com/",
+            "http://example.com/feed/d2f52296-39d9-46e1-a6c5-39e33d119403",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            False,
+            False,
+            "2024-01-02 00:00:00+00:00",
+            "2024-01-02 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
 
-    response = await client.get("/feed.json?page=1&page_size=1")
+    response = await client.get(
+        "/feed.json",
+        query_string={"page": "1", "page_size": "1"},
+    )
     payload = await response.json
+    assert len(payload["items"]) == 1
     assert payload["next_url"] == "http://example.com/feed.json?page=2&page_size=1"
 
-    response = await client.get("/feed.json?page=2&page_size=1")
+    response = await client.get(
+        "/feed.json",
+        query_string={"page": "2", "page_size": "1"},
+    )
     payload = await response.json
-    assert payload["next_url"] == "http://example.com/feed.json?page=3&page_size=1"
+    assert len(payload["items"]) == 1
+    assert payload["next_url"] is None
 
 
-async def test_feed_html(client: testing.QuartClient, current_app: Quart) -> None:
+async def test_feed_html(db: Connection, client: testing.QuartClient) -> None:
     """
     Test the h-feed HTML endpoint.
     """
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO entries (
     uuid,
     author,
@@ -225,28 +230,28 @@ INSERT INTO entries (
     last_modified_at
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "92cdeabd827843ad871d0214dcb2d12e",
-                "http://example.com/",
-                "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                json.dumps(
-                    {
-                        "type": ["h-entry"],
-                        "properties": {
-                            "content": ["hello world"],
-                            "category": ["foo", "bar"],
-                        },
+        """,
+        (
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
                     },
-                    separators=(",", ":"),
-                ),
-                False,
-                False,
-                "2024-01-01 00:00:00+00:00",
-                "2024-01-01 00:00:00+00:00",
+                },
+                separators=(",", ":"),
             ),
-        )
-        await db.commit()
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
 
     response = await client.get("/feed.html", headers={"Accept": "text/mf2+html"})
 
@@ -292,13 +297,12 @@ async def test_feed_html_conditional_get(client: testing.QuartClient) -> None:
     assert response.status_code == 304
 
 
-async def test_feed_rss(client: testing.QuartClient, current_app: Quart) -> None:
+async def test_feed_rss(db: Connection, client: testing.QuartClient) -> None:
     """
     Test the RSS 2.0 endpoint.
     """
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO entries (
     uuid,
     author,
@@ -310,28 +314,28 @@ INSERT INTO entries (
     last_modified_at
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "92cdeabd827843ad871d0214dcb2d12e",
-                "http://example.com/",
-                "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                json.dumps(
-                    {
-                        "type": ["h-entry"],
-                        "properties": {
-                            "content": ["hello world"],
-                            "category": ["foo", "bar"],
-                        },
+        """,
+        (
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
                     },
-                    separators=(",", ":"),
-                ),
-                False,
-                False,
-                "2024-01-01 00:00:00+00:00",
-                "2024-01-01 00:00:00+00:00",
+                },
+                separators=(",", ":"),
             ),
-        )
-        await db.commit()
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
 
     response = await client.get("/feed.rss", headers={"Accept": "application/rss+xml"})
 
@@ -377,13 +381,12 @@ async def test_feed_rss_conditional_get(client: testing.QuartClient) -> None:
     assert response.status_code == 304
 
 
-async def test_feed_atom(client: testing.QuartClient, current_app: Quart) -> None:
+async def test_feed_atom(db: Connection, client: testing.QuartClient) -> None:
     """
     Test the Atom endpoint.
     """
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO entries (
     uuid,
     author,
@@ -395,28 +398,28 @@ INSERT INTO entries (
     last_modified_at
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "92cdeabd827843ad871d0214dcb2d12e",
-                "http://example.com/",
-                "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                json.dumps(
-                    {
-                        "type": ["h-entry"],
-                        "properties": {
-                            "content": ["hello world"],
-                            "category": ["foo", "bar"],
-                        },
+        """,
+        (
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
                     },
-                    separators=(",", ":"),
-                ),
-                False,
-                False,
-                "2024-01-01 00:00:00+00:00",
-                "2024-01-01 00:00:00+00:00",
+                },
+                separators=(",", ":"),
             ),
-        )
-        await db.commit()
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
 
     response = await client.get("/feed.xml", headers={"Accept": "application/atom+xml"})
 
@@ -473,7 +476,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "41ee765ec465195ab6f59370276d65d91a1fee442bfd1df3c98ad3570fcbf80b"
+        == "8b2f43e7600c9531bd2416987d717c9e0704dc90afedaca1d40f04674f727751"
     )
 
     html = await response.data
@@ -482,8 +485,8 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "name": ["Welcome to my blog!"],
-                    "summary": ["A quick intro on my blog"],
+                    "name": ["About"],
+                    "summary": ["About this blog."],
                     "content": [
                         {
                             "value": (
@@ -599,7 +602,7 @@ async def test_entry_not_modified(
     response = await client.get(
         "/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad",
         headers={
-            "If-None-Match": "41ee765ec465195ab6f59370276d65d91a1fee442bfd1df3c98ad3570fcbf80b"
+            "If-None-Match": "8b2f43e7600c9531bd2416987d717c9e0704dc90afedaca1d40f04674f727751"
         },
     )
 
@@ -633,3 +636,14 @@ async def test_atom_xslt(client: testing.QuartClient) -> None:
 
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/xslt+xml"
+
+
+async def test_max_page_size_redirect(client: testing.QuartClient) -> None:
+    """
+    Test that we redirect the user when a too large page size is requested.
+    """
+    for page in ["/feed.html", "/feed.rss", "/feed.xml", "/feed.json"]:
+        response = await client.get(page, query_string={"page_size": "1000"})
+
+        assert response.status_code == 302
+        assert response.headers["Location"] == f"{page}?page=1&page_size=100"

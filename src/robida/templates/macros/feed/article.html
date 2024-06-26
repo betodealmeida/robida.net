@@ -2,44 +2,42 @@
 {% import 'macros/feed/published.html' as published_macros %}
 
 {% macro article(data) %}
-<article class="h-entry">
-    <header>
-        <hgroup>
-        {% if data.properties.name %}
-        <h1 class="p-name">{{ data.properties.name[0] }}</h1>
-        {% endif %}
-
-        {% if data.properties.summary %}
-        <p class="p-summary">{{ data.properties.summary[0] }}</p>
-        {% endif %}
-        </hgroup>
-    </header>
-
-    {% if data.properties.content %}
-        <div class="e-content">
-            {% if data.properties.content[0] is mapping %}
-                {{ data.properties.content[0].html | safe}}
-            {% else %}
-                {{ data.properties.content[0] }}
-            {% endif %}
-        </div>
+<header>
+    <hgroup>
+    {% if data.properties.name %}
+    <h1 class="p-name">{{ data.properties.name[0] }}</h1>
     {% endif %}
-    <footer>
-        <p>
-            {% if data.properties.author %}
-            {{ get_type_emoji(data) | safe }}
-            Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
-            {% endif %}
-            @
-            {% if data.properties.url %}
-            <a href="{{ data.properties.url[0] }}" class="u-url">
-            {{ published_macros.published(data.properties.published[0]) }}
-            ⚓
-            </a>
-            {% else %}
-            {{ published_macros.published(data.properties.published[0]) }}
-            {% endif %}
-        </p>
-    </footer>
-</article>
+
+    {% if data.properties.summary %}
+    <p class="p-summary">{{ data.properties.summary[0] }}</p>
+    {% endif %}
+    </hgroup>
+</header>
+
+{% if data.properties.content %}
+    <div class="e-content">
+        {% if data.properties.content[0] is mapping %}
+            {{ data.properties.content[0].html | safe}}
+        {% else %}
+            {{ data.properties.content[0] }}
+        {% endif %}
+    </div>
+{% endif %}
+<footer>
+    <p>
+        {% if data.properties.author %}
+        {{ get_type_emoji(data) | safe }}
+        Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
+        {% endif %}
+        @
+        {% if data.properties.url %}
+        <a href="{{ data.properties.url[0] }}" class="u-url">
+        {{ published_macros.published(data.properties.published[0]) }}
+        ⚓
+        </a>
+        {% else %}
+        {{ published_macros.published(data.properties.published[0]) }}
+        {% endif %}
+    </p>
+</footer>
 {% endmacro %}

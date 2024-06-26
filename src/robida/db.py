@@ -51,6 +51,13 @@ async def load_entries(app: Quart) -> None:
             content=Microformats2(
                 type=["h-entry"],
                 properties={
+                    "url": [
+                        url_for(
+                            "feed.entry",
+                            uuid="1d4f24cc-8c6a-442e-8a42-bc208cb16534",
+                            _external=True,
+                        )
+                    ],
                     "content": ["Hello, world!"],
                     "published": [datetime.now(timezone.utc).isoformat()],
                     "author": [
@@ -77,6 +84,13 @@ async def load_entries(app: Quart) -> None:
             content=Microformats2(
                 type=["h-entry"],
                 properties={
+                    "url": [
+                        url_for(
+                            "feed.entry",
+                            uuid="37c9ed45-5c0c-43e4-b088-0e904ed849d7",
+                            _external=True,
+                        )
+                    ],
                     "content": ["Hello, world!"],
                     "published": [datetime.now(timezone.utc).isoformat()],
                     "author": [
@@ -111,14 +125,21 @@ async def load_entries(app: Quart) -> None:
             content=Microformats2(
                 type=["h-entry"],
                 properties={
-                    "name": ["Welcome to my blog!"],
+                    "name": ["About"],
+                    "url": [
+                        url_for(
+                            "feed.entry",
+                            uuid="8bf10ece-be18-4b96-af91-04e5c2a931ad",
+                            _external=True,
+                        )
+                    ],
                     "content": [
                         {
                             "value": extract_text_from_html(html).strip(),
                             "html": html.strip(),
                         },
                     ],
-                    "summary": ["A quick intro on my blog"],
+                    "summary": ["About this blog."],
                     "published": [datetime.now(timezone.utc).isoformat()],
                     "author": [
                         {
@@ -133,7 +154,71 @@ async def load_entries(app: Quart) -> None:
             ),
         )
 
-    entries = [note, deleted, article]
+        reply = Entry(
+            uuid=UUID("68e50fbd-69c0-4e12-bf2f-208ace952ffd"),
+            author="http://alice.example.com",
+            location="http://alice.example.com/post/1",
+            content=Microformats2(
+                type=["h-entry"],
+                properties={
+                    "url": ["http://alice.example.com/post/1"],
+                    "in-reply-to": [
+                        url_for(
+                            "feed.entry",
+                            uuid="1d4f24cc-8c6a-442e-8a42-bc208cb16534",
+                            _external=True,
+                        )
+                    ],
+                    "content": ["Welcome!"],
+                    "published": [datetime.now(timezone.utc).isoformat()],
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "properties": {
+                                "name": ["Alice"],
+                                "url": ["http://alice.example.com"],
+                            },
+                        }
+                    ],
+                },
+            ),
+        )
+
+        another_reply = Entry(
+            uuid=UUID("99111091-26c7-4e3e-a0be-436fbeee0d14"),
+            author=url_for("homepage.index", _external=True),
+            location=url_for(
+                "feed.entry",
+                uuid="99111091-26c7-4e3e-a0be-436fbeee0d14",
+                _external=True,
+            ),
+            content=Microformats2(
+                type=["h-entry"],
+                properties={
+                    "url": [
+                        url_for(
+                            "feed.entry",
+                            uuid="99111091-26c7-4e3e-a0be-436fbeee0d14",
+                            _external=True,
+                        )
+                    ],
+                    "in-reply-to": ["http://alice.example.com/post/1"],
+                    "content": ["Thank you!"],
+                    "published": [datetime.now(timezone.utc).isoformat()],
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "properties": {
+                                "name": [app.config["NAME"]],
+                                "url": [url_for("homepage.index", _external=True)],
+                            },
+                        }
+                    ],
+                },
+            ),
+        )
+
+    entries = [note, deleted, article, reply, another_reply]
 
     async with get_db(app) as db:
         for entry in entries:
@@ -147,7 +232,8 @@ INSERT INTO entries (
     deleted,
     created_at,
     last_modified_at
-) VALUES (?, ?, ?, ?, ?, ?, ?);
+)
+VALUES (?, ?, ?, ?, ?, ?, ?);
                 """,
                 (
                     entry.uuid.hex,
@@ -161,11 +247,55 @@ INSERT INTO entries (
             )
             await db.execute(
                 """
-INSERT INTO documents (uuid, content) VALUES (?, ?);
+INSERT INTO documents (
+    uuid,
+    content
+)
+VALUES (?, ?);
                 """,
                 (
                     entry.uuid.hex,
                     entry.content.model_dump_json(exclude_unset=True),
+                ),
+            )
+
+        async with app.app_context():
+            await db.execute(
+                """
+INSERT INTO incoming_webmentions (
+    source,
+    target,
+    status
+)
+VALUES (?, ?, ?);
+                """,
+                (
+                    "http://alice.example.com/post/1",
+                    url_for(
+                        "feed.entry",
+                        uuid=UUID("1d4f24cc-8c6a-442e-8a42-bc208cb16534"),
+                        _external=True,
+                    ),
+                    "success",
+                ),
+            )
+            await db.execute(
+                """
+INSERT INTO outgoing_webmentions (
+    source,
+    target,
+    status
+)
+VALUES (?, ?, ?);
+                """,
+                (
+                    url_for(
+                        "feed.entry",
+                        uuid=UUID("99111091-26c7-4e3e-a0be-436fbeee0d14"),
+                        _external=True,
+                    ),
+                    "http://alice.example.com/post/1",
+                    "success",
                 ),
             )
         await db.commit()

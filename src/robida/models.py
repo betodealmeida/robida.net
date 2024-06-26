@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 def utcnow() -> datetime:
@@ -23,6 +23,8 @@ class Entry(BaseModel):
     Entry dataclass.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     uuid: UUID
     author: str
     location: str
@@ -31,15 +33,6 @@ class Entry(BaseModel):
     deleted: bool = False
     created_at: datetime = Field(default_factory=utcnow)
     last_modified_at: datetime = Field(default_factory=utcnow)
-
-    class Config:  # pylint: disable=too-few-public-methods
-        """
-        Custom config.
-
-        Setting `arbitrary_types_allowed=True` allows tests to freeze time.
-        """
-
-        arbitrary_types_allowed = True
 
 
 class Microformats2(BaseModel):

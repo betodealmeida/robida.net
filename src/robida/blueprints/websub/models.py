@@ -4,7 +4,7 @@ WebSub models.
 
 from typing import Literal
 
-from pydantic import create_model
+from pydantic import ConfigDict, create_model
 
 subscription_annotations = {
     "hub.callback": (str, ...),
@@ -21,25 +21,14 @@ publish_annotations = {
 }
 
 
-class Config:  # pylint: disable=too-few-public-methods
-    """
-    Ignore any extra query arguments.
-
-    "Hubs MUST ignore additional request parameters they do not understand."
-    https://www.w3.org/TR/websub/#subscriber-sends-subscription-request
-    """
-
-    extr = "ignore"
-
-
 SubscriptionRequest = create_model(
     "SubscriptionRequest",
-    __config__=Config,
+    model_config=ConfigDict(extra="ignore"),
     **subscription_annotations,
 )
 
 PublishRequest = create_model(
     "PublishRequest",
-    __config__=Config,
+    model_config=ConfigDict(extra="ignore"),
     **publish_annotations,
 )

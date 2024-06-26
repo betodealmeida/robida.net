@@ -4,6 +4,7 @@ Tests for the WebSub helper functions.
 
 from uuid import UUID
 
+from aiosqlite import Connection
 from freezegun import freeze_time
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
@@ -16,12 +17,12 @@ from robida.blueprints.websub.helpers import (
     validate_subscription,
 )
 from robida.blueprints.websub.models import SubscriptionRequest
-from robida.db import get_db
 
 
 @freeze_time("2024-01-01 00:00:00")
 async def test_subscribe(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -56,9 +57,8 @@ async def test_subscribe(
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert dict(row) == {
         "callback": "http://example.com/callback",
@@ -72,6 +72,7 @@ async def test_subscribe(
 @freeze_time("2024-01-01 00:00:00")
 async def test_subscribe_no_lease(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -105,9 +106,8 @@ async def test_subscribe_no_lease(
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert dict(row) == {
         "callback": "http://example.com/callback",
@@ -121,6 +121,7 @@ async def test_subscribe_no_lease(
 @freeze_time("2024-01-01 00:00:00")
 async def test_subscribe_extra_parameters(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -158,9 +159,8 @@ async def test_subscribe_extra_parameters(
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert dict(row) == {
         "callback": "http://example.com/callback",
@@ -174,6 +174,7 @@ async def test_subscribe_extra_parameters(
 @freeze_time("2024-01-01 00:00:00")
 async def test_subscribe_invalid_request(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -208,9 +209,8 @@ async def test_subscribe_invalid_request(
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert row is None
 
@@ -218,6 +218,7 @@ async def test_subscribe_invalid_request(
 @freeze_time("2024-01-01 00:00:00")
 async def test_subscribe_challenge_mismatch(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -252,15 +253,15 @@ async def test_subscribe_challenge_mismatch(
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert row is None
 
 
 async def test_subscribe_resubscribe(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -296,9 +297,8 @@ async def test_subscribe_resubscribe(
         with freeze_time("2024-01-01 00:00:00"):
             await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert dict(row) == {
         "callback": "http://example.com/callback",
@@ -322,9 +322,8 @@ async def test_subscribe_resubscribe(
         with freeze_time("2024-01-02 00:00:00"):
             await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert dict(row) == {
         "callback": "http://example.com/callback",
@@ -338,6 +337,7 @@ async def test_subscribe_resubscribe(
 @freeze_time("2024-01-01 00:00:00")
 async def test_unsubscribe(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -358,9 +358,8 @@ async def test_unsubscribe(
         content=b"92cdeabd827843ad871d0214dcb2d12e",
     )
 
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO websub_publisher (
     callback,
     topic,
@@ -374,9 +373,9 @@ INSERT INTO websub_publisher (
     'secret',
     '2024-01-01 00:00:00+00:00'
 )
-            """
-        )
-        await db.commit()
+        """
+    )
+    await db.commit()
 
     data = SubscriptionRequest(
         **{
@@ -390,9 +389,8 @@ INSERT INTO websub_publisher (
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute("SELECT * FROM websub_publisher") as cursor:
-            row = await cursor.fetchone()
+    async with db.execute("SELECT * FROM websub_publisher") as cursor:
+        row = await cursor.fetchone()
 
     assert row is None
 
@@ -400,6 +398,7 @@ INSERT INTO websub_publisher (
 @freeze_time("2024-01-01 00:00:00")
 async def test_unsubscribe_invalid_request(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -420,9 +419,8 @@ async def test_unsubscribe_invalid_request(
         status_code=400,
     )
 
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO websub_publisher (
     callback,
     topic,
@@ -436,9 +434,9 @@ INSERT INTO websub_publisher (
     'secret',
     '2024-01-01 00:00:00+00:00'
 )
-            """
-        )
-        await db.commit()
+        """
+    )
+    await db.commit()
 
     data = SubscriptionRequest(
         **{
@@ -452,19 +450,18 @@ INSERT INTO websub_publisher (
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute(
-            """
+    async with db.execute(
+        """
 SELECT *
 FROM
     websub_publisher
 WHERE
     callback = ? AND
     topic = ?
-            """,
-            ("http://example.com/callback", "http://example.com/feed/1"),
-        ) as cursor:
-            row = await cursor.fetchone()
+        """,
+        ("http://example.com/callback", "http://example.com/feed/1"),
+    ) as cursor:
+        row = await cursor.fetchone()
 
     assert row is not None
 
@@ -472,6 +469,7 @@ WHERE
 @freeze_time("2024-01-01 00:00:00")
 async def test_unsubscribe_challenge_mismatch(
     mocker: MockerFixture,
+    db: Connection,
     current_app: Quart,
     httpx_mock: HTTPXMock,
 ) -> None:
@@ -492,9 +490,8 @@ async def test_unsubscribe_challenge_mismatch(
         content=b"some other challenge",
     )
 
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO websub_publisher (
     callback,
     topic,
@@ -508,9 +505,9 @@ INSERT INTO websub_publisher (
     'secret',
     '2024-01-01 00:00:00+00:00'
 )
-            """
-        )
-        await db.commit()
+        """
+    )
+    await db.commit()
 
     data = SubscriptionRequest(
         **{
@@ -524,19 +521,18 @@ INSERT INTO websub_publisher (
     async with current_app.app_context():
         await validate_subscription(data)
 
-    async with get_db(current_app) as db:
-        async with db.execute(
-            """
+    async with db.execute(
+        """
 SELECT *
 FROM
     websub_publisher
 WHERE
     callback = ? AND
     topic = ?
-            """,
-            ("http://example.com/callback", "http://example.com/feed/1"),
-        ) as cursor:
-            row = await cursor.fetchone()
+        """,
+        ("http://example.com/callback", "http://example.com/feed/1"),
+    ) as cursor:
+        row = await cursor.fetchone()
 
     assert row is not None
 
@@ -551,7 +547,11 @@ def test_apply_parameters_to_url() -> None:
     assert apply_parameters_to_url(url, **parameters) == "http://example.com?a=1&b=2"
 
 
-async def test_distribute_content(mocker: MockerFixture, current_app: Quart) -> None:
+async def test_distribute_content(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
     """
     Test the `distribute_content` function.
     """
@@ -560,9 +560,8 @@ async def test_distribute_content(mocker: MockerFixture, current_app: Quart) -> 
         "robida.blueprints.websub.helpers.send_to_subscriber"
     )
 
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO websub_publisher (
     callback,
     topic,
@@ -588,9 +587,9 @@ INSERT INTO websub_publisher (
     'secret',
     '2024-01-01 00:00:00+00:00'
 )
-            """
-        )
-        await db.commit()
+        """
+    )
+    await db.commit()
 
     with freeze_time("2024-01-02 00:00:00"):
         async with current_app.app_context():
@@ -618,13 +617,16 @@ INSERT INTO websub_publisher (
     }
 
 
-async def test_send_to_subscriber(mocker: MockerFixture, current_app: Quart) -> None:
+async def test_send_to_subscriber(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
     """
     Test the `send_to_subscriber` function.
     """
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
+    await db.execute(
+        """
 INSERT INTO websub_publisher (
     callback,
     topic,
@@ -650,9 +652,9 @@ INSERT INTO websub_publisher (
     'secret',
     '2024-01-01 00:00:00+00:00'
 )
-            """
-        )
-        await db.commit()
+        """
+    )
+    await db.commit()
 
     async def data() -> str:
         return "test"

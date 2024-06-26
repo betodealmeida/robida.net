@@ -32,6 +32,9 @@ async def test_load_entries(current_app: Quart) -> None:
                 {
                     "type": ["h-entry"],
                     "properties": {
+                        "url": [
+                            "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
+                        ],
                         "content": ["Hello, world!"],
                         "published": ["2024-01-01T00:00:00+00:00"],
                         "author": [
@@ -60,6 +63,9 @@ async def test_load_entries(current_app: Quart) -> None:
                 {
                     "type": ["h-entry"],
                     "properties": {
+                        "url": [
+                            "http://example.com/feed/37c9ed45-5c0c-43e4-b088-0e904ed849d7"
+                        ],
                         "content": ["Hello, world!"],
                         "published": ["2024-01-01T00:00:00+00:00"],
                         "author": [
@@ -88,7 +94,10 @@ async def test_load_entries(current_app: Quart) -> None:
                 {
                     "type": ["h-entry"],
                     "properties": {
-                        "name": ["Welcome to my blog!"],
+                        "name": ["About"],
+                        "url": [
+                            "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
+                        ],
                         "content": [
                             {
                                 "value": """This blog runs a custom-built Python web framework called
@@ -101,7 +110,71 @@ async def test_load_entries(current_app: Quart) -> None:
     </p>""",
                             }
                         ],
-                        "summary": ["A quick intro on my blog"],
+                        "summary": ["About this blog."],
+                        "published": ["2024-01-01T00:00:00+00:00"],
+                        "author": [
+                            {
+                                "type": ["h-card"],
+                                "properties": {
+                                    "name": ["Beto Dealmeida"],
+                                    "url": ["http://example.com/"],
+                                },
+                            }
+                        ],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "read": 0,
+            "deleted": 0,
+            "created_at": "2024-01-01 00:00:00+00:00",
+            "last_modified_at": "2024-01-01 00:00:00+00:00",
+        },
+        {
+            "uuid": "68e50fbd69c04e12bf2f208ace952ffd",
+            "author": "http://alice.example.com",
+            "location": "http://alice.example.com/post/1",
+            "content": json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "url": ["http://alice.example.com/post/1"],
+                        "in-reply-to": [
+                            "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
+                        ],
+                        "content": ["Welcome!"],
+                        "published": ["2024-01-01T00:00:00+00:00"],
+                        "author": [
+                            {
+                                "type": ["h-card"],
+                                "properties": {
+                                    "name": ["Alice"],
+                                    "url": ["http://alice.example.com"],
+                                },
+                            }
+                        ],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "read": 0,
+            "deleted": 0,
+            "created_at": "2024-01-01 00:00:00+00:00",
+            "last_modified_at": "2024-01-01 00:00:00+00:00",
+        },
+        {
+            "uuid": "9911109126c74e3ea0be436fbeee0d14",
+            "author": "http://example.com/",
+            "location": "http://example.com/feed/99111091-26c7-4e3e-a0be-436fbeee0d14",
+            "content": json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "url": [
+                            "http://example.com/feed/99111091-26c7-4e3e-a0be-436fbeee0d14"
+                        ],
+                        "in-reply-to": ["http://alice.example.com/post/1"],
+                        "content": ["Thank you!"],
                         "published": ["2024-01-01T00:00:00+00:00"],
                         "author": [
                             {

@@ -15,12 +15,12 @@ async def test_search(client: testing.QuartClient, current_app: Quart) -> None:
     Test the search endpoint.
     """
     await load_entries(current_app)
-    response = await client.get("/search?q=python")
+    response = await client.get("/search", query_string={"q": "python"})
 
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "41ee765ec465195ab6f59370276d65d91a1fee442bfd1df3c98ad3570fcbf80b"
+        == "8b2f43e7600c9531bd2416987d717c9e0704dc90afedaca1d40f04674f727751"
     )
 
     html = await response.data
@@ -33,8 +33,8 @@ async def test_search(client: testing.QuartClient, current_app: Quart) -> None:
                     {
                         "type": ["h-entry"],
                         "properties": {
-                            "name": ["Welcome to my blog!"],
-                            "summary": ["A quick intro on my blog"],
+                            "name": ["About"],
+                            "summary": ["About this blog."],
                             "content": [
                                 {
                                     "value": (
@@ -134,7 +134,7 @@ async def test_search_conditional_get(
     response = await client.get(
         "/search?q=python",
         headers={
-            "If-None-Match": "41ee765ec465195ab6f59370276d65d91a1fee442bfd1df3c98ad3570fcbf80b"
+            "If-None-Match": "8b2f43e7600c9531bd2416987d717c9e0704dc90afedaca1d40f04674f727751"
         },
     )
 

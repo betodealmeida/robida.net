@@ -1,10 +1,17 @@
 {% import 'macros/feed/article.html' as article_macros %}
 {% import 'macros/feed/note.html' as note_macros %}
 
+{# see https://indieweb.org/post-type-discovery #}
 {% macro h_entry(data) %}
+<article class="h-entry">
     {% if data.properties.name %}
         {{ article_macros.article(data) }}
     {% else %}
         {{ note_macros.note(data) }}
     {% endif %}
+
+    {% for child in data.children %}
+        {{ h_entry(child) }}
+    {% endfor %}
+</article>
 {% endmacro %}

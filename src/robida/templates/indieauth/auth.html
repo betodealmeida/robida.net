@@ -13,29 +13,35 @@
     <input type="hidden" id="code" name="code" value="{{ code }}" />
 
     {% if known_requested_scopes %}
-    <h3>Known scopes</h3>
-    {% for scope in known_requested_scopes %}
-    <input checked type="checkbox" id="{{ scope }}" name="known" value="{{ scope }}">
-    <label for="{{ scope }}">{{ scope }}</label><br>
-    {% endfor %}
+    <fieldset>
+        <legend>Known scopes</legend>
+        {% for scope in known_requested_scopes %}
+        <input checked type="checkbox" id="{{ scope }}" name="known" value="{{ scope }}">
+        <label for="{{ scope }}">{{ scope }}</label><br>
+        {% endfor %}
+    </fieldset>
     {% endif %}
 
     {% if unknown_requested_scopes %}
-    <h3>Unknown scopes</h3>
-    {% for scope in unknown_requested_scopes %}
-    <input checked type="checkbox" id="{{ scope }}" name="unknown" value="{{ scope }}">
-    <label for="{{ scope }}">{{ scope }}</label><br>
-    {% endfor %}
+    <fieldset>
+        <legend>Unknown scopes</legend>
+        {% for scope in unknown_requested_scopes %}
+        <input checked type="checkbox" id="{{ scope }}" name="unknown" value="{{ scope }}">
+        <label for="{{ scope }}">{{ scope }}</label><br>
+        {% endfor %}
+    </fieldset>
     {% endif %}
 
     {% if other_scopes %}
-    <h3>Other supported scopes</h3>
-    {% for scope in other_scopes %}
-    <input type="checkbox" id="{{ scope }}" name="other" value="{{ scope }}">
-    <label for="{{ scope }}">{{ scope }}</label><br>
-    {% endfor %}
+    <fieldset>
+        <legend>Other supported scopes</legend>
+        {% for scope in other_scopes %}
+        <input type="checkbox" id="{{ scope }}" name="other" value="{{ scope }}">
+        <label for="{{ scope }}">{{ scope }}</label><br>
+        {% endfor %}
+    </fieldset>
     {% endif %}
 
-    <p><input type="submit" value="Allow" /></p>
+    <input type="submit" value="Allow" />
 </form>
 {% endblock %}

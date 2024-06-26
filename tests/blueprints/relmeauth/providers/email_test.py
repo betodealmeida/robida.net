@@ -6,22 +6,19 @@ Tests for the email provider.
 
 from itsdangerous import SignatureExpired, BadSignature
 from pytest_mock import MockerFixture
-from quart import Quart, testing
+from quart import Quart, session, testing
 
 from robida.blueprints.relmeauth.providers.email import EmailProvider, send_email
 
 
-async def test_email_provider(mocker: MockerFixture, current_app: Quart) -> None:
+async def test_email_provider(current_app: Quart) -> None:
     """
     Test the Email provider.
     """
-    async with current_app.test_request_context("/", method="GET"):
-        session = mocker.patch("robida.blueprints.relmeauth.providers.base.session")
-
     assert EmailProvider.match("mailto:me@example.com")
     assert not EmailProvider.match("https://home.apache.org/phonebook.html?uid=me")
 
-    async with current_app.app_context():
+    async with current_app.test_request_context("/", method="GET"):
         provider = EmailProvider(
             "https://me.example.com",
             "mailto:me@example.com",
@@ -29,16 +26,11 @@ async def test_email_provider(mocker: MockerFixture, current_app: Quart) -> None
 
         response = provider.login()
         assert response.status_code == 302
-        assert (
-            response.headers["Location"] == "http://example.com/relmeauth/email/login"
-        )
+        assert response.headers["Location"] == "/relmeauth/email/login"
 
-    session.update.assert_called_with(
-        {
-            "relmeauth.email.me": "https://me.example.com",
-            "relmeauth.email.address": "me@example.com",
-        }
-    )
+        assert session["relmeauth.email.me"] == "https://me.example.com"
+        assert session["relmeauth.email.address"] == "me@example.com"
+
     assert current_app.blueprints["email"] == provider.blueprint
 
 
@@ -98,7 +90,10 @@ async def test_email_provider_callback(
     )
     URLSafeTimedSerializer().loads.return_value = "me@example.com"
 
-    response = await client.get("/relmeauth/email/verify?token=12345")
+    response = await client.get(
+        "/relmeauth/email/verify",
+        query_string={"token": "12345"},
+    )
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/"
@@ -128,7 +123,10 @@ async def test_email_provider_callback_next(
     )
     URLSafeTimedSerializer().loads.return_value = "me@example.com"
 
-    response = await client.get("/relmeauth/email/verify?token=12345")
+    response = await client.get(
+        "/relmeauth/email/verify",
+        query_string={"token": "12345"},
+    )
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/continue"
@@ -157,7 +155,10 @@ async def test_email_provider_callback_invalid_email(
     )
     URLSafeTimedSerializer().loads.return_value = "alice@example.com"
 
-    response = await client.get("/relmeauth/email/verify?token=12345")
+    response = await client.get(
+        "/relmeauth/email/verify",
+        query_string={"token": "12345"},
+    )
 
     assert response.status_code == 400
     assert await response.get_data() == b"Invalid email"
@@ -186,7 +187,10 @@ async def test_email_provider_callback_expired_token(
     )
     URLSafeTimedSerializer().loads.side_effect = SignatureExpired("Token expired")
 
-    response = await client.get("/relmeauth/email/verify?token=12345")
+    response = await client.get(
+        "/relmeauth/email/verify",
+        query_string={"token": "12345"},
+    )
 
     assert response.status_code == 400
     assert await response.data == b"Token expired"
@@ -215,7 +219,10 @@ async def test_email_provider_callback_invalid_token(
     )
     URLSafeTimedSerializer().loads.side_effect = BadSignature("Invalid token")
 
-    response = await client.get("/relmeauth/email/verify?token=12345")
+    response = await client.get(
+        "/relmeauth/email/verify",
+        query_string={"token": "12345"},
+    )
 
     assert response.status_code == 400
     assert await response.data == b"Invalid token"

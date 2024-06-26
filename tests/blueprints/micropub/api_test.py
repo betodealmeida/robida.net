@@ -24,6 +24,7 @@ async def test_create_entry(
     """
     Test main endpoint.
     """
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -73,6 +74,7 @@ async def test_create_entry_no_type(
     """
     Test main endpoint with a multipart/form-data payload without the type specified.
     """
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -121,6 +123,7 @@ async def test_create_entry_from_json(
     """
     Test main endpoint with a JSON request payload.
     """
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -176,6 +179,7 @@ async def test_create_entry_from_json_no_type(
     """
     Test main endpoint with a JSON request payload without the type specified.
     """
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -238,6 +242,7 @@ async def test_create_entry_with_file(
         ],
     )
     mocker.patch("robida.blueprints.micropub.api.aiofiles")
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
@@ -346,7 +351,7 @@ async def test_index_source(client: testing.QuartClient) -> None:
         }
     }
 
-    response = await client.get(f"/micropub?q=source&url={url}")
+    response = await client.get("/micropub", query_string={"q": "source", "url": url})
     assert response.status_code == 200
     assert await response.json == {
         "type": ["h-entry"],
@@ -371,10 +376,16 @@ async def test_index_invalid(client: testing.QuartClient) -> None:
     }
 
 
-async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) -> None:
+async def test_delete_and_undelete(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+    db: Connection,
+) -> None:
     """
     Test deleting and undeleting an entry.
     """
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
+
     response = await client.post(
         "/micropub",
         json={
@@ -449,10 +460,32 @@ WHERE
     assert row[0] == 0
 
 
-async def test_update(client: testing.QuartClient, db: Connection) -> None:
+async def test_delete_not_found(client: testing.QuartClient) -> None:
+    """
+    Test deleting and undeleting an entry that doesn't exist.
+    """
+    response = await client.post(
+        "/micropub",
+        json={
+            "url": "http://example.com/feed/96135d01-f6be-4e1c-99d0-cc5a6a4f1d10",
+            "action": "delete",
+        },
+        auth=Authorization("bearer", token="delete"),
+    )
+
+    assert response.status_code == 404
+
+
+async def test_update(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+    db: Connection,
+) -> None:
     """
     Test updating an entry.
     """
+    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
+
     with freeze_time("2024-01-01 00:00:00"):
         response = await client.post(
             "/micropub",
@@ -515,6 +548,32 @@ WHERE
         ),
         "last_modified_at": "2024-01-02 00:00:00+00:00",
     }
+
+
+async def test_update_not_found(client: testing.QuartClient) -> None:
+    """
+    Test updating an entry that doesn't exist.
+    """
+    with freeze_time("2024-01-02 00:00:00"):
+        response = await client.post(
+            "/micropub",
+            json={
+                "action": "update",
+                "url": "http://example.com/entry/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                "replace": {
+                    "content": ["hello world, updated"],
+                },
+                "add": {
+                    "category": ["baz"],
+                },
+                "delete": {
+                    "photo": ["https://photos.example.com/592829482876343254.jpg"],
+                },
+            },
+            auth=Authorization("bearer", token="update"),
+        )
+
+    assert response.status_code == 404
 
 
 async def test_invalid_action(client: testing.QuartClient) -> None:

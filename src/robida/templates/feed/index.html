@@ -4,4 +4,18 @@
 
 {% block content %}
     {{ feed_macros.h_feed(hfeed) }}
+
+    <footer class="pagination">
+        {% if previous_url %}
+        <a href="{{ previous_url }}">« Previous</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+
+        {% if next_url %}
+        <a href="{{ next_url }}">Next »</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+    </footer>
 {% endblock %}
