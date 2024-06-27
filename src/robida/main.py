@@ -10,12 +10,12 @@ from dotenv import dotenv_values
 from quart import Quart, Response, g, request, session, url_for
 from quart_schema import QuartSchema
 
+from robida.blueprints.auth import api as auth
 from robida.blueprints.feed import api as feed
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
-from robida.blueprints.relmeauth import api as relmeauth
 from robida.blueprints.search import api as search
 from robida.blueprints.webmention import api as webmention
 from robida.blueprints.websub import api as websub
@@ -45,12 +45,12 @@ def create_app(
     quart_schema.init_app(app)
 
     # blueprints
+    app.register_blueprint(auth.blueprint)
     app.register_blueprint(feed.blueprint)
     app.register_blueprint(homepage.blueprint)
     app.register_blueprint(indieauth.blueprint)
     app.register_blueprint(media.blueprint)
     app.register_blueprint(micropub.blueprint)
-    app.register_blueprint(relmeauth.blueprint)
     app.register_blueprint(search.blueprint)
     app.register_blueprint(webmention.blueprint)
     app.register_blueprint(websub.blueprint)

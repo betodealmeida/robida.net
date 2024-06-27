@@ -4,6 +4,7 @@ Tests for the email provider.
 
 # pylint: disable=redefined-outer-name, invalid-name
 
+import httpx
 from itsdangerous import SignatureExpired, BadSignature
 from pytest_mock import MockerFixture
 from quart import Quart, session, testing
@@ -15,13 +16,22 @@ async def test_email_provider(current_app: Quart) -> None:
     """
     Test the Email provider.
     """
-    assert EmailProvider.match("mailto:me@example.com")
-    assert not EmailProvider.match("https://home.apache.org/phonebook.html?uid=me")
+    valid_response = httpx.Response(
+        html='<a rel="me" href="mailto:me@example.com">me</a>',
+        status_code=200,
+    )
+    invalid_response = httpx.Response(
+        html='<a href="mailto:me@example.com">me</a>',
+        status_code=200,
+    )
+
+    assert EmailProvider.match(valid_response)
+    assert not EmailProvider.match(invalid_response)
 
     async with current_app.test_request_context("/", method="GET"):
         provider = EmailProvider(
             "https://me.example.com",
-            "mailto:me@example.com",
+            valid_response,
         )
 
         response = provider.login()

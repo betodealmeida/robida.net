@@ -2,17 +2,20 @@
 Email provider.
 """
 
+import re
 import urllib.parse
 from dataclasses import dataclass
 from email.message import EmailMessage
 
 import aiosmtplib
+import httpx
+from bs4 import BeautifulSoup
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from quart import Blueprint, Response, current_app, render_template, session
 from quart.helpers import make_response, redirect, url_for
 from quart_schema import validate_querystring
 
-from .base import Provider
+from robida.blueprints.auth.providers.base import Provider
 
 
 blueprint = Blueprint("email", __name__, url_prefix="/relmeauth/email")
@@ -51,20 +54,30 @@ class EmailProvider(Provider):
     Email-based authentication.
     """
 
+    name = "Email"
+    description = (
+        'Login with your email. Requires a <code>rel="me"</code> link on your site '
+        "pointing to your email address."
+    )
+
     blueprint = blueprint
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    def match(cls, url: str) -> bool:
+    def match(cls, response: httpx.Response) -> bool:
         """
         Match emails.
         """
-        return url.startswith("mailto:")
+        soup = BeautifulSoup(response.text, "html.parser")
+        return bool(soup.find("a", rel="me", href=re.compile("^mailto:")))
 
     def get_scope(self) -> dict[str, str]:
+        soup = BeautifulSoup(self.response.text, "html.parser")
+        profile = soup.find("a", rel="me", href=re.compile("^mailto:"))["href"]
+
         return {
             "relmeauth.email.me": self.me,
-            "relmeauth.email.address": urllib.parse.urlparse(self.profile).path,
+            "relmeauth.email.address": urllib.parse.urlparse(profile).path,
         }
 
 

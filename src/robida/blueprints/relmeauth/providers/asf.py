@@ -7,11 +7,12 @@ from dataclasses import dataclass
 from uuid import uuid4
 
 import httpx
+from bs4 import BeautifulSoup
 from quart import Blueprint, Response, session
 from quart.helpers import make_response, redirect, url_for
 from quart_schema import validate_querystring
 
-from .base import Provider
+from robida.blueprints.auth.providers.base import Provider
 
 
 blueprint = Blueprint("asf", __name__, url_prefix="/relmeauth/asf")
@@ -44,6 +45,18 @@ class ProfileResponse:  # pylint: disable=too-many-instance-attributes
     state: str
 
 
+def is_phonebook_url(href: str) -> bool:
+    """
+    Check if the URL is the ASF phonebook.
+    """
+    parsed = urllib.parse.urlparse(href)
+    return (
+        parsed.netloc == "home.apache.org"
+        and parsed.path == "/phonebook.html"
+        and "uid" in urllib.parse.parse_qs(parsed.query)
+    )
+
+
 class ASFProvider(Provider):
     """
     Apache Software Foundation (ASF) OAuth provider
@@ -51,33 +64,38 @@ class ASFProvider(Provider):
     https://oauth.apache.org/api.html
     """
 
+    name = "Apache Software Foundation phonebook"
+    description = (
+        'An <a href="https://oauth.apache.org/api.html#intro">OAuth provider for ASF '
+        'committers</a>. Requires a <code>rel="me"</code> link on your site pointing to a '
+        'specific <code>uid</code> in the ASF <a href="https://home.apache.org/'
+        'phonebook.html">phonebook</a>.'
+    )
+
     blueprint = blueprint
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    def match(cls, url: str) -> bool:
+    def match(cls, response: httpx.Response) -> bool:
         """
         Match `rel="me"` links pointing to the ASF phonebook.
 
         https://home.apache.org/phonebook.html?uid=beto
         """
-        parsed = urllib.parse.urlparse(url)
-
-        return (
-            parsed.netloc == "home.apache.org"
-            and parsed.path == "/phonebook.html"
-            and "uid" in urllib.parse.parse_qs(parsed.query)
-        )
+        soup = BeautifulSoup(response.text, "html.parser")
+        return bool(soup.find("a", rel="me", href=is_phonebook_url))
 
     def get_scope(self) -> dict[str, str]:
         """
         Store scope for verification.
         """
-        parsed = urllib.parse.urlparse(self.profile)
+        soup = BeautifulSoup(self.response.text, "html.parser")
+        profile = soup.find("a", rel="me", href=is_phonebook_url)["href"]
+        parsed = urllib.parse.urlparse(profile)
 
         return {
             "relmeauth.asf.me": self.me,
-            "relmeauth.asf.url": self.profile,
+            "relmeauth.asf.url": profile,
             "relmeauth.asf.uid": urllib.parse.parse_qs(parsed.query)["uid"][0],
             "relmeauth.asf.state": uuid4().hex,
         }

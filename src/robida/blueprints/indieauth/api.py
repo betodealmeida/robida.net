@@ -80,7 +80,7 @@ async def authorization(query_args: AuthorizationRequest) -> Response:
     # redirect them to the login page.
     if "me" not in session:
         session["next"] = url_for("indieauth.authorization", **asdict(query_args))
-        return redirect(url_for("relmeauth.login"))
+        return redirect(url_for("auth.login"))
 
     if query_args.response_type not in RESPONSE_TYPES_SUPPORTED or (
         query_args.code_challenge_method not in CODE_CHALLENGE_METHODS_SUPPORTED

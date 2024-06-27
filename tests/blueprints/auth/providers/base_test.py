@@ -5,7 +5,7 @@ Tests for the base RelMeAuth provider.
 from pytest_mock import MockerFixture
 from quart import Quart, session
 
-from robida.blueprints.relmeauth.providers.base import Provider
+from robida.blueprints.auth.providers.base import Provider
 
 
 async def test_base_provider(mocker: MockerFixture, current_app: Quart) -> None:

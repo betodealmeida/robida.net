@@ -4,7 +4,7 @@ Tests for the RelMeAuth helper functions.
 
 from pytest_httpx import HTTPXMock
 
-from robida.blueprints.relmeauth.helpers import get_profiles
+from robida.blueprints.auth.helpers import get_profiles
 
 
 async def test_get_profiles(httpx_mock: HTTPXMock) -> None:

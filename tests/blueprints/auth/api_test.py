@@ -28,11 +28,12 @@ async def test_logout(mocker: MockerFixture, client: testing.QuartClient) -> Non
     Not much here.
     """
     session = {"me": "https://me.example.com"}
-    mocker.patch("robida.blueprints.relmeauth.api.session", new=session)
+    mocker.patch("robida.blueprints.auth.api.session", new=session)
 
     response = await client.get("/logout")
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/"
     assert session == {}
 
 

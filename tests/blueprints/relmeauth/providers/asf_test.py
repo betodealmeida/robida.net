@@ -4,6 +4,7 @@ Tests for the ASF provider.
 
 from uuid import UUID
 
+import httpx
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 from quart import Quart, session, testing
@@ -20,13 +21,22 @@ async def test_asf_provider(mocker: MockerFixture, current_app: Quart) -> None:
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
 
-    assert ASFProvider.match("https://home.apache.org/phonebook.html?uid=me")
-    assert not ASFProvider.match("https://me.example.com")
+    valid_response = httpx.Response(
+        html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    invalid_response = httpx.Response(
+        html='<a href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+
+    assert ASFProvider.match(valid_response)
+    assert not ASFProvider.match(invalid_response)
 
     async with current_app.test_request_context("/", method="GET"):
         provider = ASFProvider(
             "https://me.example.com",
-            "https://home.apache.org/phonebook.html?uid=me",
+            valid_response,
         )
 
         response = provider.login()

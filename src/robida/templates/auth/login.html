@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Login</h2>
+
+<p>You can login with your <a href="https://indieweb.org/">IndieWeb</a> site by entering its URL below. Currently the following mechanisms are supported:</p>
+
+<dl>
+{% for provider in providers %}
+    <dt>{{ provider.name | safe }}</dt>
+    <dd>{{ provider.description | safe }}</dd>
+{% endfor %}
+</dl>
+
+<hr/>
+
+<form method="POST" action="/login">
+    <input type="text" name="me" placeholder="https://" required/>
+    <button type="submit">Go!</button>
+</form>
+{% endblock %}
