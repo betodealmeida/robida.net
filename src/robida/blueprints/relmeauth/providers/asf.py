@@ -2,6 +2,8 @@
 Apache Software Foundation (ASF) OAuth provider
 """
 
+from __future__ import annotations
+
 import json
 import urllib.parse
 from dataclasses import dataclass
@@ -91,7 +93,7 @@ class ASFProvider(Provider):
 
     @classmethod
     # pylint: disable=too-many-return-statements
-    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
+    async def match(cls, me: str, client: httpx.AsyncClient) -> ASFProvider | None:
         """
         Match `rel="me"` links pointing to the ASF phonebook.
 

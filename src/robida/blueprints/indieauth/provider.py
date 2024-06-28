@@ -2,6 +2,8 @@
 IndieAuth provider.
 """
 
+from __future__ import annotations
+
 import json
 import urllib.parse
 from dataclasses import dataclass
@@ -68,14 +70,30 @@ class IndieAuthProvider(Provider):
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
+    # pylint: disable=too-many-return-statements
+    async def match(
+        cls,
+        me: str,
+        client: httpx.AsyncClient,
+    ) -> IndieAuthProvider | None:
         """
         Try to find an IndieAuth provider for the given URL.
+
+        https://indieauth.spec.indieweb.org/#discovery-by-clients
         """
         # We can't use IndieAuth to login ourselves, since we need to be logged in to use
         # our IndieAuth endpoint.
         if me == url_for("homepage.index", _external=True):
             return None
+
+        try:
+            response = await client.head(me)
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            return None
+
+        if link := response.links.get("indieauth-metadata"):
+            return await cls.from_metadata(me, link["url"], client)
 
         try:
             response = await client.get(me)
@@ -84,44 +102,8 @@ class IndieAuthProvider(Provider):
             return None
 
         soup = BeautifulSoup(response.text, "html.parser")
-
-        # https://indieauth.spec.indieweb.org/#discovery-by-clients
-        metadata_endpoint = None
-        if link := response.links.get("indieauth-metadata"):
-            metadata_endpoint = link["url"]
-        elif element := soup.find("link", rel="indieauth-metadata"):
-            metadata_endpoint = element["href"]
-
-        if metadata_endpoint:
-            if server_metadata := await get_server_metadata(
-                metadata_endpoint,
-                client,
-            ):
-                # "The identifier MUST be a prefix of the indieauth-metadata URL."
-                if metadata_endpoint.startswith(server_metadata.issuer):
-                    scope = (
-                        "profile"
-                        if server_metadata.scopes_supported
-                        and "profile" in server_metadata.scopes_supported
-                        else None
-                    )
-
-                    code_challenge_methods_supported = set(
-                        server_metadata.code_challenge_methods_supported
-                    )
-                    for method in ["S256", "plain"]:
-                        if method in code_challenge_methods_supported:
-                            code_challenge_method = method
-                            break
-                    else:
-                        code_challenge_method = None
-
-                    return cls(
-                        me,
-                        server_metadata.authorization_endpoint,
-                        scope,
-                        code_challenge_method,
-                    )
+        if element := soup.find("link", rel="indieauth-metadata"):
+            return await cls.from_metadata(me, element["href"], client)
 
         # try `authorization_endpoint` for compatibility with previous revisions
         if link := response.links.get("authorization_endpoint"):
@@ -132,6 +114,47 @@ class IndieAuthProvider(Provider):
 
         return None
 
+    @classmethod
+    async def from_metadata(
+        cls,
+        me: str,
+        metadata_endpoint: str,
+        client: httpx.AsyncClient,
+    ) -> IndieAuthProvider | None:
+        """
+        Build provider from the metadata response.
+        """
+        server_metadata = await get_server_metadata(metadata_endpoint, client)
+        if not server_metadata:
+            return None
+
+        # "The identifier MUST be a prefix of the indieauth-metadata URL."
+        if not metadata_endpoint.startswith(str(server_metadata.issuer)):
+            return None
+
+        scope = (
+            "profile"
+            if server_metadata.scopes_supported
+            and "profile" in server_metadata.scopes_supported
+            else None
+        )
+
+        # use PKCE if possible
+        supported_methods = set(server_metadata.code_challenge_methods_supported)
+        for method in ["S256", "plain"]:
+            if method in supported_methods:
+                code_challenge_method = method
+                break
+        else:
+            code_challenge_method = None
+
+        return cls(
+            me,
+            str(server_metadata.authorization_endpoint),
+            scope,
+            code_challenge_method,
+        )
+
     def __init__(
         self,
         me: str,
@@ -139,10 +162,10 @@ class IndieAuthProvider(Provider):
         scope: str | None = None,
         code_challenge_method: str | None = None,
     ) -> None:
-        super().__init__(me, profile)
-
         self.scope = scope
         self.code_challenge_method = code_challenge_method
+
+        super().__init__(me, profile)
 
     def get_scope(self) -> dict[str, str | None]:
         """
@@ -189,7 +212,7 @@ async def login() -> Response:
 
     url = urllib.parse.urlparse(
         session["indieauth.client.authorization_endpoint"]
-    )._replace(query=query)
+    )._replace(query=urllib.parse.urlencode(query))
 
     return redirect(url.geturl())
 

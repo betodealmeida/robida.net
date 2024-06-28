@@ -9,7 +9,7 @@ My website.
 - [X] IndieAuth
 - [X] RelMeAuth
 - [X] Centralized login
-- [ ] IndieAuth provider
+- [X] IndieAuth provider
 - [ ] OpenStreetMap provider
 - [ ] Passkeys?
 
@@ -67,6 +67,9 @@ My website.
 
 ### Notes
 
+https://indieweb.org/h-x-app#Properties
+- extract more info when app requests a token
+
 - render responses (https://indieweb.org/responses), and return in feed
     - use bleach.clean (better: https://nh3.readthedocs.io/en/latest/)
     - do more work to populate a summary, specially for websites without an h-entry
@@ -77,8 +80,7 @@ My website.
 - replies to places that don't receive webmentions?
 
 - move get_entry to robida.helpers
-    - add indiauth provider
-        - remember to add h-app
+    - remember to add h-app
 - on auth.html, ask for confirmation on giving refresh token and the expiration time of the access token
 
 /bookmarklet blueprint

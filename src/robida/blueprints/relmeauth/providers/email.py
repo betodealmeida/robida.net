@@ -2,6 +2,8 @@
 Email provider.
 """
 
+from __future__ import annotations
+
 import re
 import urllib.parse
 from dataclasses import dataclass
@@ -74,7 +76,7 @@ class EmailProvider(Provider):
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
+    async def match(cls, me: str, client: httpx.AsyncClient) -> EmailProvider | None:
         """
         Match emails.
         """

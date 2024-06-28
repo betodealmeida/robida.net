@@ -3,9 +3,15 @@
 {% block content %}
 <h2>Heya!</h2>
 
-<div class="h-card">
-    <p>My name is <strong><a class="u-url p-name" href="{{ url_for('homepage.index', _external=True) }}">{{ config.NAME }}</strong></a> <a rel="me" class="u-email" href="mailto:{{ config.EMAIL }}">📧</a>. <span class="p-note">{{ config.NOTE | safe }}</span></p>
+<div class="h-app h-x-app">
+    <link class="u-url" href="https://github.com/betodealmeida/robida.net/" />
 
-    <p>This is my <mark>very minimal website</mark>. You can see my <a href="{{ url_for('feed.html_index') }}">latest posts</a> (also available as <a href="{{ url_for('feed.rss_index') }}">RSS 2.0</a>, <a href="{{ url_for('feed.atom_index') }}">Atom</a>, <a href="{{ url_for('feed.json_index') }}">JSON Feed</a>, or <a href="https://www.w3.org/TR/websub/">WebSub</a>). You can leave a comment by posting a <a href="https://www.w3.org/TR/webmention/">WebMention</a>.</p>
+    <div class="p-author h-card">
+        <link rel="canonical" class="u-url" href="{{ url_for('homepage.index', _external=True) }}"/>
+
+        <p>My name is <strong><span class="p-name">{{ config.NAME }}</strong></span> <a rel="me" class="u-email" href="mailto:{{ config.EMAIL }}">📧</a>. <span class="p-note">{{ config.NOTE | safe }}</span></p>
+    </div>
+
+    <p class="p-summary">This is my <mark>very minimal website</mark>, <strong><span class="p-name">{{ config.SITE_NAME }}</span></strong>. You can see my <a href="{{ url_for('feed.html_index') }}">latest posts</a> (also available as <a href="{{ url_for('feed.rss_index') }}">RSS 2.0</a>, <a href="{{ url_for('feed.atom_index') }}">Atom</a>, <a href="{{ url_for('feed.json_index') }}">JSON Feed</a>, or <a href="https://www.w3.org/TR/websub/">WebSub</a>). You can leave a comment by posting a <a href="https://www.w3.org/TR/webmention/">WebMention</a>.</p>
 </div>
 {% endblock %}

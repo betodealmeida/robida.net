@@ -45,7 +45,7 @@ async def get_client_info(client_id: str) -> ClientInfo:
     app_info = {}
     metadata = mf2py.parse(doc=html)
     for item in metadata["items"]:
-        if "h-app" in item["type"]:
+        if "h-app" in item["type"] or "h-x-app" in item["type"]:
             app_info = item["properties"]
             break
 
