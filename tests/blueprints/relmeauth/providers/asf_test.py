@@ -12,7 +12,11 @@ from quart import Quart, session, testing
 from robida.blueprints.relmeauth.providers.asf import ASFProvider
 
 
-async def test_asf_provider(mocker: MockerFixture, current_app: Quart) -> None:
+async def test_asf_provider(
+    mocker: MockerFixture,
+    httpx_mock: HTTPXMock,
+    current_app: Quart,
+) -> None:
     """
     Test the ASF provider.
     """
@@ -21,22 +25,36 @@ async def test_asf_provider(mocker: MockerFixture, current_app: Quart) -> None:
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
 
-    valid_response = httpx.Response(
+    httpx_mock.add_response(
+        url="https://me.example.com",
         html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
         status_code=200,
     )
-    invalid_response = httpx.Response(
+    httpx_mock.add_response(
+        url="https://invalid.example.com",
         html='<a href="https://home.apache.org/phonebook.html?uid=me">me</a>',
         status_code=200,
     )
-
-    assert ASFProvider.match(valid_response)
-    assert not ASFProvider.match(invalid_response)
+    httpx_mock.add_response(
+        url="https://home.apache.org/public/public_ldap_people.json",
+        json={
+            "people": {
+                "me": {
+                    "uid": "me",
+                    "urls": ["https://me.example.com"],
+                },
+            },
+        },
+    )
 
     async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert await ASFProvider.match("https://me.example.com", client)
+            assert not await ASFProvider.match("https://invalid.example.com", client)
+
         provider = ASFProvider(
             "https://me.example.com",
-            valid_response,
+            "https://home.apache.org/phonebook.html?uid=me",
         )
 
         response = provider.login()

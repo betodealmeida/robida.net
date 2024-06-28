@@ -17,7 +17,6 @@ from quart_schema import validate_querystring
 
 from robida.blueprints.auth.providers.base import Provider
 
-
 blueprint = Blueprint("email", __name__, url_prefix="/relmeauth/email")
 
 
@@ -38,6 +37,17 @@ async def send_email(email: str, subject: str, body: str) -> None:
         username=current_app.config["SMTP_USERNAME"],
         password=current_app.config["SMTP_PASSWORD"],
     )
+
+
+def get_profile(html: str) -> str | None:
+    """
+    Get email from profile.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("a", rel="me", href=re.compile("^mailto:"))
+    profile = element["href"] if element else None
+
+    return profile
 
 
 @dataclass
@@ -64,20 +74,26 @@ class EmailProvider(Provider):
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    def match(cls, response: httpx.Response) -> bool:
+    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
         """
         Match emails.
         """
-        soup = BeautifulSoup(response.text, "html.parser")
-        return bool(soup.find("a", rel="me", href=re.compile("^mailto:")))
+        try:
+            response = await client.get(me)
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            return None
 
-    def get_scope(self) -> dict[str, str]:
-        soup = BeautifulSoup(self.response.text, "html.parser")
-        profile = soup.find("a", rel="me", href=re.compile("^mailto:"))["href"]
+        profile = get_profile(response.text)
+        if profile is None:
+            return None
 
+        return cls(me, profile)
+
+    def get_scope(self) -> dict[str, str | None]:
         return {
             "relmeauth.email.me": self.me,
-            "relmeauth.email.address": urllib.parse.urlparse(profile).path,
+            "relmeauth.email.address": urllib.parse.urlparse(self.profile).path,
         }
 
 

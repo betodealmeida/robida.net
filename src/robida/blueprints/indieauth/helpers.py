@@ -2,8 +2,6 @@
 Helper functions.
 """
 
-import base64
-import hashlib
 import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -16,10 +14,11 @@ from bs4 import BeautifulSoup
 from quart import Response, current_app, g, make_response
 
 from robida.db import get_db
+from robida.helpers import compute_s256_challenge
 
 
 VERIFICATION_METHODS = {
-    "S256": hashlib.sha256,
+    "S256": compute_s256_challenge,
 }
 
 
@@ -116,11 +115,7 @@ def verify_code_challenge(
     if verification_method is None:
         return False
 
-    digest = verification_method(code_verifier.encode("utf-8")).digest()
-    encoded = base64.urlsafe_b64encode(digest)
-    calculated_challenge = encoded.rstrip(b"=").decode("utf-8")
-
-    return code_challenge == calculated_challenge
+    return code_challenge == verification_method(code_verifier)
 
 
 async def get_scopes(token: str | None) -> set[str]:

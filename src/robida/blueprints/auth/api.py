@@ -4,21 +4,27 @@ RelMeAuth implementation.
 https://microformats.org/wiki/RelMeAuth
 """
 
+from typing import Type
+
 import httpx
 from quart import Blueprint, Response, render_template, session
 from quart.helpers import make_response, redirect, url_for
 from quart_schema import DataSource, validate_request
 
+from robida.blueprints.auth.providers.base import Provider
+from robida.blueprints.indieauth.provider import IndieAuthProvider
 from robida.blueprints.relmeauth.providers.asf import ASFProvider
 from robida.blueprints.relmeauth.providers.email import EmailProvider
+from robida.helpers import canonicalize_url
 
 from .models import LoginRequest
 
 blueprint = Blueprint("auth", __name__, url_prefix="/")
 
-providers = [
+providers: list[Type[Provider]] = [
     ASFProvider,
     EmailProvider,
+    IndieAuthProvider,
 ]
 
 
@@ -48,12 +54,11 @@ async def submit(data: LoginRequest) -> Response:
     This endpoint receives the `me` parameter, and tries to find a link in the page that
     has a `rel="me"` attribute supported by one of the providers.
     """
-    async with httpx.AsyncClient() as client:
-        response = await client.get(data.me)
-        response.raise_for_status()
+    me = canonicalize_url(data.me)
 
-    for provider in providers:
-        if provider.match(response):
-            return provider(data.me, response).login()
+    async with httpx.AsyncClient() as client:
+        for class_ in providers:
+            if provider := await class_.match(me, client):
+                return provider.login()
 
     return await make_response("No provider found", 400)

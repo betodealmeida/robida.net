@@ -15,19 +15,20 @@
             <nav>
                 <ul>
                     <li>
+                        🏡
                         <strong>
                             <a href="{{ url_for('homepage.index') }}">Home</a>
                         </strong>
                     </li>
                 </ul>
                 <ul>
-                    <li><a href="{{ url_for('feed.index') }}">Feed</a></li>
-                    <li><a href="{{ url_for('feed.entry', uuid='8bf10ece-be18-4b96-af91-04e5c2a931ad') }}">About</a></li>
+                    <li>📓 <a href="{{ url_for('feed.index') }}">Feed</a></li>
+                    <li>💁🏽 <a href="{{ url_for('feed.entry', uuid='8bf10ece-be18-4b96-af91-04e5c2a931ad') }}">About</a></li>
                     {% if session.me %}
                     <li><strong>{{ session.me }}</strong></li>
-                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    <li>🔑 <a href="{{ url_for('auth.logout') }}">Logout</a></li>
                     {% else %}
-                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li>🔑 <a href="{{ url_for('auth.login') }}">Login</a></li>
                     {% endif %}
                 </ul>
             </nav>

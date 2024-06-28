@@ -15,7 +15,9 @@
 <hr/>
 
 <form method="POST" action="/login">
-    <input type="text" name="me" placeholder="https://" required/>
-    <button type="submit">Go!</button>
+    <fieldset role="group">
+        <input name="me" type="url" placeholder="https://" autocomplete="url" required/>
+        <input type="submit" value="Go!" />
+    </fieldset>
 </form>
 {% endblock %}

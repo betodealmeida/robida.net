@@ -2,6 +2,9 @@
 Generic helper functions.
 """
 
+import base64
+import hashlib
+import urllib.parse
 from datetime import datetime
 from typing import Any
 
@@ -69,3 +72,61 @@ def rfc822_to_iso(rfc822: str) -> str:
     Convert an RFC 822 date to ISO 8601.
     """
     return datetime.strptime(rfc822, "%a, %d %b %Y %H:%M:%S %z").isoformat()
+
+
+def canonicalize_url(url: str) -> str:
+    """
+    Apply URL canonicalization.
+
+    https://indieauth.spec.indieweb.org/#url-canonicalization
+    """
+    parsed = urllib.parse.urlparse(url)
+
+    # Set a scheme if not present; note that when scheme is empty the whole URL is
+    # considered a path, so we need to adjust the `netloc` and `path` accordingly.
+    if not parsed.scheme:
+        if "/" in parsed.path:
+            netloc, path = parsed.path.split("/", 1)
+        else:
+            netloc, path = parsed.path, "/"
+
+        parsed = parsed._replace(
+            scheme="https",
+            netloc=netloc,
+            path=path,
+        )
+
+    # make sure domain is lowercase
+    parsed = parsed._replace(netloc=parsed.netloc.lower())
+
+    # make sure path is at least "/"
+    if not parsed.path:
+        parsed = parsed._replace(path="/")
+
+    return parsed.geturl()
+
+
+def compute_challenge(code_verifier: str, code_challenge_method: str) -> str:
+    """
+    Compute the challenge from the code verifier and method.
+    """
+    if code_challenge_method == "plain":
+        return code_verifier
+
+    if code_challenge_method == "S256":
+        return compute_s256_challenge(code_verifier)
+
+    raise ValueError("Invalid code challenge method")
+
+
+def compute_s256_challenge(code_verifier: str) -> str:
+    """
+    Compute the S256 challenge from the code verifier.
+
+    https://tools.ietf.org/html/rfc7636#section-4.2
+    """
+    digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+    encoded = base64.urlsafe_b64encode(digest)
+    code_challenge = encoded.rstrip(b"=").decode("utf-8")
+
+    return code_challenge

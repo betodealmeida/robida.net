@@ -2,6 +2,8 @@
 Base OAuth provider
 """
 
+from __future__ import annotations
+
 import httpx
 from quart import Blueprint, Response, current_app, session
 from quart.helpers import redirect, url_for
@@ -19,11 +21,12 @@ class Provider:
     login_endpoint: str
 
     @classmethod
-    def match(cls, response: httpx.Response) -> bool:  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
         """
-        Provider is present in the URL response.
+        Provider is represented in the URL response.
         """
-        return False
+        return None
 
     @classmethod
     def register(cls) -> None:
@@ -33,14 +36,14 @@ class Provider:
         if cls.blueprint.name not in current_app.blueprints:
             current_app.register_blueprint(cls.blueprint)
 
-    def __init__(self, me: str, response: httpx.Response) -> None:
+    def __init__(self, me: str, profile: str) -> None:
         self.me = me
-        self.response = response
+        self.profile = profile
 
         session.update(self.get_scope())
         self.register()
 
-    def get_scope(self) -> dict[str, str]:
+    def get_scope(self) -> dict[str, str | None]:
         """
         Store scope for verification.
         """

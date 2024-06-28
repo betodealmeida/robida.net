@@ -2,6 +2,7 @@
 Apache Software Foundation (ASF) OAuth provider
 """
 
+import json
 import urllib.parse
 from dataclasses import dataclass
 from uuid import uuid4
@@ -14,8 +15,9 @@ from quart_schema import validate_querystring
 
 from robida.blueprints.auth.providers.base import Provider
 
-
 blueprint = Blueprint("asf", __name__, url_prefix="/relmeauth/asf")
+
+PEOPLE_URL = "https://home.apache.org/public/public_ldap_people.json"
 
 
 @dataclass
@@ -57,6 +59,17 @@ def is_phonebook_url(href: str) -> bool:
     )
 
 
+def get_profile(html: str) -> str | None:
+    """
+    Get the profile URL from the response.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("a", rel="me", href=is_phonebook_url)
+    profile = element["href"] if element else None
+
+    return profile
+
+
 class ASFProvider(Provider):
     """
     Apache Software Foundation (ASF) OAuth provider
@@ -66,36 +79,69 @@ class ASFProvider(Provider):
 
     name = "Apache Software Foundation phonebook"
     description = (
-        'An <a href="https://oauth.apache.org/api.html#intro">OAuth provider for ASF '
-        'committers</a>. Requires a <code>rel="me"</code> link on your site pointing to a '
-        'specific <code>uid</code> in the ASF <a href="https://home.apache.org/'
-        'phonebook.html">phonebook</a>.'
+        'For <abbr title="Apache Software Foundation" data-tooltip="Apache Software '
+        'Foundation">ASF</abbr> committers. Requires a <code>rel="me"</code> link on '
+        'your site pointing to your entry in the <abbr title="Apache Software Foundation" '
+        'data-tooltip="Apache Software Foundation">ASF</abbr> '
+        '<a href="https://home.apache.org/phonebook.html">phonebook</a>.'
     )
 
     blueprint = blueprint
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    def match(cls, response: httpx.Response) -> bool:
+    # pylint: disable=too-many-return-statements
+    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
         """
         Match `rel="me"` links pointing to the ASF phonebook.
 
         https://home.apache.org/phonebook.html?uid=beto
         """
-        soup = BeautifulSoup(response.text, "html.parser")
-        return bool(soup.find("a", rel="me", href=is_phonebook_url))
+        try:
+            response = await client.get(me)
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            return None
 
-    def get_scope(self) -> dict[str, str]:
+        profile = get_profile(response.text)
+        if profile is None:
+            return None
+
+        parsed = urllib.parse.urlparse(profile)
+        uid = urllib.parse.parse_qs(parsed.query)["uid"][0]
+
+        # check that UID is valid and links back
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(PEOPLE_URL)
+                response.raise_for_status()
+            except httpx.HTTPStatusError:
+                return None
+
+        try:
+            payload = response.json()
+        except json.decoder.JSONDecodeError:
+            return None
+
+        try:
+            urls = payload["people"][uid]["urls"]
+        except KeyError:
+            return None
+
+        if me not in urls:
+            return None
+
+        return cls(me, profile)
+
+    def get_scope(self) -> dict[str, str | None]:
         """
         Store scope for verification.
         """
-        soup = BeautifulSoup(self.response.text, "html.parser")
-        profile = soup.find("a", rel="me", href=is_phonebook_url)["href"]
-        parsed = urllib.parse.urlparse(profile)
+        parsed = urllib.parse.urlparse(self.profile)
 
         return {
             "relmeauth.asf.me": self.me,
-            "relmeauth.asf.url": profile,
+            "relmeauth.asf.url": self.profile,
             "relmeauth.asf.uid": urllib.parse.parse_qs(parsed.query)["uid"][0],
             "relmeauth.asf.state": uuid4().hex,
         }

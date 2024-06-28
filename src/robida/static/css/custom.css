@@ -35,3 +35,7 @@ a[href^="http://localhost"]::after, a[href^="https://robida.net"]::after {
 a.copyright::after {
     display: none !important;
 }
+
+dt {
+    font-weight: bold;
+}

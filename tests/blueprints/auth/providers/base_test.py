@@ -2,6 +2,7 @@
 Tests for the base RelMeAuth provider.
 """
 
+import httpx
 from pytest_mock import MockerFixture
 from quart import Quart, session
 
@@ -13,7 +14,8 @@ async def test_base_provider(mocker: MockerFixture, current_app: Quart) -> None:
     Test the base provider.
     """
     # the base provider never matches
-    assert not Provider.match("https://me.example.com")
+    async with httpx.AsyncClient() as client:
+        assert not await Provider.match("https://me.example.com", client)
 
     async with current_app.test_request_context("/", method="GET"):
         Provider.blueprint = mocker.MagicMock()

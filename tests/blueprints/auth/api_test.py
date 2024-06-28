@@ -42,7 +42,7 @@ async def test_submit(client: testing.QuartClient, httpx_mock: HTTPXMock) -> Non
     Test the submit page.
     """
     httpx_mock.add_response(
-        url="https://me.example.com",
+        url="https://me.example.com/",
         html="""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,7 +69,7 @@ async def test_submit_no_provider(
     Test the submit page when no provider is found.
     """
     httpx_mock.add_response(
-        url="https://me.example.com",
+        url="https://me.example.com/",
         html="""<!DOCTYPE html>
 <html lang="en">
 <head>

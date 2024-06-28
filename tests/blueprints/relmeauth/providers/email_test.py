@@ -6,32 +6,36 @@ Tests for the email provider.
 
 import httpx
 from itsdangerous import SignatureExpired, BadSignature
+from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 from quart import Quart, session, testing
 
 from robida.blueprints.relmeauth.providers.email import EmailProvider, send_email
 
 
-async def test_email_provider(current_app: Quart) -> None:
+async def test_email_provider(httpx_mock: HTTPXMock, current_app: Quart) -> None:
     """
     Test the Email provider.
     """
-    valid_response = httpx.Response(
+    httpx_mock.add_response(
+        url="https://me.example.com",
         html='<a rel="me" href="mailto:me@example.com">me</a>',
         status_code=200,
     )
-    invalid_response = httpx.Response(
+    httpx_mock.add_response(
+        url="https://invalid.example.com",
         html='<a href="mailto:me@example.com">me</a>',
         status_code=200,
     )
 
-    assert EmailProvider.match(valid_response)
-    assert not EmailProvider.match(invalid_response)
-
     async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert await EmailProvider.match("https://me.example.com", client)
+            assert not await EmailProvider.match("https://invalid.example.com", client)
+
         provider = EmailProvider(
             "https://me.example.com",
-            valid_response,
+            "mailto:me@example.com",
         )
 
         response = provider.login()

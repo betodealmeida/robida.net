@@ -192,9 +192,6 @@ def get_webmention_hentry(
 
     This function tries to find a proper h-entry in the source, and falls back to a
     dummy entry if it can't find one.
-
-    TODO: enrich hentry, putting source on the `url` property, sanitizing HTML?
-        XXX Or we could sanitize HTML based on the author tag?
     """
     dummy_hentry = Microformats2(
         type=["h-entry"],
