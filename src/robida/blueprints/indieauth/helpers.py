@@ -28,9 +28,11 @@ class ClientInfo:
     Dataclass to store information about the IndieAuth client.
     """
 
-    name: str
     url: str
-    image: str | None
+    name: str
+    logo: str | None
+    summary: str | None
+    author: str | None
     redirect_uris: set[str]
 
 
@@ -42,19 +44,34 @@ async def get_client_info(client_id: str) -> ClientInfo:
         response = await client.get(client_id)
         html = response.text
 
-    app_info = {}
+    app_info: dict[str, list[Any]] = {
+        "name": [client_id],
+        "url": [""],
+        "logo": [None],
+        "summary": [None],
+        "author": [None],
+    }
     metadata = mf2py.parse(doc=html)
     for item in metadata["items"]:
         if "h-app" in item["type"] or "h-x-app" in item["type"]:
-            app_info = item["properties"]
+            app_info.update(item["properties"])
             break
 
-    name = app_info.get("name", [client_id])[0]
-    url = urllib.parse.urljoin(client_id, app_info.get("url", [""])[0])
-    image = None
-    if logo := app_info.get("logo"):
-        image = logo[0].get("value") if isinstance(image, dict) else logo[0]
-        image = urllib.parse.urljoin(client_id, image)
+    name = app_info["name"][0]
+    url = urllib.parse.urljoin(client_id, app_info["url"][0])
+
+    logo = None
+    if property_ := app_info["logo"][0]:
+        logo = property_.get("value") if isinstance(property_, dict) else property_
+        logo = urllib.parse.urljoin(client_id, logo)
+
+    summary = None
+    if property_ := app_info["summary"][0]:
+        summary = property_.get("value") if isinstance(property_, dict) else property_
+
+    author = None
+    if property_ := app_info["author"][0]:
+        author = property_.get("value") if isinstance(property_, dict) else property_
 
     # find redirect URIs
     redirect_uris = {
@@ -67,7 +84,14 @@ async def get_client_info(client_id: str) -> ClientInfo:
         for link in soup.find_all("link", rel="redirect_uri")
     )
 
-    return ClientInfo(name=name, url=url, image=image, redirect_uris=redirect_uris)
+    return ClientInfo(
+        url=url,
+        name=name,
+        logo=logo,
+        summary=summary,
+        author=author,
+        redirect_uris=redirect_uris,
+    )
 
 
 def redirect_match(url1: str, url2: str) -> bool:

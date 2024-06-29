@@ -15,13 +15,13 @@ My website.
 
 ### Blog
 
-- [X] MicroPub
+- [X] MicroPub server
 - [X] WebSub
 - [ ] Feed: h-feed, RSS/ATOM (with XSL), JSON
   - [X] note
   - [X] card
   - [X] article
-  - [ ] reply
+  - [X] reply
   - [ ] repost
   - [ ] like
   - [ ] bookmark
@@ -39,11 +39,11 @@ My website.
 - [ ] WebMentions
   - [X] Salmentions
   - [ ] Private webmentions
-- [ ] CRUD
-- [ ] Bookmarklets
 - [ ] Categories
-- [ ] ActivityPub
 - [ ] Syndication (FAWM, Archive.org, Bandcamp, IndieWeb News)
+- [ ] MicroPub client
+- [ ] Bookmarklets
+- [ ] ActivityPub
 - [ ] Payments
 
 ### Reader
@@ -80,7 +80,6 @@ https://indieweb.org/h-x-app#Properties
 - replies to places that don't receive webmentions?
 
 - move get_entry to robida.helpers
-    - remember to add h-app
 - on auth.html, ask for confirmation on giving refresh token and the expiration time of the access token
 
 /bookmarklet blueprint

@@ -34,9 +34,11 @@ async def test_authorization(
     mocker.patch(
         "robida.blueprints.indieauth.api.get_client_info",
         return_value=ClientInfo(
-            name="Example App",
             url="https://example.com/",
-            image="https://example.com/logo.png",
+            name="Example App",
+            logo="https://example.com/logo.png",
+            summary=None,
+            author=None,
             redirect_uris={
                 "https://example.com/redirect2",
                 "https://example.com/redirect",
@@ -163,9 +165,11 @@ async def test_authorization_with_id(
     mocker.patch(
         "robida.blueprints.indieauth.api.get_client_info",
         return_value=ClientInfo(
-            name="Example App",
             url="https://example.com/",
-            image="https://example.com/logo.png",
+            name="Example App",
+            logo="https://example.com/logo.png",
+            summary=None,
+            author=None,
             redirect_uris={
                 "https://example.com/redirect2",
                 "https://example.com/redirect",
@@ -217,9 +221,11 @@ async def test_authorization_without_me(
     mocker.patch(
         "robida.blueprints.indieauth.api.get_client_info",
         return_value=ClientInfo(
-            name="Example App",
             url="https://example.com/",
-            image="https://example.com/logo.png",
+            name="Example App",
+            logo="https://example.com/logo.png",
+            summary=None,
+            author=None,
             redirect_uris={
                 "https://example.com/redirect2",
                 "https://example.com/redirect",
@@ -322,9 +328,11 @@ async def test_authorization_invalid_redirect(
     mocker.patch(
         "robida.blueprints.indieauth.api.get_client_info",
         return_value=ClientInfo(
-            name="Example App",
             url="https://example.com/",
-            image="https://example.com/logo.png",
+            name="Example App",
+            logo="https://example.com/logo.png",
+            summary=None,
+            author=None,
             redirect_uris={
                 "https://example.com/redirect2",
                 "https://example.com/redirect",
@@ -757,7 +765,7 @@ INSERT INTO oauth_authorization_codes (
         "profile": {
             "email": "me@example.com",
             "name": "Beto Dealmeida",
-            "photo": "http://example.com/static/photo.jpg",
+            "photo": "http://example.com/static/img/photo.jpg",
             "url": "http://example.com/",
         },
         "refresh_token": "rr_c35ad4716c6c488b9ffc8854607192f0",
@@ -1252,7 +1260,7 @@ INSERT INTO oauth_tokens (
     assert await response.json == {
         "email": "me@example.com",
         "name": "Beto Dealmeida",
-        "photo": "http://example.com/static/photo.jpg",
+        "photo": "http://example.com/static/img/photo.jpg",
         "url": "http://example.com/",
     }
 

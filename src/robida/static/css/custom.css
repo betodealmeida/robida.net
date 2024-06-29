@@ -39,3 +39,13 @@ a.copyright::after {
 dt {
     font-weight: bold;
 }
+
+.h-card img {
+    border-radius: 1.0em;
+    margin-bottom: 1.0em;
+    width: 256px;
+}
+
+.u-logo {
+    display: none;
+}

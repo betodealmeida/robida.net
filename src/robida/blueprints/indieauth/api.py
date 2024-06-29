@@ -364,7 +364,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     parameters["profile"] = ProfileResponse(
         name=current_app.config["NAME"],
         url=url_for("homepage.index", _external=True),
-        photo=url_for("static", filename="photo.jpg", _external=True),
+        photo=url_for("static", filename="img/photo.jpg", _external=True),
     )
     if "email" in scopes:
         parameters["profile"].email = current_app.config["EMAIL"]
@@ -522,7 +522,7 @@ async def userinfo() -> ProfileResponse:
     response = ProfileResponse(
         name=current_app.config["NAME"],
         url=url_for("homepage.index", _external=True),
-        photo=url_for("static", filename="photo.jpg", _external=True),
+        photo=url_for("static", filename="img/photo.jpg", _external=True),
     )
 
     scopes = await get_scopes(g.access_token)
