@@ -80,7 +80,7 @@ async def authorization(query_args: AuthorizationRequest) -> Response:
     # redirect them to the login page.
     if "me" not in session:
         session["next"] = url_for("indieauth.authorization", **asdict(query_args))
-        return redirect(url_for("relmeauth.login"))
+        return redirect(url_for("auth.login"))
 
     if query_args.response_type not in RESPONSE_TYPES_SUPPORTED or (
         query_args.code_challenge_method not in CODE_CHALLENGE_METHODS_SUPPORTED
@@ -364,7 +364,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     parameters["profile"] = ProfileResponse(
         name=current_app.config["NAME"],
         url=url_for("homepage.index", _external=True),
-        photo=url_for("static", filename="photo.jpg", _external=True),
+        photo=url_for("static", filename="img/photo.jpg", _external=True),
     )
     if "email" in scopes:
         parameters["profile"].email = current_app.config["EMAIL"]
@@ -522,7 +522,7 @@ async def userinfo() -> ProfileResponse:
     response = ProfileResponse(
         name=current_app.config["NAME"],
         url=url_for("homepage.index", _external=True),
-        photo=url_for("static", filename="photo.jpg", _external=True),
+        photo=url_for("static", filename="img/photo.jpg", _external=True),
     )
 
     scopes = await get_scopes(g.access_token)

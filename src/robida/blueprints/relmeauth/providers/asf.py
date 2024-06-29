@@ -2,19 +2,24 @@
 Apache Software Foundation (ASF) OAuth provider
 """
 
+from __future__ import annotations
+
+import json
 import urllib.parse
 from dataclasses import dataclass
 from uuid import uuid4
 
 import httpx
+from bs4 import BeautifulSoup
 from quart import Blueprint, Response, session
 from quart.helpers import make_response, redirect, url_for
 from quart_schema import validate_querystring
 
-from .base import Provider
-
+from robida.blueprints.auth.providers.base import Provider
 
 blueprint = Blueprint("asf", __name__, url_prefix="/relmeauth/asf")
+
+PEOPLE_URL = "https://home.apache.org/public/public_ldap_people.json"
 
 
 @dataclass
@@ -44,6 +49,29 @@ class ProfileResponse:  # pylint: disable=too-many-instance-attributes
     state: str
 
 
+def is_phonebook_url(href: str) -> bool:
+    """
+    Check if the URL is the ASF phonebook.
+    """
+    parsed = urllib.parse.urlparse(href)
+    return (
+        parsed.netloc == "home.apache.org"
+        and parsed.path == "/phonebook.html"
+        and "uid" in urllib.parse.parse_qs(parsed.query)
+    )
+
+
+def get_profile(html: str) -> str | None:
+    """
+    Get the profile URL from the response.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("a", rel="me", href=is_phonebook_url)
+    profile = element["href"] if element else None
+
+    return profile
+
+
 class ASFProvider(Provider):
     """
     Apache Software Foundation (ASF) OAuth provider
@@ -51,25 +79,63 @@ class ASFProvider(Provider):
     https://oauth.apache.org/api.html
     """
 
+    name = "Apache Software Foundation phonebook"
+    description = (
+        'For <abbr title="Apache Software Foundation" data-tooltip="Apache Software '
+        'Foundation">ASF</abbr> committers. Requires a <code>rel="me"</code> link on '
+        'your site pointing to your entry in the <abbr title="Apache Software Foundation" '
+        'data-tooltip="Apache Software Foundation">ASF</abbr> '
+        '<a href="https://home.apache.org/phonebook.html">phonebook</a>.'
+    )
+
     blueprint = blueprint
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    def match(cls, url: str) -> bool:
+    # pylint: disable=too-many-return-statements
+    async def match(cls, me: str, client: httpx.AsyncClient) -> ASFProvider | None:
         """
         Match `rel="me"` links pointing to the ASF phonebook.
 
         https://home.apache.org/phonebook.html?uid=beto
         """
-        parsed = urllib.parse.urlparse(url)
+        try:
+            response = await client.get(me)
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            return None
 
-        return (
-            parsed.netloc == "home.apache.org"
-            and parsed.path == "/phonebook.html"
-            and "uid" in urllib.parse.parse_qs(parsed.query)
-        )
+        profile = get_profile(response.text)
+        if profile is None:
+            return None
 
-    def get_scope(self) -> dict[str, str]:
+        parsed = urllib.parse.urlparse(profile)
+        uid = urllib.parse.parse_qs(parsed.query)["uid"][0]
+
+        # check that UID is valid and links back
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(PEOPLE_URL)
+                response.raise_for_status()
+            except httpx.HTTPStatusError:
+                return None
+
+        try:
+            payload = response.json()
+        except json.decoder.JSONDecodeError:
+            return None
+
+        try:
+            urls = payload["people"][uid]["urls"]
+        except KeyError:
+            return None
+
+        if me not in urls:
+            return None
+
+        return cls(me, profile)
+
+    def get_scope(self) -> dict[str, str | None]:
         """
         Store scope for verification.
         """

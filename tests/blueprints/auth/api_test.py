@@ -28,11 +28,12 @@ async def test_logout(mocker: MockerFixture, client: testing.QuartClient) -> Non
     Not much here.
     """
     session = {"me": "https://me.example.com"}
-    mocker.patch("robida.blueprints.relmeauth.api.session", new=session)
+    mocker.patch("robida.blueprints.auth.api.session", new=session)
 
     response = await client.get("/logout")
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/"
     assert session == {}
 
 
@@ -41,7 +42,7 @@ async def test_submit(client: testing.QuartClient, httpx_mock: HTTPXMock) -> Non
     Test the submit page.
     """
     httpx_mock.add_response(
-        url="https://me.example.com",
+        url="https://me.example.com/",
         html="""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -68,7 +69,7 @@ async def test_submit_no_provider(
     Test the submit page when no provider is found.
     """
     httpx_mock.add_response(
-        url="https://me.example.com",
+        url="https://me.example.com/",
         html="""<!DOCTYPE html>
 <html lang="en">
 <head>

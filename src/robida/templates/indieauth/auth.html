@@ -3,8 +3,14 @@
 {% block content %}
 <h2>Authorization request</h2>
 
+{% if client_info.logo %}
+<img src="{{ client_info.logo }}" width="100" height="100"/>
+{% endif %}
 <p>
     <strong><a href="{{ client_info.url }}">{{ client_info.name }}</a></strong>
+    {% if client_info.summary %}
+    ({{ client_info.summary }})
+    {% endif %}
     is requesting access to your identity and the following scopes:
 </p>
 

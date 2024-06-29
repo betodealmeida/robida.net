@@ -745,7 +745,7 @@ async def test_build_jsonfeed_item(current_app: Quart) -> None:
                 JSONFeedAuthor(
                     name="Beto Dealmeida",
                     url="http://example.com/",
-                    avatar="http://example.com/static/photo.jpg",
+                    avatar="http://example.com/static/img/photo.jpg",
                 )
             ],
             tags=[],

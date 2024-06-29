@@ -4,23 +4,48 @@ Tests for the email provider.
 
 # pylint: disable=redefined-outer-name, invalid-name
 
+import httpx
 from itsdangerous import SignatureExpired, BadSignature
+from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 from quart import Quart, session, testing
 
 from robida.blueprints.relmeauth.providers.email import EmailProvider, send_email
 
 
+async def test_email_provider_match(httpx_mock: HTTPXMock, current_app: Quart) -> None:
+    """
+    Test the Email provider `match` method.
+    """
+    httpx_mock.add_response(
+        url="https://me.example.com/",
+        html='<a rel="me" href="mailto:me@example.com">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://invalid.example.com",
+        html='<a href="mailto:me@example.com">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://error.example.com",
+        status_code=400,
+    )
+
+    async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert await EmailProvider.match("https://me.example.com/", client)
+            assert not await EmailProvider.match("https://invalid.example.com", client)
+            assert not await EmailProvider.match("https://error.example.com", client)
+
+
 async def test_email_provider(current_app: Quart) -> None:
     """
     Test the Email provider.
     """
-    assert EmailProvider.match("mailto:me@example.com")
-    assert not EmailProvider.match("https://home.apache.org/phonebook.html?uid=me")
-
     async with current_app.test_request_context("/", method="GET"):
         provider = EmailProvider(
-            "https://me.example.com",
+            "https://me.example.com/",
             "mailto:me@example.com",
         )
 
@@ -28,7 +53,7 @@ async def test_email_provider(current_app: Quart) -> None:
         assert response.status_code == 302
         assert response.headers["Location"] == "/relmeauth/email/login"
 
-        assert session["relmeauth.email.me"] == "https://me.example.com"
+        assert session["relmeauth.email.me"] == "https://me.example.com/"
         assert session["relmeauth.email.address"] == "me@example.com"
 
     assert current_app.blueprints["email"] == provider.blueprint
@@ -78,12 +103,14 @@ async def test_email_provider_callback(
     async with current_app.app_context():
         EmailProvider.register()
 
+    session = {
+        "relmeauth.email.me": "https://me.example.com/",
+        "relmeauth.email.address": "me@example.com",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.email.session",
-        new={
-            "relmeauth.email.me": "https://me.example.com",
-            "relmeauth.email.address": "me@example.com",
-        },
+        new=session,
     )
     URLSafeTimedSerializer = mocker.patch(
         "robida.blueprints.relmeauth.providers.email.URLSafeTimedSerializer"
@@ -97,6 +124,7 @@ async def test_email_provider_callback(
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/"
+    assert session["me"] == "https://me.example.com/"
 
 
 async def test_email_provider_callback_next(
@@ -110,13 +138,15 @@ async def test_email_provider_callback_next(
     async with current_app.app_context():
         EmailProvider.register()
 
+    session = {
+        "relmeauth.email.me": "https://me.example.com/",
+        "relmeauth.email.address": "me@example.com",
+        "next": "/continue",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.email.session",
-        new={
-            "relmeauth.email.me": "https://me.example.com",
-            "relmeauth.email.address": "me@example.com",
-            "next": "/continue",
-        },
+        new=session,
     )
     URLSafeTimedSerializer = mocker.patch(
         "robida.blueprints.relmeauth.providers.email.URLSafeTimedSerializer"
@@ -130,6 +160,7 @@ async def test_email_provider_callback_next(
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/continue"
+    assert session["me"] == "https://me.example.com/"
 
 
 async def test_email_provider_callback_invalid_email(
@@ -143,12 +174,14 @@ async def test_email_provider_callback_invalid_email(
     async with current_app.app_context():
         EmailProvider.register()
 
+    session = {
+        "relmeauth.email.me": "https://me.example.com/",
+        "relmeauth.email.address": "me@example.com",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.email.session",
-        new={
-            "relmeauth.email.me": "https://me.example.com",
-            "relmeauth.email.address": "me@example.com",
-        },
+        new=session,
     )
     URLSafeTimedSerializer = mocker.patch(
         "robida.blueprints.relmeauth.providers.email.URLSafeTimedSerializer"
@@ -162,6 +195,7 @@ async def test_email_provider_callback_invalid_email(
 
     assert response.status_code == 400
     assert await response.get_data() == b"Invalid email"
+    assert "me" not in session
 
 
 async def test_email_provider_callback_expired_token(
@@ -175,12 +209,14 @@ async def test_email_provider_callback_expired_token(
     async with current_app.app_context():
         EmailProvider.register()
 
+    session = {
+        "relmeauth.email.me": "https://me.example.com/",
+        "relmeauth.email.address": "me@example.com",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.email.session",
-        new={
-            "relmeauth.email.me": "https://me.example.com",
-            "relmeauth.email.address": "me@example.com",
-        },
+        new=session,
     )
     URLSafeTimedSerializer = mocker.patch(
         "robida.blueprints.relmeauth.providers.email.URLSafeTimedSerializer"
@@ -194,6 +230,7 @@ async def test_email_provider_callback_expired_token(
 
     assert response.status_code == 400
     assert await response.data == b"Token expired"
+    assert "me" not in session
 
 
 async def test_email_provider_callback_invalid_token(
@@ -207,12 +244,13 @@ async def test_email_provider_callback_invalid_token(
     async with current_app.app_context():
         EmailProvider.register()
 
+    session = {
+        "relmeauth.email.me": "https://me.example.com/",
+        "relmeauth.email.address": "me@example.com",
+    }
     mocker.patch(
         "robida.blueprints.relmeauth.providers.email.session",
-        new={
-            "relmeauth.email.me": "https://me.example.com",
-            "relmeauth.email.address": "me@example.com",
-        },
+        new=session,
     )
     URLSafeTimedSerializer = mocker.patch(
         "robida.blueprints.relmeauth.providers.email.URLSafeTimedSerializer"
@@ -226,6 +264,7 @@ async def test_email_provider_callback_invalid_token(
 
     assert response.status_code == 400
     assert await response.data == b"Invalid token"
+    assert "me" not in session
 
 
 async def test_send_email(mocker: MockerFixture, current_app: Quart) -> None:

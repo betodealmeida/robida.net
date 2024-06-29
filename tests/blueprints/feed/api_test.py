@@ -79,7 +79,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             {
                 "name": "Beto Dealmeida",
                 "url": "http://example.com/",
-                "avatar": "http://example.com/static/photo.jpg",
+                "avatar": "http://example.com/static/img/photo.jpg",
             }
         ],
         "language": "en-US",
@@ -97,7 +97,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     {
                         "name": "Beto Dealmeida",
                         "url": "http://example.com/",
-                        "avatar": "http://example.com/static/photo.jpg",
+                        "avatar": "http://example.com/static/img/photo.jpg",
                     }
                 ],
             }

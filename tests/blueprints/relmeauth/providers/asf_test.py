@@ -2,13 +2,57 @@
 Tests for the ASF provider.
 """
 
+# pylint: disable=redefined-outer-name
+
 from uuid import UUID
 
+import httpx
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 from quart import Quart, session, testing
 
 from robida.blueprints.relmeauth.providers.asf import ASFProvider
+
+
+async def test_asf_provider_match(
+    httpx_mock: HTTPXMock,
+    current_app: Quart,
+) -> None:
+    """
+    Test the ASF provider `match` method.
+    """
+    httpx_mock.add_response(
+        url="https://me.example.com",
+        html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://invalid.example.com",
+        html='<a href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://error.example.com",
+        status_code=400,
+    )
+    httpx_mock.add_response(
+        url="https://home.apache.org/public/public_ldap_people.json",
+        json={
+            "people": {
+                "me": {
+                    "uid": "me",
+                    "urls": ["https://me.example.com"],
+                },
+            },
+        },
+        status_code=200,
+    )
+
+    async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert await ASFProvider.match("https://me.example.com", client)
+            assert not await ASFProvider.match("https://invalid.example.com", client)
+            assert not await ASFProvider.match("https://error.example.com", client)
 
 
 async def test_asf_provider(mocker: MockerFixture, current_app: Quart) -> None:
@@ -19,9 +63,6 @@ async def test_asf_provider(mocker: MockerFixture, current_app: Quart) -> None:
         "robida.blueprints.relmeauth.providers.asf.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
-
-    assert ASFProvider.match("https://home.apache.org/phonebook.html?uid=me")
-    assert not ASFProvider.match("https://me.example.com")
 
     async with current_app.test_request_context("/", method="GET"):
         provider = ASFProvider(
@@ -42,6 +83,97 @@ async def test_asf_provider(mocker: MockerFixture, current_app: Quart) -> None:
         assert session["relmeauth.asf.state"] == "92cdeabd827843ad871d0214dcb2d12e"
 
     assert current_app.blueprints["asf"] == provider.blueprint
+
+
+async def test_asf_provider_no_people(
+    httpx_mock: HTTPXMock,
+    current_app: Quart,
+) -> None:
+    """
+    Test the ASF provider when the people endpoint fails.
+    """
+    httpx_mock.add_response(
+        url="https://me.example.com",
+        html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://home.apache.org/public/public_ldap_people.json",
+        status_code=400,
+    )
+
+    async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert not await ASFProvider.match("https://me.example.com", client)
+
+
+async def test_asf_provider_not_json(
+    httpx_mock: HTTPXMock,
+    current_app: Quart,
+) -> None:
+    """
+    Test the ASF provider when the people endpoint is not JSON.
+    """
+    httpx_mock.add_response(
+        url="https://me.example.com",
+        html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://home.apache.org/public/public_ldap_people.json",
+        html="<html></html>",
+        status_code=200,
+    )
+
+    async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert not await ASFProvider.match("https://me.example.com", client)
+
+
+async def test_asf_provider_no_user(
+    httpx_mock: HTTPXMock,
+    current_app: Quart,
+) -> None:
+    """
+    Test the ASF provider when the people endpoint doesn't have the user.
+    """
+    httpx_mock.add_response(
+        url="https://me.example.com",
+        html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://home.apache.org/public/public_ldap_people.json",
+        json={"people": {}},
+        status_code=200,
+    )
+
+    async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert not await ASFProvider.match("https://me.example.com", client)
+
+
+async def test_asf_provider_no_url(
+    httpx_mock: HTTPXMock,
+    current_app: Quart,
+) -> None:
+    """
+    Test the ASF provider when the people endpoint doesn't have the URL.
+    """
+    httpx_mock.add_response(
+        url="https://me.example.com",
+        html='<a rel="me" href="https://home.apache.org/phonebook.html?uid=me">me</a>',
+        status_code=200,
+    )
+    httpx_mock.add_response(
+        url="https://home.apache.org/public/public_ldap_people.json",
+        json={"people": {"me": {"urls": []}}},
+        status_code=200,
+    )
+
+    async with current_app.test_request_context("/", method="GET"):
+        async with httpx.AsyncClient() as client:
+            assert not await ASFProvider.match("https://me.example.com", client)
 
 
 async def test_asf_provider_login(
@@ -86,14 +218,16 @@ async def test_asf_provider_callback(
     async with current_app.app_context():
         ASFProvider.register()
 
+    session = {
+        "relmeauth.asf.me": "https://me.example.com",
+        "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
+        "relmeauth.asf.uid": "me",
+        "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.asf.session",
-        new={
-            "relmeauth.asf.me": "https://me.example.com",
-            "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
-            "relmeauth.asf.uid": "me",
-            "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
-        },
+        new=session,
     )
 
     httpx_mock.add_response(
@@ -118,6 +252,7 @@ async def test_asf_provider_callback(
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/"
+    assert session["me"] == "https://me.example.com"
 
 
 async def test_asf_provider_callback_next(
@@ -132,15 +267,17 @@ async def test_asf_provider_callback_next(
     async with current_app.app_context():
         ASFProvider.register()
 
+    session = {
+        "relmeauth.asf.me": "https://me.example.com",
+        "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
+        "relmeauth.asf.uid": "me",
+        "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
+        "next": "/continue",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.asf.session",
-        new={
-            "relmeauth.asf.me": "https://me.example.com",
-            "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
-            "relmeauth.asf.uid": "me",
-            "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
-            "next": "/continue",
-        },
+        new=session,
     )
 
     httpx_mock.add_response(
@@ -165,6 +302,7 @@ async def test_asf_provider_callback_next(
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/continue"
+    assert session["me"] == "https://me.example.com"
 
 
 async def test_asf_provider_callback_uid_mismatch(
@@ -179,14 +317,16 @@ async def test_asf_provider_callback_uid_mismatch(
     async with current_app.app_context():
         ASFProvider.register()
 
+    session = {
+        "relmeauth.asf.me": "https://me.example.com",
+        "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
+        "relmeauth.asf.uid": "me",
+        "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.asf.session",
-        new={
-            "relmeauth.asf.me": "https://me.example.com",
-            "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
-            "relmeauth.asf.uid": "me",
-            "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
-        },
+        new=session,
     )
 
     httpx_mock.add_response(
@@ -211,6 +351,7 @@ async def test_asf_provider_callback_uid_mismatch(
 
     assert response.status_code == 401
     assert await response.data == b"Unauthorized"
+    assert "me" not in session
 
 
 async def test_asf_provider_callback_state_mismatch(
@@ -225,14 +366,16 @@ async def test_asf_provider_callback_state_mismatch(
     async with current_app.app_context():
         ASFProvider.register()
 
+    session = {
+        "relmeauth.asf.me": "https://me.example.com",
+        "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
+        "relmeauth.asf.uid": "me",
+        "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
+    }
+
     mocker.patch(
         "robida.blueprints.relmeauth.providers.asf.session",
-        new={
-            "relmeauth.asf.me": "https://me.example.com",
-            "relmeauth.asf.url": "https://home.apache.org/phonebook.html?uid=me",
-            "relmeauth.asf.uid": "me",
-            "relmeauth.asf.state": "92cdeabd827843ad871d0214dcb2d12e",
-        },
+        new=session,
     )
 
     httpx_mock.add_response(
@@ -257,3 +400,4 @@ async def test_asf_provider_callback_state_mismatch(
 
     assert response.status_code == 401
     assert await response.data == b"Unauthorized"
+    assert "me" not in session

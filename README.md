@@ -8,19 +8,20 @@ My website.
 
 - [X] IndieAuth
 - [X] RelMeAuth
-- [ ] Centralized login
+- [X] Centralized login
+- [X] IndieAuth provider
 - [ ] OpenStreetMap provider
 - [ ] Passkeys?
 
 ### Blog
 
-- [X] MicroPub
+- [X] MicroPub server
 - [X] WebSub
-- [/] Feed: h-feed, RSS/ATOM (with XSL), JSON
+- [ ] Feed: h-feed, RSS/ATOM (with XSL), JSON
   - [X] note
   - [X] card
   - [X] article
-  - [ ] reply
+  - [X] reply
   - [ ] repost
   - [ ] like
   - [ ] bookmark
@@ -32,16 +33,17 @@ My website.
   - [ ] checkin
   - [ ] trip
   - [ ] venue (h-card)
-  ------
   - [ ] song
 - [X] Search
 - [X] Single entry display
-- [/] WebMentions
-- [ ] CRUD
-- [ ] Bookmarklets
+- [ ] WebMentions
+  - [X] Salmentions
+  - [ ] Private webmentions
 - [ ] Categories
+- [ ] Syndication (FAWM, Archive.org, Bandcamp, IndieWeb News)
+- [ ] MicroPub client
+- [ ] Bookmarklets
 - [ ] ActivityPub
-- [ ] Syndication (FAWM?, Archive.org, Bandcamp?, indieweb news)
 - [ ] Payments
 
 ### Reader
@@ -65,25 +67,20 @@ My website.
 
 ### Notes
 
+https://indieweb.org/h-x-app#Properties
+- extract more info when app requests a token
+
 - render responses (https://indieweb.org/responses), and return in feed
     - use bleach.clean (better: https://nh3.readthedocs.io/en/latest/)
-    - do more work to populate a summary ,specially for websites without an h-entry
+    - do more work to populate a summary, specially for websites without an h-entry
 
 - private/draft
 
 - webmention moderation
 - replies to places that don't receive webmentions?
-- move p-note to env
-- private webmentions
 
 - move get_entry to robida.helpers
-- move relmeauth.api to auth.api
-    - logout should send to homepage
-    - add login/logout to header, showing logged-in name, picture
-    - add indiauth provider
-        - remember to add h-app
 - on auth.html, ask for confirmation on giving refresh token and the expiration time of the access token
-- index should be hcard
 
 /bookmarklet blueprint
 - Gives Bookmarkelt with token pre-filled if logged in

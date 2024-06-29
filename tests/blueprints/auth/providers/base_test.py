@@ -2,19 +2,26 @@
 Tests for the base RelMeAuth provider.
 """
 
+import httpx
 from pytest_mock import MockerFixture
 from quart import Quart, session
 
-from robida.blueprints.relmeauth.providers.base import Provider
+from robida.blueprints.auth.providers.base import Provider
+
+
+async def test_base_provider_match() -> None:
+    """
+    Test the base provider `match` method.
+    """
+    # the base provider never matches
+    async with httpx.AsyncClient() as client:
+        assert not await Provider.match("https://me.example.com", client)
 
 
 async def test_base_provider(mocker: MockerFixture, current_app: Quart) -> None:
     """
     Test the base provider.
     """
-    # the base provider never matches
-    assert not Provider.match("https://me.example.com")
-
     async with current_app.test_request_context("/", method="GET"):
         Provider.blueprint = mocker.MagicMock()
 

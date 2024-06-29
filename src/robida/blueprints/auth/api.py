@@ -4,20 +4,27 @@ RelMeAuth implementation.
 https://microformats.org/wiki/RelMeAuth
 """
 
+from typing import Type
+
+import httpx
 from quart import Blueprint, Response, render_template, session
-from quart.helpers import make_response
+from quart.helpers import make_response, redirect, url_for
 from quart_schema import DataSource, validate_request
 
-from .helpers import get_profiles
+from robida.blueprints.auth.providers.base import Provider
+from robida.blueprints.indieauth.provider import IndieAuthProvider
+from robida.blueprints.relmeauth.providers.asf import ASFProvider
+from robida.blueprints.relmeauth.providers.email import EmailProvider
+from robida.helpers import canonicalize_url
+
 from .models import LoginRequest
-from .providers.asf import ASFProvider
-from .providers.email import EmailProvider
 
-blueprint = Blueprint("relmeauth", __name__, url_prefix="/")
+blueprint = Blueprint("auth", __name__, url_prefix="/")
 
-providers = [
+providers: list[Type[Provider]] = [
     ASFProvider,
     EmailProvider,
+    IndieAuthProvider,
 ]
 
 
@@ -26,7 +33,7 @@ async def login() -> Response:
     """
     Show a login form.
     """
-    return await render_template("relmeauth/login.html")
+    return await render_template("auth/login.html", providers=providers)
 
 
 @blueprint.route("/logout", methods=["GET"])
@@ -35,7 +42,7 @@ async def logout() -> Response:
     Logout the user.
     """
     session.pop("me", None)
-    return await render_template("relmeauth/login.html")
+    return redirect(url_for("homepage.index"))
 
 
 @blueprint.route("/login", methods=["POST"])
@@ -47,11 +54,11 @@ async def submit(data: LoginRequest) -> Response:
     This endpoint receives the `me` parameter, and tries to find a link in the page that
     has a `rel="me"` attribute supported by one of the providers.
     """
-    profiles = await get_profiles(data.me)
+    me = canonicalize_url(data.me)
 
-    for provider in providers:
-        for profile in profiles:
-            if provider.match(profile):
-                return provider(data.me, profile).login()
+    async with httpx.AsyncClient() as client:
+        for class_ in providers:
+            if provider := await class_.match(me, client):
+                return provider.login()
 
     return await make_response("No provider found", 400)

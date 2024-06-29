@@ -2,6 +2,9 @@
 Base OAuth provider
 """
 
+from __future__ import annotations
+
+import httpx
 from quart import Blueprint, Response, current_app, session
 from quart.helpers import redirect, url_for
 
@@ -11,15 +14,19 @@ class Provider:
     Base class for OAuth providers.
     """
 
+    name: str
+    description: str
+
     blueprint: Blueprint
     login_endpoint: str
 
     @classmethod
-    def match(cls, url: str) -> bool:  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    async def match(cls, me: str, client: httpx.AsyncClient) -> Provider | None:
         """
-        Match `rel="me"` links pointing to the provider.
+        Provider is represented in the URL response.
         """
-        return False
+        return None
 
     @classmethod
     def register(cls) -> None:
@@ -36,7 +43,7 @@ class Provider:
         session.update(self.get_scope())
         self.register()
 
-    def get_scope(self) -> dict[str, str]:
+    def get_scope(self) -> dict[str, str | None]:
         """
         Store scope for verification.
         """
@@ -44,6 +51,6 @@ class Provider:
 
     def login(self) -> Response:
         """
-        Redirect to ASF for authentication.
+        Redirect for authentication.
         """
         return redirect(url_for(self.login_endpoint))

@@ -271,7 +271,7 @@ def build_jsonfeed_item(entry: Entry) -> JSONFeedItem:
             JSONFeedAuthor(
                 name=current_app.config["NAME"],
                 url=url_for("homepage.index", _external=True),
-                avatar=url_for("static", filename="photo.jpg", _external=True),
+                avatar=url_for("static", filename="img/photo.jpg", _external=True),
             )
         ],
     )
@@ -316,7 +316,7 @@ def build_jsonfeed(entries: list[Entry], next_url: str | None) -> JSONFeed:
             JSONFeedAuthor(
                 name=current_app.config["NAME"],
                 url=url_for("homepage.index", _external=True),
-                avatar=url_for("static", filename="photo.jpg", _external=True),
+                avatar=url_for("static", filename="img/photo.jpg", _external=True),
             ),
         ],
         language=current_app.config["LANGUAGE"],
@@ -350,7 +350,7 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
                         "name": [current_app.config["NAME"]],
                         "url": [url_for("homepage.index", _external=True)],
                         "photo": [
-                            url_for("static", filename="photo.jpg", _external=True)
+                            url_for("static", filename="img/photo.jpg", _external=True)
                         ],
                     },
                 }

@@ -2,18 +2,22 @@
 Email provider.
 """
 
+from __future__ import annotations
+
+import re
 import urllib.parse
 from dataclasses import dataclass
 from email.message import EmailMessage
 
 import aiosmtplib
+import httpx
+from bs4 import BeautifulSoup
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from quart import Blueprint, Response, current_app, render_template, session
 from quart.helpers import make_response, redirect, url_for
 from quart_schema import validate_querystring
 
-from .base import Provider
-
+from robida.blueprints.auth.providers.base import Provider
 
 blueprint = Blueprint("email", __name__, url_prefix="/relmeauth/email")
 
@@ -37,6 +41,17 @@ async def send_email(email: str, subject: str, body: str) -> None:
     )
 
 
+def get_profile(html: str) -> str | None:
+    """
+    Get email from profile.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("a", rel="me", href=re.compile("^mailto:"))
+    profile = element["href"] if element else None
+
+    return profile
+
+
 @dataclass
 class TokenRequest:
     """
@@ -51,17 +66,33 @@ class EmailProvider(Provider):
     Email-based authentication.
     """
 
+    name = "Email"
+    description = (
+        'Login with your email. Requires a <code>rel="me"</code> link on your site '
+        "pointing to your email address."
+    )
+
     blueprint = blueprint
     login_endpoint = f"{blueprint.name}.login"
 
     @classmethod
-    def match(cls, url: str) -> bool:
+    async def match(cls, me: str, client: httpx.AsyncClient) -> EmailProvider | None:
         """
         Match emails.
         """
-        return url.startswith("mailto:")
+        try:
+            response = await client.get(me)
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            return None
 
-    def get_scope(self) -> dict[str, str]:
+        profile = get_profile(response.text)
+        if profile is None:
+            return None
+
+        return cls(me, profile)
+
+    def get_scope(self) -> dict[str, str | None]:
         return {
             "relmeauth.email.me": self.me,
             "relmeauth.email.address": urllib.parse.urlparse(self.profile).path,
