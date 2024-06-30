@@ -480,6 +480,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
     )
 
     html = await response.data
+    print(mf2py.parse(html))
     assert mf2py.parse(html) == {
         "items": [
             {
@@ -491,27 +492,21 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
                         {
                             "value": (
                                 "This blog runs a custom-built Python web framework "
-                                "called  Robida  , built for the  IndieWeb  ."
+                                "called Robida, built for the IndieWeb."
                             ),
                             "lang": "en",
                             "html": """<p>
-                        This blog runs a custom-built Python web framework called
-                        <a href="https://github.com/betodealmeida/robida.net/">
-                            Robida
-                        </a>
-                        , built for the
-                        <a href="https://indieweb.org/">
-                            IndieWeb
-                        </a>
-                        .
-                    </p>""",
+        This blog runs a custom-built Python web framework called
+        <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
+        <a href="https://indieweb.org/">IndieWeb</a>.
+    </p>""",
                         }
                     ],
-                    "category": ["blog", "python"],
                     "url": [
                         "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
                     ],
                     "published": ["2024-01-01T00:00:00+0000"],
+                    "category": ["blog", "python"],
                 },
                 "children": [
                     {
@@ -533,9 +528,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             "token_endpoint": ["/token"],
             "hub": ["/websub"],
             "alternate": ["/feed.json", "/feed.rss", "/feed.xml", "/feed.html"],
-            "stylesheet": [
-                "/static/css/main.css",
-            ],
+            "stylesheet": ["/static/css/main.css"],
         },
         "rel-urls": {
             "/micropub": {"text": "", "rels": ["micropub"]},

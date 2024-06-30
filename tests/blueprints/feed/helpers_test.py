@@ -834,25 +834,27 @@ async def test_render_microformat(httpx_mock: HTTPXMock, current_app: Quart) -> 
             }
         )
 
+    space = " "
     assert (
         rendered
-        == """<article class="h-entry">
+        == f"""<article class="h-entry">
     <p class="p-content e-content">
         I ate a cheese sandwich.
-    </p>
+</p>
     <footer>
         <p>
-            <span title="A note (h-entry)">
-                📔
-            </span>
-            Published by
-            <a class="h-card" href="https://tantek.com/">
-                Tantek Çelik
-            </a>
+            <span title="A note (h-entry)">📔</span>
+            Published by                 <a class="h-card" href="https://tantek.com/">
+            Tantek Çelik
+        </a>
+
+
             @
             <time class="dt-published" datetime="2013-03-07">
-                Thu, 07 Mar 2013 00:00:00
-            </time>
+    Thu, 07 Mar 2013 00:00:00{space}
+</time>
+
+
         </p>
     </footer>
 </article>

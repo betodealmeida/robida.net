@@ -39,6 +39,7 @@ My website.
 - [X] Single entry display
 - [ ] WebMentions
   - [X] Salmentions
+  - [ ] Manual webmentions
   - [ ] Private webmentions
 - [X] SCSS
 - [X] Categories
@@ -70,6 +71,9 @@ My website.
 - [ ] Titan?
 
 ### Notes
+
+- robots.txt
+- about now contact pay tip
 
 https://indieweb.org/h-x-app#Properties
 - extract more info when app requests a token
