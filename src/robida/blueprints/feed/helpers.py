@@ -143,7 +143,11 @@ def reformat_html(html: str) -> str:
     Reformat HTML so it looks nice.
     """
     formatter = HTMLFormatter(indent=4)
-    html = BeautifulSoup(html, "html.parser").prettify(formatter=formatter)
+    html = BeautifulSoup(
+        html,
+        "html.parser",
+        preserve_whitespace_tags=["p"],
+    ).prettify(formatter=formatter)
 
     return html
 
