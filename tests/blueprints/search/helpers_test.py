@@ -16,7 +16,7 @@ from robida.models import Entry, Microformats2
 @freeze_time("2024-01-01 00:00:00")
 async def test_search(current_app: Quart) -> None:
     """
-    Test the search endpoint.
+    Test the search backend.
     """
     await load_entries(current_app)
 
@@ -35,6 +35,7 @@ async def test_search(current_app: Quart) -> None:
                         "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
                     ],
                     "content": ["Hello, world!"],
+                    "category": ["note"],
                     "published": ["2024-01-01T00:00:00+00:00"],
                     "author": [
                         {
@@ -78,6 +79,7 @@ async def test_search_invalid_query(current_app: Quart) -> None:
                         "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
                     ],
                     "content": ["Hello, world!"],
+                    "category": ["note"],
                     "published": ["2024-01-01T00:00:00+00:00"],
                     "author": [
                         {

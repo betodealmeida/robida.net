@@ -1,5 +1,5 @@
 """
-Tests for the search API.
+Tests for the categories API.
 """
 
 import mf2py
@@ -10,12 +10,12 @@ from robida.db import load_entries
 
 
 @freeze_time("2024-01-01 00:00:00")
-async def test_search(client: testing.QuartClient, current_app: Quart) -> None:
+async def test_category(client: testing.QuartClient, current_app: Quart) -> None:
     """
-    Test the search endpoint.
+    Test the category endpoint.
     """
     await load_entries(current_app)
-    response = await client.get("/search", query_string={"q": "python"})
+    response = await client.get("/category/python")
 
     assert response.status_code == 200
     assert (
@@ -120,16 +120,16 @@ async def test_search(client: testing.QuartClient, current_app: Quart) -> None:
 
 
 @freeze_time("2024-01-01 00:00:00")
-async def test_search_conditional_get(
+async def test_category_conditional_get(
     client: testing.QuartClient,
     current_app: Quart,
 ) -> None:
     """
-    Test conditional GETs in the search endpoint.
+    Test conditional GETs in the category endpoint.
     """
     await load_entries(current_app)
     response = await client.get(
-        "/search?q=python",
+        "/category/python",
         headers={
             "If-None-Match": "d53e21b298dbbf7ec4dfe270be5df53ac793d8db9a927fa0e042ba032e803718"
         },

@@ -1454,6 +1454,7 @@ async def test_send_salmention(mocker: MockerFixture, current_app: Quart) -> Non
             properties={
                 "url": ["http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"],
                 "content": ["Hello, world!"],
+                "category": ["note"],
                 "published": ["2024-01-01T00:00:00+00:00"],
                 "author": [
                     {
@@ -1494,6 +1495,7 @@ async def test_send_salmention(mocker: MockerFixture, current_app: Quart) -> Non
                                 ],
                                 "in-reply-to": ["http://alice.example.com/post/1"],
                                 "content": ["Thank you!"],
+                                "category": ["note"],
                                 "published": ["2024-01-01T12:00:00+00:00"],
                                 "author": [
                                     {

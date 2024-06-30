@@ -476,7 +476,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "8b2f43e7600c9531bd2416987d717c9e0704dc90afedaca1d40f04674f727751"
+        == "d53e21b298dbbf7ec4dfe270be5df53ac793d8db9a927fa0e042ba032e803718"
     )
 
     html = await response.data
@@ -507,6 +507,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
                     </p>""",
                         }
                     ],
+                    "category": ["blog", "python"],
                     "url": [
                         "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
                     ],
@@ -533,8 +534,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             "hub": ["/websub"],
             "alternate": ["/feed.json", "/feed.rss", "/feed.xml", "/feed.html"],
             "stylesheet": [
-                "/static/css/pico.fluid.classless.min.css",
-                "/static/css/custom.css",
+                "/static/css/main.css",
             ],
         },
         "rel-urls": {
@@ -550,11 +550,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             "/feed.rss": {"text": "", "rels": ["alternate"]},
             "/feed.xml": {"text": "", "rels": ["alternate"]},
             "/feed.html": {"text": "", "rels": ["alternate"]},
-            "/static/css/pico.fluid.classless.min.css": {
-                "text": "",
-                "rels": ["stylesheet"],
-            },
-            "/static/css/custom.css": {"text": "", "rels": ["stylesheet"]},
+            "/static/css/main.css": {"text": "", "rels": ["stylesheet"]},
         },
         "debug": {
             "description": "mf2py - microformats2 parser for python",
@@ -602,7 +598,7 @@ async def test_entry_not_modified(
     response = await client.get(
         "/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad",
         headers={
-            "If-None-Match": "8b2f43e7600c9531bd2416987d717c9e0704dc90afedaca1d40f04674f727751"
+            "If-None-Match": "d53e21b298dbbf7ec4dfe270be5df53ac793d8db9a927fa0e042ba032e803718"
         },
     )
 

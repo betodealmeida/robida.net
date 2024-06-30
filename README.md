@@ -10,6 +10,7 @@ My website.
 - [X] RelMeAuth
 - [X] Centralized login
 - [X] IndieAuth provider
+- [ ] Firefox storage
 - [ ] OpenStreetMap provider
 - [ ] Passkeys?
 
@@ -39,10 +40,13 @@ My website.
 - [ ] WebMentions
   - [X] Salmentions
   - [ ] Private webmentions
-- [ ] Categories
+- [X] SCSS
+- [X] Categories
+- [ ] CRUD
+- [ ] Bookmarklets
+- [ ] PWA
 - [ ] Syndication (FAWM, Archive.org, Bandcamp, IndieWeb News)
 - [ ] MicroPub client
-- [ ] Bookmarklets
 - [ ] ActivityPub
 - [ ] Payments
 

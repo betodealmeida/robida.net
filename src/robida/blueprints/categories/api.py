@@ -1,5 +1,5 @@
 """
-Search API.
+Category API.
 """
 
 from quart import Blueprint, Response, current_app, render_template
@@ -12,20 +12,20 @@ from robida.blueprints.feed.helpers import (
     reformat_html,
 )
 
-from .helpers import search_entries
-from .models import SearchRequest
+from .helpers import list_entries
+from .models import CategoryRequest
 
-blueprint = Blueprint("search", __name__, url_prefix="/search")
+blueprint = Blueprint("category", __name__, url_prefix="/category")
 
 
-@blueprint.route("", methods=["GET"])
-@validate_querystring(SearchRequest)
-async def index(query_args: SearchRequest) -> Response:
+@blueprint.route("/<category>", methods=["GET"])
+@validate_querystring(CategoryRequest)
+async def index(category: str, query_args: CategoryRequest) -> Response:
     """
-    Search for items.
+    Category for items.
     """
-    entries = await search_entries(
-        query_args.q,
+    entries = await list_entries(
+        category,
         page=query_args.page - 1,
         page_size=query_args.page_size or int(current_app.config["PAGE_SIZE"]),
     )
@@ -34,7 +34,14 @@ async def index(query_args: SearchRequest) -> Response:
     if response.status_code == 304:
         return response
 
-    hfeed = hfeed_from_entries(entries, url_for("search.index", _external=True))
+    hfeed = hfeed_from_entries(
+        entries,
+        url_for(
+            "category.index",
+            category=category,
+            _external=True,
+        ),
+    )
     html = await render_template("feed/index.html", hfeed=hfeed)
     response.set_data(reformat_html(html))
 

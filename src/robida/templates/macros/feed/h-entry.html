@@ -1,5 +1,7 @@
 {% import 'macros/feed/article.html' as article_macros %}
 {% import 'macros/feed/note.html' as note_macros %}
+{% import 'macros/feed/author.html' as author_macros %}
+{% import 'macros/feed/published.html' as published_macros %}
 
 {# see https://indieweb.org/post-type-discovery #}
 {% macro h_entry(data) %}
@@ -9,6 +11,35 @@
     {% else %}
         {{ note_macros.note(data) }}
     {% endif %}
+
+    <footer>
+        <p>
+            {% if data.properties.author %}
+            {{ get_type_emoji(data) | safe }}
+            Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
+            {% endif %}
+            @
+            {% if data.properties.url %}
+            <a href="{{ data.properties.url[0] }}" class="u-url">
+            {{ published_macros.published(data.properties.published[0]) }}
+            ⚓
+            </a>
+            {% else %}
+            {{ published_macros.published(data.properties.published[0]) }}
+            {% endif %}
+
+            {% if data.properties.category %}
+            {% for category in data.properties.category %}
+                <a
+                    href="{{ url_for('category.index', category=category) }}"
+                    class="p-category"
+                >
+                    <mark>{{ category }}</mark>
+                </a>
+            {% endfor %}
+            {% endif %}
+        </p>
+    </footer>
 
     {% for child in data.children %}
         {{ h_entry(child) }}

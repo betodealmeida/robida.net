@@ -46,6 +46,7 @@ async def test_load_entries(current_app: Quart) -> None:
                                 },
                             }
                         ],
+                        "category": ["note"],
                     },
                 },
                 separators=(",", ":"),
@@ -77,6 +78,7 @@ async def test_load_entries(current_app: Quart) -> None:
                                 },
                             }
                         ],
+                        "category": ["note"],
                     },
                 },
                 separators=(",", ":"),
@@ -121,6 +123,7 @@ async def test_load_entries(current_app: Quart) -> None:
                                 },
                             }
                         ],
+                        "category": ["blog", "python"],
                     },
                 },
                 separators=(",", ":"),
@@ -185,6 +188,7 @@ async def test_load_entries(current_app: Quart) -> None:
                                 },
                             }
                         ],
+                        "category": ["note"],
                     },
                 },
                 separators=(",", ":"),
