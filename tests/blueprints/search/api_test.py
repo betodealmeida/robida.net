@@ -2,6 +2,8 @@
 Tests for the search API.
 """
 
+# pylint: disable=line-too-long
+
 import mf2py
 from freezegun import freeze_time
 from quart import Quart, testing
@@ -20,7 +22,7 @@ async def test_search(client: testing.QuartClient, current_app: Quart) -> None:
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "d53e21b298dbbf7ec4dfe270be5df53ac793d8db9a927fa0e042ba032e803718"
+        == "e4f00d1a3dc8c3ed4289ba94cbdc9b3143b55fc7352002b2a98baa7569a67532"
     )
 
     html = await response.data
@@ -39,21 +41,21 @@ async def test_search(client: testing.QuartClient, current_app: Quart) -> None:
                                 {
                                     "value": (
                                         "This blog runs a custom-built Python web "
-                                        "framework called Robida, built for the IndieWeb."
+                                        "framework called Robida, built for the "
+                                        "IndieWeb. ⋯"
                                     ),
                                     "lang": "en",
-                                    "html": """<p>
-        This blog runs a custom-built Python web framework called
-        <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
-        <a href="https://indieweb.org/">IndieWeb</a>.
-    </p>""",
-                                }
+                                    "html": """This blog runs a custom-built Python web framework called
+    Robida, built for the
+    IndieWeb.
+⋯""",
+                                },
                             ],
                             "url": [
                                 "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
                             ],
                             "published": ["2024-01-01T00:00:00+0000"],
-                            "category": ["blog", "python"],
+                            "category": ["about", "blog", "python"],
                         },
                         "children": [
                             {
@@ -122,7 +124,7 @@ async def test_search_conditional_get(
     response = await client.get(
         "/search?q=python",
         headers={
-            "If-None-Match": "d53e21b298dbbf7ec4dfe270be5df53ac793d8db9a927fa0e042ba032e803718"
+            "If-None-Match": "e4f00d1a3dc8c3ed4289ba94cbdc9b3143b55fc7352002b2a98baa7569a67532"
         },
     )
 

@@ -1,7 +1,7 @@
 {% import 'macros/feed/author.html' as author_macros %}
 {% import 'macros/feed/published.html' as published_macros %}
 
-{% macro article(data) %}
+{% macro article(data, compact=False) %}
 <header>
     <hgroup>
     {% if data.properties.name %}
@@ -15,12 +15,17 @@
 </header>
 
 {% if data.properties.content %}
+    {% if data.properties.content[0] is mapping %}
+        {% set content = data.properties.content[0].html %}
+    {% else %}
+        {% set content = data.properties.content[0] %}
+    {% endif %}
+    {% if compact %}
+        {% set content = summarize(content) %}
+    {% endif %}
+
     <div class="e-content">
-        {% if data.properties.content[0] is mapping %}
-            {{ data.properties.content[0].html | safe}}
-        {% else %}
-            {{ data.properties.content[0] }}
-        {% endif %}
+        {{ content | safe }}
     </div>
 {% endif %}
 {% endmacro %}

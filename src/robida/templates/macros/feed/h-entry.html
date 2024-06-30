@@ -4,12 +4,12 @@
 {% import 'macros/feed/published.html' as published_macros %}
 
 {# see https://indieweb.org/post-type-discovery #}
-{% macro h_entry(data) %}
+{% macro h_entry(data, compact=False) %}
 <article class="h-entry">
     {% if data.properties.name %}
-        {{ article_macros.article(data) }}
+        {{ article_macros.article(data, compact) }}
     {% else %}
-        {{ note_macros.note(data) }}
+        {{ note_macros.note(data, compact) }}
     {% endif %}
 
     <footer>
@@ -42,7 +42,7 @@
     </footer>
 
     {% for child in data.children %}
-        {{ h_entry(child) }}
+        {{ h_entry(child, compact) }}
     {% endfor %}
 </article>
 {% endmacro %}

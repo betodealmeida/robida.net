@@ -10,6 +10,7 @@ My website.
 - [X] RelMeAuth
 - [X] Centralized login
 - [X] IndieAuth provider
+- [X] Robots.txt
 - [ ] Firefox storage
 - [ ] OpenStreetMap provider
 - [ ] Passkeys?
@@ -43,6 +44,10 @@ My website.
   - [ ] Private webmentions
 - [X] SCSS
 - [X] Categories
+- [X] Pages
+  - [X] About
+  - [X] Contact
+  - [X] Now
 - [ ] CRUD
 - [ ] Bookmarklets
 - [ ] PWA
@@ -73,7 +78,6 @@ My website.
 ### Notes
 
 - robots.txt
-- about now contact pay tip
 
 https://indieweb.org/h-x-app#Properties
 - extract more info when app requests a token

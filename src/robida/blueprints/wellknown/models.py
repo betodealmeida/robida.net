@@ -2,7 +2,7 @@
 Models for well-known responses.
 """
 
-from typing_extensions import Annotated
+from typing import Annotated
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, UrlConstraints
 from pydantic.functional_validators import AfterValidator

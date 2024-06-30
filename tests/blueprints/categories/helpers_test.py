@@ -37,14 +37,15 @@ async def test_categories(current_app: Quart) -> None:
                     ],
                     "content": [
                         {
-                            "value": """This blog runs a custom-built Python web framework called
-        Robida, built for the
-        IndieWeb.""",
+                            "value": (
+                                "This blog runs a custom-built Python web framework "
+                                "called\n    Robida, built for the\n    IndieWeb."
+                            ),
                             "html": """<p>
-        This blog runs a custom-built Python web framework called
-        <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
-        <a href="https://indieweb.org/">IndieWeb</a>.
-    </p>""",
+    This blog runs a custom-built Python web framework called
+    <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
+    <a href="https://indieweb.org/">IndieWeb</a>.
+</p>""",
                         }
                     ],
                     "summary": ["About this blog."],
@@ -58,7 +59,7 @@ async def test_categories(current_app: Quart) -> None:
                             },
                         }
                     ],
-                    "category": ["blog", "python"],
+                    "category": ["about", "blog", "python"],
                 },
                 children=[],
             ),
@@ -66,5 +67,5 @@ async def test_categories(current_app: Quart) -> None:
             deleted=False,
             created_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
             last_modified_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
-        ),
+        )
     ]

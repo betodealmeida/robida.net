@@ -95,6 +95,7 @@ async def html_index(query_args: FeedRequest) -> Response:
         title=f'h-feed for {current_app.config["SITE_NAME"]}',
         next_url=next_url,
         previous_url=previous_url,
+        compact=True,
     )
     response.set_data(reformat_html(html))
 

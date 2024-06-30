@@ -14,6 +14,8 @@ from bs4 import BeautifulSoup
 
 from robida.models import Microformats2
 
+SUMMARY_LENGTH = 255
+
 
 def extract_text_from_html(html: str) -> str:
     """
@@ -130,3 +132,12 @@ def compute_s256_challenge(code_verifier: str) -> str:
     code_challenge = encoded.rstrip(b"=").decode("utf-8")
 
     return code_challenge
+
+
+def summarize(text: str) -> str:
+    """
+    Summarize text, making it shorter.
+
+    This is used when showing entries in the feed/search/cateegory pages.
+    """
+    return extract_text_from_html(text)[:SUMMARY_LENGTH] + "⋯"

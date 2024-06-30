@@ -110,11 +110,11 @@ async def load_entries(app: Quart) -> None:
         )
 
         html = """
-    <p>
-        This blog runs a custom-built Python web framework called
-        <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
-        <a href="https://indieweb.org/">IndieWeb</a>.
-    </p>
+<p>
+    This blog runs a custom-built Python web framework called
+    <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
+    <a href="https://indieweb.org/">IndieWeb</a>.
+</p>
         """
         article = Entry(
             uuid=UUID("8bf10ece-be18-4b96-af91-04e5c2a931ad"),
@@ -152,7 +152,7 @@ async def load_entries(app: Quart) -> None:
                             },
                         }
                     ],
-                    "category": ["blog", "python"],
+                    "category": ["about", "blog", "python"],
                 },
             ),
         )

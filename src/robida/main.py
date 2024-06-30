@@ -17,13 +17,14 @@ from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
 from robida.blueprints.media import api as media
 from robida.blueprints.micropub import api as micropub
+from robida.blueprints.robots import api as robots
 from robida.blueprints.search import api as search
 from robida.blueprints.webmention import api as webmention
 from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
 from robida.constants import links
 from robida.db import init_db, load_entries
-from robida.helpers import fetch_hcard, get_type_emoji, iso_to_rfc822
+from robida.helpers import fetch_hcard, get_type_emoji, iso_to_rfc822, summarize
 
 quart_schema = QuartSchema()
 
@@ -53,6 +54,7 @@ def create_app(
     app.register_blueprint(indieauth.blueprint)
     app.register_blueprint(media.blueprint)
     app.register_blueprint(micropub.blueprint)
+    app.register_blueprint(robots.blueprint)
     app.register_blueprint(search.blueprint)
     app.register_blueprint(webmention.blueprint)
     app.register_blueprint(websub.blueprint)
@@ -66,6 +68,7 @@ def create_app(
             "fetch_hcard": fetch_hcard,
             "iso_to_rfc822": iso_to_rfc822,
             "get_type_emoji": get_type_emoji,
+            "summarize": summarize,
         }
     )
 

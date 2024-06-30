@@ -1,11 +1,10 @@
 {% import 'macros/feed/author.html' as author_macros %}
 {% import 'macros/feed/published.html' as published_macros %}
 
-{% macro note(data) %}
+{% macro note(data, compact=False) %}
 <p class="p-content e-content">
     {% if data.properties.content[0] is mapping %}
-        {# ignore HTML? #}
-        {{ data.properties.content[0].value }}
+        {{ data.properties.content[0].html | safe }}
     {% else %}
         {{ data.properties.content[0] }}
     {% endif %}
