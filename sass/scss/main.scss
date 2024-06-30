@@ -1,0 +1,7 @@
+@use "pico" with (
+  $enable-semantic-container: true,
+  $enable-classes: false,
+  $theme-color: "indigo"
+);
+
+@use "custom";

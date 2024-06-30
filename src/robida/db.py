@@ -69,6 +69,7 @@ async def load_entries(app: Quart) -> None:
                             },
                         }
                     ],
+                    "category": ["note"],
                 },
             ),
         )
@@ -102,6 +103,7 @@ async def load_entries(app: Quart) -> None:
                             },
                         }
                     ],
+                    "category": ["note"],
                 },
             ),
             deleted=True,
@@ -150,6 +152,7 @@ async def load_entries(app: Quart) -> None:
                             },
                         }
                     ],
+                    "category": ["blog", "python"],
                 },
             ),
         )
@@ -214,6 +217,7 @@ async def load_entries(app: Quart) -> None:
                             },
                         }
                     ],
+                    "category": ["note"],
                 },
             ),
         )

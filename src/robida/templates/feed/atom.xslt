@@ -15,8 +15,7 @@
                 {% for link in links %}
                 <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint, _external=True) }}"/>
                 {% endfor %}
-                <link rel="stylesheet" href="{{ url_for('static', filename='css/pico.fluid.classless.min.css') }}"/>
-                <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}"/>
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
                 <script>
                     <![CDATA[
                         /*

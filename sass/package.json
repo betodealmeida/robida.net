@@ -1,0 +1,9 @@
+{
+    "scripts": {
+        "scss": "sass --load-path=node_modules/@picocss/pico/scss/ --watch scss/main.scss:../src/robida/static/css/main.css"
+    },
+    "devDependencies": {
+        "@picocss/pico": "^2.0.6",
+        "sass": "^1.77.6"
+    }
+}

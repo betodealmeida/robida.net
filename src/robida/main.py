@@ -11,6 +11,7 @@ from quart import Quart, Response, g, request, session, url_for
 from quart_schema import QuartSchema
 
 from robida.blueprints.auth import api as auth
+from robida.blueprints.categories import api as categories
 from robida.blueprints.feed import api as feed
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
@@ -46,6 +47,7 @@ def create_app(
 
     # blueprints
     app.register_blueprint(auth.blueprint)
+    app.register_blueprint(categories.blueprint)
     app.register_blueprint(feed.blueprint)
     app.register_blueprint(homepage.blueprint)
     app.register_blueprint(indieauth.blueprint)
