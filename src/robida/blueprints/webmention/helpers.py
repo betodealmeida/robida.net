@@ -7,8 +7,9 @@ import logging
 import re
 import urllib.parse
 from collections import defaultdict
+from collections.abc import AsyncGenerator, Callable
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Callable
+from typing import Any
 from uuid import UUID, uuid4
 
 import httpx
@@ -32,10 +33,10 @@ ALLOWED_SCHEMES = {"http", "https"}
 
 MODERATION_MESSAGE = (
     "The webmention was processed, but needs moderation before it can be displayed. "
-    "note that this endpoint supports the `vouch` extension to WebMention "
+    "Note that this endpoint supports the `vouch` extension to WebMention "
     "(https://indieweb.org/Vouch). If a `vouch` URL was not provided the existing "
-    "webmention can be updated by posting a new webmention with the exact same `source` "
-    "and `target` URLs, along with the `vouch` URL."
+    "webmention should be updated by posting a new webmention with the exact same "
+    "`source` and `target` URLs, along with the `vouch` URL."
 )
 
 

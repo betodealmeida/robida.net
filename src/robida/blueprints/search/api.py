@@ -35,7 +35,7 @@ async def index(query_args: SearchRequest) -> Response:
         return response
 
     hfeed = hfeed_from_entries(entries, url_for("search.index", _external=True))
-    html = await render_template("feed/index.html", hfeed=hfeed)
+    html = await render_template("feed/index.html", hfeed=hfeed, compact=True)
     response.set_data(reformat_html(html))
 
     return response

@@ -3,7 +3,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {{ feed_macros.h_feed(hfeed) }}
+    {{ feed_macros.h_feed(hfeed, compact=compact) }}
 
     <footer class="pagination">
         {% if previous_url %}

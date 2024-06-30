@@ -49,12 +49,12 @@ repos:
     exclude: ^templates/
     args: [--disable=use-implicit-booleaness-not-comparison]
 
-- repo: https://github.com/asottile/pyupgrade
-  rev: v3.10.1
-  hooks:
-    - id: pyupgrade
-      args:
-        - --py38-plus
+    #- repo: https://github.com/asottile/pyupgrade
+    #  rev: v3.16.0
+    #  hooks:
+    #- id: pyupgrade
+    #args:
+    #- --py311-plus
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.3.7

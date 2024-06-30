@@ -1,54 +1,58 @@
 article p.p-summary {
-    font-style: italic;
+  font-style: italic;
 }
 
 article footer {
-    font-size: 0.875em;
+  font-size: 0.875em;
 }
 
 a.copyright {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 footer.pagination {
-    display: flex;
-    justify-content: space-between;
+  display: flex;
+  justify-content: space-between;
 }
 
 /* Show carets after external links: https://christianoliff.com/blog/styling-external-links-with-an-icon-in-css/ */
 a[href^="http"]::after, a[href^="https://"]::after {
-    content: "↗";
-    font-size: 0.625em;
-    margin-left: 0.125em;
-    padding-left: 0.125em;
-    position: relative;
-    text-decoration: none;
-    vertical-align: super;
+  content: "↗";
+  font-size: 0.625em;
+  margin-left: 0.125em;
+  padding-left: 0.125em;
+  position: relative;
+  text-decoration: none;
+  vertical-align: super;
 }
 
 a[href^="http://localhost"]::after, a[href^="https://robida.net"]::after {
-    display: none !important;
+  display: none !important;
 }
 
 a.copyright::after {
-    display: none !important;
+  display: none !important;
 }
 
 dt {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .h-card img {
-    border-radius: 1.0em;
-    margin-bottom: 1.0em;
-    width: 256px;
+  border-radius: 1.0em;
+  margin-bottom: 1.0em;
+  width: 256px;
 }
 
 .u-logo {
-    display: none;
+  display: none;
 }
 
 .p-category {
-    font-size: 0.875em;
-    padding: 0.25rem;
+  font-size: 0.875em;
+  padding: 0.25rem;
+}
+
+.honey {
+  display: none;
 }

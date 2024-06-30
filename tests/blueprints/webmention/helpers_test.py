@@ -7,7 +7,7 @@ Tests for the helper functions.
 import json
 import urllib.parse
 from datetime import datetime, timezone
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
 import httpx

@@ -4,8 +4,6 @@ RelMeAuth implementation.
 https://microformats.org/wiki/RelMeAuth
 """
 
-from typing import Type
-
 import httpx
 from quart import Blueprint, Response, render_template, session
 from quart.helpers import make_response, redirect, url_for
@@ -21,7 +19,7 @@ from .models import LoginRequest
 
 blueprint = Blueprint("auth", __name__, url_prefix="/")
 
-providers: list[Type[Provider]] = [
+providers: list[type[Provider]] = [
     ASFProvider,
     EmailProvider,
     IndieAuthProvider,

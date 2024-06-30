@@ -9,7 +9,6 @@ from __future__ import annotations
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 from uuid import UUID, uuid4
 
 import aiofiles
@@ -28,31 +27,10 @@ from robida.blueprints.webmention.helpers import send_webmentions
 from robida.db import get_db
 from robida.models import Microformats2
 
+from .helpers import process_form
 from .models import ActionType, ErrorType
 
 blueprint = Blueprint("micropub", __name__, url_prefix="/micropub")
-
-
-def process_form(payload: MultiDict) -> Microformats2:
-    """
-    Convert form data to Microformats 2 JSON.
-
-    See http://microformats.org/wiki/microformats2-json.
-    """
-    data: dict[str, Any] = {
-        "type": [f'h-{payload["h"]}'],
-        "properties": {},
-    }
-    for key, value in payload.to_dict(flat=False).items():
-        if key == "h":
-            continue
-
-        if key.endswith("[]"):
-            key = key[:-2]
-
-        data["properties"][key] = value
-
-    return Microformats2(**data)
 
 
 @blueprint.route("", methods=["GET"])
@@ -187,6 +165,12 @@ async def create(data: Microformats2) -> Response:
     created_at = last_modified_at = datetime.now(timezone.utc)
     url = url_for("feed.entry", uuid=str(uuid), _external=True)
 
+    data.properties.setdefault("author", author)
+    data.properties.setdefault("dt-published", created_at)
+    data.properties.setdefault("dt-updated", last_modified_at)
+    data.properties.setdefault("u-url", url)
+    data.properties.setdefault("u-uid", str(uuid))
+
     async with get_db(current_app) as db:
         await db.execute(
             """
@@ -251,6 +235,9 @@ WHERE
 
     data = Microformats2.model_validate_json(row["content"])
 
+    last_modified_at = datetime.now(timezone.utc)
+    data.properties["dt-updated"] = last_modified_at
+
     if "replace" in payload:
         for key, value in payload["replace"].items():
             data.properties[key] = value
@@ -267,8 +254,6 @@ WHERE
             ]
             if not data.properties[key]:
                 del data.properties[key]
-
-    last_modified_at = datetime.now(timezone.utc)
 
     async with get_db(current_app) as db:
         await db.execute(
