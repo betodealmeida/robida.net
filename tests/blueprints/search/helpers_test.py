@@ -16,7 +16,7 @@ from robida.models import Entry, Microformats2
 @freeze_time("2024-01-01 00:00:00")
 async def test_search(current_app: Quart) -> None:
     """
-    Test the search endpoint.
+    Test the search backend.
     """
     await load_entries(current_app)
 
