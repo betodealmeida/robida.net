@@ -52,19 +52,17 @@ async def get_client_info(client_id: str) -> ClientInfo:
         "summary": [None],
         "author": [None],
     }
-    metadata = mf2py.parse(doc=html)
+    metadata = mf2py.parse(html, url=client_id)
     for item in metadata["items"]:
         if "h-app" in item["type"] or "h-x-app" in item["type"]:
             app_info.update(item["properties"])
             break
 
     name = app_info["name"][0]
-    url = urllib.parse.urljoin(client_id, app_info["url"][0])
 
     logo = None
     if property_ := app_info["logo"][0]:
         logo = property_.get("value") if isinstance(property_, dict) else property_
-        logo = urllib.parse.urljoin(client_id, logo)
 
     summary = None
     if property_ := app_info["summary"][0]:
@@ -81,12 +79,11 @@ async def get_client_info(client_id: str) -> ClientInfo:
 
     soup = BeautifulSoup(html, "html.parser")
     redirect_uris.update(
-        urllib.parse.urljoin(client_id, link["href"])
-        for link in soup.find_all("link", rel="redirect_uri")
+        link["href"] for link in soup.find_all("link", rel="redirect_uri")
     )
 
     return ClientInfo(
-        url=url,
+        url=client_id,
         name=name,
         logo=logo,
         summary=summary,

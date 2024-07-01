@@ -52,6 +52,6 @@ class ServerMetadataResponse(BaseModel):
     response_types_supported: list[str] | None = None
     grant_types_supported: list[str] | None = None
     service_documentation: HttpUrl | None = None
-    code_challenge_methods_supported: list[str] = Field(default_factory=list)
+    code_challenge_methods_supported: Annotated[list[str], Field(default_factory=list)]
     authorization_response_iss_parameter_supported: bool | None = None
     userinfo_endpoint: HttpUrl | None = None

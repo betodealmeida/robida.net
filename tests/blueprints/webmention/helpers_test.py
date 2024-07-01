@@ -20,7 +20,6 @@ from quart import Quart
 
 from robida.blueprints.webmention.helpers import (
     MODERATION_MESSAGE,
-    create_entry,
     extract_urls,
     get_webmention_hentry,
     find_endpoint,
@@ -365,6 +364,7 @@ async def test_validate_webmention_needs_moderation(
                 "type": ["h-entry"],
                 "properties": {
                     "url": ["https://other.example.com"],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                     "content": [
                         {
                             "html": '<a rel="nofollow" href="https://other.example.com">https://other.example.com</a>',
@@ -402,7 +402,7 @@ async def test_validate_webmention(
     send_salmention = mocker.patch(
         "robida.blueprints.webmention.helpers.send_salmention"
     )
-    create_entry = mocker.patch("robida.blueprints.webmention.helpers.create_entry")
+    upsert_entry = mocker.patch("robida.blueprints.webmention.helpers.upsert_entry")
     httpx_mock.add_response(
         url="https://other.example.com",
         html='<a href="http://example.com/">Look at this!</a>',
@@ -430,6 +430,7 @@ async def test_validate_webmention(
                 "type": ["h-entry"],
                 "properties": {
                     "url": ["https://other.example.com"],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                     "content": [
                         {
                             "html": '<a rel="nofollow" href="https://other.example.com">https://other.example.com</a>',
@@ -445,14 +446,13 @@ async def test_validate_webmention(
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
 
-    create_entry.assert_called_with(
+    upsert_entry.assert_called_with(
         db,
-        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
-        "https://other.example.com",
         Microformats2(
             type=["h-entry"],
             properties={
                 "url": ["https://other.example.com"],
+                "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 "content": [
                     {
                         "html": '<a rel="nofollow" href="https://other.example.com">https://other.example.com</a>',
@@ -488,12 +488,16 @@ async def test_get_webmention_hentry() -> None:
             """,
             headers={"Content-Type": "text/html"},
             status_code=200,
+            request=httpx.Request("GET", "http://example.com/"),
         ),
         "http://other.example.com/",
         "http://example.com/",
+        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     ) == Microformats2(
         type=["h-entry"],
         properties={
+            "url": ["http://other.example.com/"],
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "name": ["Microformats are amazing"],
             "author": [
                 {
@@ -527,13 +531,16 @@ async def test_get_webmention_hentry_no_microformats() -> None:
             text="<p>Hi, there!</p>",
             headers={"Content-Type": "text/html"},
             status_code=200,
+            request=httpx.Request("GET", "http://example.com/"),
         ),
         "http://other.example.com/",
         "http://example.com/",
+        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     ) == Microformats2(
         type=["h-entry"],
         properties={
             "url": ["http://other.example.com/"],
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "content": [
                 {
                     "html": '<a rel="nofollow" href="http://other.example.com/">http://other.example.com/</a>',
@@ -566,10 +573,14 @@ async def test_get_webmention_hentry_json() -> None:
         ),
         "http://other.example.com/",
         "http://example.com/",
+        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     ) == Microformats2(
         type=["h-entry"],
         properties={
+            "url": ["http://other.example.com/"],
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "content": ["Microformats are amazing"],
+            "published": ["2024-01-01T00:00:00+00:00"],
             "in-reply-to": ["http://example.com/"],
         },
         children=[],
@@ -602,10 +613,14 @@ async def test_get_webmention_hentry_json_nested() -> None:
         ),
         "http://other.example.com/",
         "http://example.com/",
+        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     ) == Microformats2(
         type=["h-entry"],
         properties={
+            "url": ["http://other.example.com/"],
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "content": ["Microformats are amazing"],
+            "published": ["2024-01-01T00:00:00+00:00"],
             "in-reply-to": ["http://example.com/"],
         },
         children=[],
@@ -625,10 +640,12 @@ async def test_get_webmention_hentry_json_not_dict() -> None:
         ),
         "http://other.example.com/",
         "http://example.com/",
+        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     ) == Microformats2(
         type=["h-entry"],
         properties={
             "url": ["http://other.example.com/"],
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "content": [
                 {
                     "html": '<a rel="nofollow" href="http://other.example.com/">http://other.example.com/</a>',
@@ -653,10 +670,12 @@ async def test_get_webmention_hentry_json_no_microformats() -> None:
         ),
         "http://other.example.com/",
         "http://example.com/",
+        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     ) == Microformats2(
         type=["h-entry"],
         properties={
             "url": ["http://other.example.com/"],
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "content": [
                 {
                     "html": '<a rel="nofollow" href="http://other.example.com/">http://other.example.com/</a>',
@@ -753,107 +772,6 @@ async def test_is_vouch_valid(
         "https://alice.example.com",
         "https://bob.example.com/post/1",
     )
-
-
-@freeze_time("2024-01-01 00:00:00")
-async def test_create_entry(db: Connection, current_app: Quart) -> None:
-    """
-    Test the `create_entry` function.
-    """
-    async with current_app.app_context():
-        await create_entry(
-            db,
-            UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
-            "https://other.example.com",
-            Microformats2(
-                type=["h-entry"],
-                properties={
-                    "author": {"url": "https://other.example.com"},
-                    "content": [
-                        "This is a dummy entry created by the webmention processor."
-                    ],
-                },
-            ),
-        )
-
-    async with db.execute(
-        "SELECT * FROM entries WHERE uuid = ?;",
-        ("92cdeabd827843ad871d0214dcb2d12e",),
-    ) as cursor:
-        entry = await cursor.fetchone()
-
-    assert dict(entry) == {
-        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "author": "https://other.example.com",
-        "location": "https://other.example.com",
-        "content": json.dumps(
-            {
-                "type": ["h-entry"],
-                "properties": {
-                    "author": {"url": "https://other.example.com"},
-                    "content": [
-                        "This is a dummy entry created by the webmention processor."
-                    ],
-                },
-            },
-            separators=(",", ":"),
-        ),
-        "read": 0,
-        "deleted": 0,
-        "created_at": "2024-01-01 00:00:00+00:00",
-        "last_modified_at": "2024-01-01 00:00:00+00:00",
-    }
-
-
-async def test_create_entry_published(db: Connection, current_app: Quart) -> None:
-    """
-    Test the `create_entry` function when the h-entry has the `published` attribute.
-    """
-    async with current_app.app_context():
-        await create_entry(
-            db,
-            UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
-            "https://other.example.com",
-            Microformats2(
-                type=["h-entry"],
-                properties={
-                    "author": {"url": "https://other.example.com"},
-                    "content": [
-                        "This is a dummy entry created by the webmention processor."
-                    ],
-                    "published": ["2024-01-01T01:23:45+00:00"],
-                },
-            ),
-        )
-
-    async with db.execute(
-        "SELECT * FROM entries WHERE uuid = ?;",
-        ("92cdeabd827843ad871d0214dcb2d12e",),
-    ) as cursor:
-        entry = await cursor.fetchone()
-
-    assert dict(entry) == {
-        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "author": "https://other.example.com",
-        "location": "https://other.example.com",
-        "content": json.dumps(
-            {
-                "type": ["h-entry"],
-                "properties": {
-                    "author": {"url": "https://other.example.com"},
-                    "content": [
-                        "This is a dummy entry created by the webmention processor."
-                    ],
-                    "published": ["2024-01-01T01:23:45+00:00"],
-                },
-            },
-            separators=(",", ":"),
-        ),
-        "read": 0,
-        "deleted": 0,
-        "created_at": "2024-01-01 01:23:45+00:00",
-        "last_modified_at": "2024-01-01 01:23:45+00:00",
-    }
 
 
 def test_match_url() -> None:

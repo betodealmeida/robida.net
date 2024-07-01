@@ -30,6 +30,8 @@ async def test_homepage_headers(client: testing.QuartClient) -> None:
             ("link", '<http://example.com/feed.rss>; rel="alternate"'),
             ("link", '<http://example.com/feed.xml>; rel="alternate"'),
             ("link", '<http://example.com/feed.html>; rel="alternate"'),
+            ("x-robots-tag", "noai"),
+            ("x-robots-tag", "noimageai"),
             ("vary", "Cookie"),
         ]
     )

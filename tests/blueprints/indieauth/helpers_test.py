@@ -51,7 +51,7 @@ async def test_get_client_info(httpx_mock: HTTPXMock) -> None:
 
     client_info = await get_client_info("https://example.com")
     assert client_info == ClientInfo(
-        url="https://example.com/",
+        url="https://example.com",
         name="Example App",
         logo="https://example.com/logo.png",
         summary=None,
@@ -93,7 +93,7 @@ async def test_get_client_info_with_summary_and_hcard(httpx_mock: HTTPXMock) -> 
 
     client_info = await get_client_info("https://example.com")
     assert client_info == ClientInfo(
-        url="https://github.com/betodealmeida/robida.net/",
+        url="https://example.com",
         name="rob⋯ida",
         logo="https://example.com/static/img/robida.svg",
         summary=(

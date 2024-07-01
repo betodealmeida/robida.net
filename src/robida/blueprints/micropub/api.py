@@ -25,6 +25,7 @@ from werkzeug.datastructures import MultiDict
 from robida.blueprints.indieauth.helpers import requires_scope
 from robida.blueprints.webmention.helpers import send_webmentions
 from robida.db import get_db
+from robida.helpers import get_hcard, upsert_entry
 from robida.models import Microformats2
 
 from .helpers import process_form
@@ -161,47 +162,18 @@ async def create(data: Microformats2) -> Response:
     Create a new Micropub entry.
     """
     uuid = uuid4()
-    author = url_for("homepage.index", _external=True)
     created_at = last_modified_at = datetime.now(timezone.utc)
     url = url_for("feed.entry", uuid=str(uuid), _external=True)
+    hcard = get_hcard()
 
-    data.properties.setdefault("author", author)
-    data.properties.setdefault("dt-published", created_at)
-    data.properties.setdefault("dt-updated", last_modified_at)
-    data.properties.setdefault("u-url", url)
-    data.properties.setdefault("u-uid", str(uuid))
+    data.properties.setdefault("author", [hcard.model_dump()])
+    data.properties.setdefault("published", [created_at.isoformat()])
+    data.properties.setdefault("updated", [last_modified_at.isoformat()])
+    data.properties.setdefault("url", [url])
+    data.properties.setdefault("uid", [str(uuid)])
 
     async with get_db(current_app) as db:
-        await db.execute(
-            """
-INSERT INTO entries (
-    uuid,
-    author,
-    location,
-    content,
-    created_at,
-    last_modified_at
-) VALUES (?, ?, ?, ?, ?, ?);
-            """,
-            (
-                uuid.hex,
-                author,
-                url,
-                data.model_dump_json(exclude_unset=True),
-                created_at,
-                last_modified_at,
-            ),
-        )
-        await db.execute(
-            """
-INSERT INTO documents (uuid, content) VALUES (?, ?);
-            """,
-            (
-                uuid.hex,
-                data.model_dump_json(exclude_unset=True),
-            ),
-        )
-        await db.commit()
+        await upsert_entry(db, data)
 
     current_app.add_background_task(send_webmentions, url, data)
 
@@ -236,7 +208,7 @@ WHERE
     data = Microformats2.model_validate_json(row["content"])
 
     last_modified_at = datetime.now(timezone.utc)
-    data.properties["dt-updated"] = last_modified_at
+    data.properties["updated"] = [last_modified_at]
 
     if "replace" in payload:
         for key, value in payload["replace"].items():

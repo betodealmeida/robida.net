@@ -22,6 +22,8 @@ beautifulsoup4 = "^4.12.3"
 pytest-httpx = "^0.30.0"
 aiosmtplib = "^3.0.1"
 pre-commit = "^3.7.1"
+nh3 = "^0.2.17"
+pyromark = "^0.4.0"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.7"
 flake8-pyproject = "^1.2.3"

@@ -22,7 +22,7 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "e4f00d1a3dc8c3ed4289ba94cbdc9b3143b55fc7352002b2a98baa7569a67532"
+        == "eed8d2521e55b1bdedee8ae16e4dfd36db3b65cc1d3d5c3f4be2ec7743c51586"
     )
 
     html = await response.data
@@ -39,17 +39,14 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
                             "summary": ["About this blog."],
                             "content": [
                                 {
-                                    "value": (
-                                        "This blog runs a custom-built Python web "
-                                        "framework called Robida, built for the "
-                                        "IndieWeb. ⋯"
-                                    ),
+                                    "value": "This blog runs a custom-built Python web framework called Robida, built for the IndieWeb.",
                                     "lang": "en",
-                                    "html": """This blog runs a custom-built Python web framework called
-    Robida, built for the
-    IndieWeb.
-⋯""",
-                                },
+                                    "html": """<p>
+    This blog runs a custom-built Python web framework called
+    <a href="https://github.com/betodealmeida/robida.net/" rel="noopener noreferrer">Robida</a>, built for the
+    <a href="https://indieweb.org/" rel="noopener noreferrer">IndieWeb</a>.
+</p>""",
+                                }
                             ],
                             "url": [
                                 "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
@@ -81,6 +78,14 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
             "hub": ["/websub"],
             "alternate": ["/feed.json", "/feed.rss", "/feed.xml", "/feed.html"],
             "stylesheet": ["/static/css/main.css"],
+            "noopener": [
+                "https://github.com/betodealmeida/robida.net/",
+                "https://indieweb.org/",
+            ],
+            "noreferrer": [
+                "https://github.com/betodealmeida/robida.net/",
+                "https://indieweb.org/",
+            ],
         },
         "rel-urls": {
             "/micropub": {"text": "", "rels": ["micropub"]},
@@ -96,6 +101,14 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
             "/feed.xml": {"text": "", "rels": ["alternate"]},
             "/feed.html": {"text": "", "rels": ["alternate"]},
             "/static/css/main.css": {"text": "", "rels": ["stylesheet"]},
+            "https://github.com/betodealmeida/robida.net/": {
+                "text": "Robida",
+                "rels": ["noopener", "noreferrer"],
+            },
+            "https://indieweb.org/": {
+                "text": "IndieWeb",
+                "rels": ["noopener", "noreferrer"],
+            },
         },
         "debug": {
             "description": "mf2py - microformats2 parser for python",
@@ -124,7 +137,7 @@ async def test_category_conditional_get(
     response = await client.get(
         "/category/python",
         headers={
-            "If-None-Match": "e4f00d1a3dc8c3ed4289ba94cbdc9b3143b55fc7352002b2a98baa7569a67532"
+            "If-None-Match": "eed8d2521e55b1bdedee8ae16e4dfd36db3b65cc1d3d5c3f4be2ec7743c51586"
         },
     )
 

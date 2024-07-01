@@ -1,0 +1,34 @@
+{% import 'macros/feed/author.html' as author_macros %}
+
+{% macro bookmark(data, compact=False) %}
+{% set bookmark_of = data.properties['bookmark-of'][0] %}
+{% if bookmark_of.properties.content %}
+    {% if bookmark_of.properties.content[0] is mapping %}
+        {% set content = bookmark_of.properties.content[0].html %}
+    {% else %}
+        {% set content = bookmark_of.properties.content[0] %}
+    {% endif %}
+    {% if compact %}
+        {% set content = content | summarize %}
+    {% endif %}
+
+    <div class="h-cite u-bookmark-of">
+        <p>Liked
+            <a
+                class="u-url"
+                href="{{ data.properties['bookmark-of'][0].value }}"
+            >
+                {{ data.properties.name[0] }}
+            </a>
+            {% if bookmark_of.properties.author %}
+                by {{ author_macros.author(bookmark_of.properties.author[0], compact=True) }}
+            {% endif %}
+            :
+        </p>
+
+        <blockquote class="e-content">
+            {{ content | clean | safe }}
+        </blockquote>
+    </div>
+{% endif %}
+{% endmacro %}

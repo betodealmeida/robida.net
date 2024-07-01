@@ -7,11 +7,13 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import dotenv_values
+from nh3 import clean  # pylint: disable=no-member, no-name-in-module
 from quart import Quart, Response, g, request, session, url_for
 from quart_schema import QuartSchema
 
 from robida.blueprints.auth import api as auth
 from robida.blueprints.categories import api as categories
+from robida.blueprints.crud import api as crud
 from robida.blueprints.feed import api as feed
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
@@ -24,7 +26,13 @@ from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
 from robida.constants import links
 from robida.db import init_db, load_entries
-from robida.helpers import fetch_hcard, get_type_emoji, iso_to_rfc822, summarize
+from robida.helpers import (
+    XForwardedProtoMiddleware,
+    fetch_hcard,
+    get_type_emoji,
+    iso_to_rfc822,
+    summarize,
+)
 
 quart_schema = QuartSchema()
 
@@ -49,6 +57,7 @@ def create_app(
     # blueprints
     app.register_blueprint(auth.blueprint)
     app.register_blueprint(categories.blueprint)
+    app.register_blueprint(crud.blueprint)
     app.register_blueprint(feed.blueprint)
     app.register_blueprint(homepage.blueprint)
     app.register_blueprint(indieauth.blueprint)
@@ -70,6 +79,12 @@ def create_app(
             "get_type_emoji": get_type_emoji,
             "summarize": summarize,
         }
+    )
+    app.jinja_env.filters.update(
+        {
+            "summarize": summarize,
+            "clean": clean,
+        },
     )
 
     # create MEDIA directory
@@ -101,6 +116,7 @@ def create_app(
         """
         Add Link headers to responses.
         """
+        # rel links
         response.headers.extend(
             [
                 (
@@ -111,7 +127,18 @@ def create_app(
             ]
         )
 
+        # no AI crawling, please
+        response.headers.extend(
+            [
+                ("X-Robots-Tag", "noai"),
+                ("X-Robots-Tag", "noimageai"),
+            ]
+        )
+
         return response
+
+    # this is needed to run behind nginx
+    app.asgi_app = XForwardedProtoMiddleware(app.asgi_app)
 
     return app
 
@@ -137,6 +164,4 @@ def run() -> None:
     Main app.
     """
     app = create_app()
-    app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.config["DEBUG"] = True
     app.run("0.0.0.0", port=5001)

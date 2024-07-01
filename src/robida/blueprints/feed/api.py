@@ -170,6 +170,7 @@ async def rss_index(query_args: FeedRequest) -> Response:
         title=f'RSS 2.0 feed for {current_app.config["SITE_NAME"]}',
         next_url=next_url,
         previous_url=previous_url,
+        compact=True,
     )
     response.set_data(xml)
 
@@ -221,6 +222,7 @@ async def atom_index(query_args: FeedRequest) -> Response:
         title=f'Atom feed for {current_app.config["SITE_NAME"]}',
         next_url=next_url,
         previous_url=previous_url,
+        compact=True,
     )
     response.set_data(xml)
 

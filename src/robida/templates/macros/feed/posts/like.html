@@ -1,0 +1,34 @@
+{% import 'macros/feed/author.html' as author_macros %}
+
+{% macro like(data, compact=False) %}
+{% set like_of = data.properties['like-of'][0] %}
+{% if like_of.properties.content %}
+    {% if like_of.properties.content[0] is mapping %}
+        {% set content = like_of.properties.content[0].html %}
+    {% else %}
+        {% set content = like_of.properties.content[0] %}
+    {% endif %}
+    {% if compact %}
+        {% set content = content | summarize %}
+    {% endif %}
+
+    <div class="h-cite u-like-of">
+        <p>Liked
+            <a
+                class="u-url"
+                href="{{ data.properties['like-of'][0].value }}"
+            >
+                {{ data.properties.name[0] }}
+            </a>
+            {% if like_of.properties.author %}
+                by {{ author_macros.author(like_of.properties.author[0], compact=True) }}
+            {% endif %}
+            :
+        </p>
+
+        <blockquote class="e-content">
+            {{ content | clean | safe }}
+        </blockquote>
+    </div>
+{% endif %}
+{% endmacro %}

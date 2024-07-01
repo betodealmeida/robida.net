@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <?xml-stylesheet type="text/xsl" href="{{ url_for('feed.rss_xslt', _external=True) }}"?>
+<!--{% import 'macros/feed/post.html' as post_macros %}-->
 
 <rss version="2.0" xmlns:extensions="https://robida.net/rss/extensions">
     <channel>
@@ -21,14 +22,16 @@
             <title>{{ child.properties.name[0] }}</title>
             {% endif %}
 
-            {% if child.properties.content[0] is mapping %}
-            <description><![CDATA[{{ child.properties.content[0].html | safe }}]]></description>
-            {% else %}
-            <description>{{ child.properties.content[0] }}</description>
-            {% endif %}
+            <description>
+                <![CDATA[{{ post_macros.post(child, compact=compact) }}]]>
+            </description>
 
             {% for category in child.properties.category or [] %}
-            <category>{{ category }}</category>
+            <category
+                extensions:category_url="{{ url_for('category.index', category=category, _external=True) }}"
+            >
+                {{ category }}
+            </category>
             {% endfor %}
 
             <!--

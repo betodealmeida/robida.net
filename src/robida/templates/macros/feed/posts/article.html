@@ -1,0 +1,16 @@
+{% macro article(data, compact=False) %}
+{% if data.properties.content %}
+    {% if data.properties.content[0] is mapping %}
+        {% set content = data.properties.content[0].html %}
+    {% else %}
+        {% set content = data.properties.content[0] %}
+    {% endif %}
+    {% if compact %}
+        {% set content = content | summarize %}
+    {% endif %}
+
+    <div class="e-content">
+        {{ content | clean | safe }}
+    </div>
+{% endif %}
+{% endmacro %}

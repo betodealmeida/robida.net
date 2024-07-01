@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>New entry</h2>
+
+<form method="POST" action="{{ url_for('crud.submit') }}">
+    <label for="options">Select a template</label>
+    <select
+        id="template"
+        name="template"
+        aria-label="Select a template"
+        required
+        hx-get="{{ url_for('crud.template') }}"
+        hx-params="*"
+        hx-trigger="change"
+        hx-target="#fields"
+    >
+        <option selected disabled value="">
+            ⋯
+        </option>
+        <option value="article">Article</option>
+        <option value="bookmark">Bookmark</option>
+        <option value="like">Like</option>
+        <option value="note">Note</option>
+    </select>
+
+    <div id="fields"></div>
+</form>
+{% endblock %}

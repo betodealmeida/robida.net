@@ -8,6 +8,7 @@ import pytest
 from aiosqlite.core import Connection
 from _pytest._py.path import LocalPath
 from quart import Quart, testing
+from quart.helpers import url_for
 
 from robida.blueprints.indieauth.helpers import get_scopes
 from robida.blueprints.wellknown.api import SCOPES_SUPPORTED
@@ -34,8 +35,8 @@ async def app(tmpdir: LocalPath) -> Quart:
     yield test_app
 
 
-@pytest.fixture
-async def client(current_app: Quart) -> testing.QuartClient:
+@pytest.fixture(name="client")
+async def test_client(current_app: Quart) -> testing.QuartClient:
     """
     A test client for the app.
     """
@@ -50,8 +51,20 @@ async def client(current_app: Quart) -> testing.QuartClient:
         return await get_scopes(token)
 
     with patch("robida.blueprints.indieauth.helpers.get_scopes", mock_get_scopes):
-        async with current_app.test_client() as test_client:
-            yield test_client
+        async with current_app.test_client() as client:
+            yield client
+
+
+@pytest.fixture
+async def authorized_client(client: testing.QuartClient) -> testing.QuartClient:
+    """
+    A test client for the app with a logged in user.
+    """
+    async with client.session_transaction() as session:
+        session["me"] = url_for("homepage.index", _external=True)
+        session["scope"] = "create update delete"
+
+    yield client
 
 
 @pytest.fixture

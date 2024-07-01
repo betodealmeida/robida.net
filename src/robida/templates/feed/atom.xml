@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <?xml-stylesheet type="text/xsl" href="{{ url_for('feed.atom_xslt', _external=True) }}"?>
+<!--{% import 'macros/feed/post.html' as post_macros %}-->
 
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:extensions="https://robida.net/atom/extensions">
     <id>{{ hfeed.properties.url[0] }}</id>
@@ -30,13 +31,9 @@
         <extensions:type_emoji>{{ get_type_emoji(child) }}</extensions:type_emoji>
         <extensions:updated>{{ iso_to_rfc822(child.properties.published[0]) }}</extensions:updated>
 
-        {% if child.properties.content[0] is mapping %}
         <content type="html">
-            <![CDATA[{{ child.properties.content[0].html | safe }}]]>
+            <![CDATA[{{ post_macros.post(child, compact=compact) }}]]>
         </content>
-        {% else %}
-        <content type="text">{{ child.properties.content[0] }}</content>
-        {% endif %}
 
         {% if child.properties.name %}
         <title>{{ child.properties.name[0] }}</title>
@@ -55,7 +52,10 @@
         {% endif %}
 
         {% for category in child.properties.category or [] %}
-        <category term="{{ category }}" />
+        <category
+            term="{{ category }}"
+            extensions:category_url="{{ url_for('category.index', category=category, _external=True) }}"
+        />
         {% endfor %}
 
         {% if child.properties.author %}
