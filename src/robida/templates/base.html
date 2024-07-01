@@ -4,6 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{{ title|default(config.SITE_NAME) }}</title>
+        <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
         {% for link in links %}
         <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint) }}">
         {% endfor %}
@@ -11,7 +12,7 @@
     </head>
     <body>
         <!-- This is a honeypot for robots, please ignore... -->
-        <a class="honey" href="{{ url_for("robots.honeypot", secret="into-the-mirror") }}">🤖</a>
+        <a class="honey" href="{{ url_for('robots.honeypot', secret='into-the-mirror') }}">🤖</a>
 
         <header>
             <nav>
@@ -42,7 +43,7 @@
 
         <footer>
             <p>
-                <form role="search" method="GET" action="/search">
+                <form role="search" method="GET" action="{{ url_for('search.index') }}">
                     <input
                         name="q"
                         type="search"

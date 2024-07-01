@@ -5,8 +5,8 @@ Generic models for entries and microformats.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
-from uuid import UUID
+from typing import Annotated, Any
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -25,14 +25,14 @@ class Entry(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    uuid: UUID
+    uuid: Annotated[UUID, Field(default_factory=uuid4)]
     author: str
     location: str
     content: Microformats2
     read: bool = False
     deleted: bool = False
-    created_at: datetime = Field(default_factory=utcnow)
-    last_modified_at: datetime = Field(default_factory=utcnow)
+    created_at: Annotated[datetime, Field(default_factory=utcnow)]
+    last_modified_at: Annotated[datetime, Field(default_factory=utcnow)]
 
 
 class Microformats2(BaseModel):
@@ -43,5 +43,6 @@ class Microformats2(BaseModel):
     """
 
     type: list[str]
-    properties: dict[str, Any]
-    children: list[Microformats2] = Field(default_factory=list)
+    value: str | None = None
+    properties: Annotated[dict[str, Any], Field(default_factory=dict)]
+    children: Annotated[list[Microformats2], Field(default_factory=list)]

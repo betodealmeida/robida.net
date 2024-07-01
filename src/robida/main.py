@@ -12,6 +12,7 @@ from quart_schema import QuartSchema
 
 from robida.blueprints.auth import api as auth
 from robida.blueprints.categories import api as categories
+from robida.blueprints.crud import api as crud
 from robida.blueprints.feed import api as feed
 from robida.blueprints.homepage import api as homepage
 from robida.blueprints.indieauth import api as indieauth
@@ -49,6 +50,7 @@ def create_app(
     # blueprints
     app.register_blueprint(auth.blueprint)
     app.register_blueprint(categories.blueprint)
+    app.register_blueprint(crud.blueprint)
     app.register_blueprint(feed.blueprint)
     app.register_blueprint(homepage.blueprint)
     app.register_blueprint(indieauth.blueprint)
@@ -71,6 +73,7 @@ def create_app(
             "summarize": summarize,
         }
     )
+    app.jinja_env.filters.update({"summarize": summarize})
 
     # create MEDIA directory
     if not Path(app.config["MEDIA"]).exists():
@@ -137,6 +140,4 @@ def run() -> None:
     Main app.
     """
     app = create_app()
-    app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.config["DEBUG"] = True
     app.run("0.0.0.0", port=5001)

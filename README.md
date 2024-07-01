@@ -20,13 +20,13 @@ My website.
 - [X] MicroPub server
 - [X] WebSub
 - [ ] Feed: h-feed, RSS/ATOM (with XSL), JSON
-  - [X] note
   - [X] card
+  - [X] note
   - [X] article
-  - [X] reply
-  - [ ] repost
   - [ ] like
   - [ ] bookmark
+  - [ ] reply
+  - [ ] repost
   - [ ] event
   - [ ] issue
   - [ ] rsvp
@@ -50,6 +50,7 @@ My website.
   - [X] Now
 - [ ] CRUD
 - [ ] Bookmarklets
+- [ ] Replies/likes
 - [ ] PWA
 - [ ] Syndication (FAWM, Archive.org, Bandcamp, IndieWeb News)
 - [ ] MicroPub client
@@ -77,7 +78,8 @@ My website.
 
 ### Notes
 
-- robots.txt
+compact in feeds!
+improve summarize to show full paragraphs?
 
 https://indieweb.org/h-x-app#Properties
 - extract more info when app requests a token

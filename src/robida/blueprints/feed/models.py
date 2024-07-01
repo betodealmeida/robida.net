@@ -6,6 +6,7 @@ Feed related models.
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SerializationInfo, field_serializer
@@ -70,10 +71,10 @@ class JSONFeedItem(BaseModel):
     banner_image: str | None = None
     date_published: datetime | None = None
     date_modified: datetime | None = None
-    authors: list[JSONFeedAuthor] = Field(default_factory=list)
-    tags: list[str] = Field(default_factory=list)
+    authors: Annotated[list[JSONFeedAuthor], Field(default_factory=list)]
+    tags: Annotated[list[str], Field(default_factory=list)]
     language: str | None = None
-    attachments: list[JSONFeedAttachment] = Field(default_factory=list)
+    attachments: Annotated[list[JSONFeedAttachment], Field(default_factory=list)]
 
     @field_serializer("id")
     def serialize_id(self, id_: UUID, _info: SerializationInfo) -> str:
@@ -99,8 +100,8 @@ class JSONFeed(BaseModel):
     next_url: str | None = None
     icon: str | None = None
     favicon: str | None = None
-    authors: list[JSONFeedAuthor] = Field(default_factory=list)
+    authors: Annotated[list[JSONFeedAuthor], Field(default_factory=list)]
     language: str | None = None
     expired: bool | None = None
-    hubs: list[str] = Field(default_factory=list)
-    items: list[JSONFeedItem] = Field(default_factory=list)
+    hubs: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[JSONFeedItem], Field(default_factory=list)]

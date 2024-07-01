@@ -295,6 +295,8 @@ def build_jsonfeed_item(entry: Entry) -> JSONFeedItem:
     if "summary" in entry.content.properties:
         item.summary = entry.content.properties["summary"][0]
 
+    item.tags = entry.content.properties.get("category", [])
+
     return item
 
 
@@ -368,6 +370,7 @@ def hentry_from_entry(entry: Entry) -> dict[str, Any]:
     """
     Build an h-entry from an entry.
     """
+    entry.content.properties.setdefault("uid", [str(entry.uuid)])
     entry.content.properties.setdefault("url", [entry.location])
     entry.content.properties.setdefault(
         "published",

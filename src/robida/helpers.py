@@ -5,16 +5,139 @@ Generic helper functions.
 import base64
 import hashlib
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
+from uuid import UUID, uuid4
 
 import httpx
 import mf2py
+from aiosqlite import Connection
 from bs4 import BeautifulSoup
+from quart import current_app
+from quart.helpers import url_for
 
-from robida.models import Microformats2
+from robida.models import Entry, Microformats2
 
 SUMMARY_LENGTH = 255
+
+
+async def upsert_entry(db: Connection, hentry: Microformats2) -> Entry:
+    """
+    Create/update an entry in the database from an h-entry.
+    """
+    uuid = UUID(hentry.properties["uid"][0])
+
+    author = location = hentry.properties["url"][0]
+    if hcard := hentry.properties.get("author"):
+        if url := hcard[0].properties.get("url"):
+            author = url[0]
+
+    try:
+        created_at = datetime.fromisoformat(hentry.properties["published"][0])
+    except (KeyError, ValueError):
+        created_at = datetime.now(timezone.utc)
+
+    try:
+        last_modified_at = datetime.fromisoformat(hentry.properties["updated"][0])
+    except (KeyError, ValueError):
+        last_modified_at = created_at
+
+    await db.execute(
+        """
+INSERT INTO entries (
+    uuid,
+    author,
+    location,
+    content,
+    read,
+    deleted,
+    created_at,
+    last_modified_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(uuid) DO UPDATE SET
+    author = excluded.author,
+    location = excluded.location,
+    content = excluded.content,
+    read = FALSE,
+    deleted = FALSE,
+    last_modified_at = excluded.last_modified_at;
+        """,
+        (
+            uuid.hex,
+            author,
+            location,
+            hentry.model_dump_json(exclude_unset=True),
+            False,
+            False,
+            created_at,
+            last_modified_at,
+        ),
+    )
+    await db.execute(
+        "INSERT INTO documents (uuid, content) VALUES (?, ?);",
+        (
+            uuid.hex,
+            hentry.model_dump_json(exclude_unset=True),
+        ),
+    )
+    await db.commit()
+
+    return Entry(
+        uuid=uuid,
+        author=author,
+        location=location,
+        content=hentry,
+        read=False,
+        deleted=False,
+        created_at=created_at,
+        last_modified_at=last_modified_at,
+    )
+
+
+def new_hentry() -> Microformats2:
+    """
+    Create a new entry.
+    """
+    uuid = uuid4()
+    created_at = last_modified_at = datetime.now(timezone.utc)
+    url = url_for("feed.entry", uuid=str(uuid), _external=True)
+
+    properties = {
+        "author": [get_hcard()],
+        "published": [created_at.isoformat()],
+        "updated": [last_modified_at.isoformat()],
+        "url": [url],
+        "uid": [str(uuid)],
+    }
+
+    return Microformats2(type=["h-entry"], properties=properties)
+
+
+def get_hcard() -> Microformats2:
+    """
+    Build our h-card.
+    """
+    return Microformats2(
+        type=["h-card"],
+        value=url_for("homepage.index", _external=True),
+        properties={
+            "name": [current_app.config["NAME"]],
+            "url": [url_for("homepage.index", _external=True)],
+            "photo": [
+                {
+                    "alt": current_app.config["PHOTO_DESCRIPTION"],
+                    "value": url_for(
+                        "static",
+                        filename="img/photo.jpg",
+                        _external=True,
+                    ),
+                },
+            ],
+            "email": [current_app.config["EMAIL"]],
+            "note": [current_app.config["NOTE"]],
+        },
+    )
 
 
 def extract_text_from_html(html: str) -> str:
@@ -34,6 +157,9 @@ def get_type_emoji(data: dict[str, Any]) -> str:
         if "in-reply-to" in data.properties:
             return '<span title="A reply (h-entry)">💬</span>'
 
+        if "like-of" in data.properties:
+            return '<span title="A like (h-entry)">❤️</span>'
+
         if "name" in data.properties:
             return '<span title="An article (h-entry)">📄</span>'
 
@@ -48,7 +174,7 @@ async def fetch_hcard(url: str) -> dict[str, Any]:
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
-        html = mf2py.Parser(response.content.decode())
+        html = mf2py.Parser(response.content.decode(), url=url)
 
     if cards := html.to_dict(filter_by_type="h-card"):
         return cards[0]
@@ -134,10 +260,15 @@ def compute_s256_challenge(code_verifier: str) -> str:
     return code_challenge
 
 
-def summarize(text: str) -> str:
+def summarize(content: str) -> str:
     """
     Summarize text, making it shorter.
 
     This is used when showing entries in the feed/search/cateegory pages.
     """
-    return extract_text_from_html(text)[:SUMMARY_LENGTH] + "⋯"
+    text = extract_text_from_html(content)
+
+    if len(text) <= SUMMARY_LENGTH:
+        return text
+
+    return text[: (SUMMARY_LENGTH - 1)] + "⋯"

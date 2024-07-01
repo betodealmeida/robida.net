@@ -1,16 +1,23 @@
-{% import 'macros/feed/article.html' as article_macros %}
-{% import 'macros/feed/note.html' as note_macros %}
 {% import 'macros/feed/author.html' as author_macros %}
+{% import 'macros/feed/post.html' as post_macros %}
 {% import 'macros/feed/published.html' as published_macros %}
 
 {# see https://indieweb.org/post-type-discovery #}
 {% macro h_entry(data, compact=False) %}
 <article class="h-entry">
     {% if data.properties.name %}
-        {{ article_macros.article(data, compact) }}
-    {% else %}
-        {{ note_macros.note(data, compact) }}
+    <header>
+        <hgroup>
+            <h1 class="p-name">{{ data.properties.name[0] }}</h1>
+
+            {% if data.properties.summary %}
+            <p class="p-summary">{{ data.properties.summary[0] }}</p>
+            {% endif %}
+        </hgroup>
+    </header>
     {% endif %}
+
+    {{ post_macros.post(data, compact=compact) }}
 
     <footer>
         <p>
@@ -30,12 +37,12 @@
 
             {% if data.properties.category %}
             {% for category in data.properties.category %}
-                <a
-                    href="{{ url_for('category.index', category=category) }}"
-                    class="p-category"
-                >
-                    <mark>{{ category }}</mark>
-                </a>
+            <a
+                href="{{ url_for('category.index', category=category) }}"
+                class="p-category"
+            >
+                <mark>{{ category }}</mark>
+            </a>
             {% endfor %}
             {% endif %}
         </p>
