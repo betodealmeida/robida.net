@@ -5,6 +5,7 @@ Generic helper functions.
 import base64
 import hashlib
 import urllib.parse
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
 from uuid import UUID, uuid4
@@ -16,10 +17,64 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from quart import current_app
 from quart.helpers import url_for
 
+from robida.events import EntryCreated, EntryDeleted, EntryUpdated, dispatcher
 from robida.models import Entry, Microformats2
 
 # inspired by Mastodon
 SUMMARY_LENGTH = 500
+
+
+ENTRY_WITH_CHILDREN = """
+WITH RECURSIVE linked_entries AS (
+    SELECT
+        e.uuid,
+        e.author,
+        e.location,
+        e.content,
+        e.read,
+        e.deleted,
+        e.created_at,
+        e.last_modified_at,
+        NULL AS target
+    FROM entries e
+    WHERE e.uuid = ?
+
+    UNION
+
+    SELECT
+        e.uuid,
+        e.author,
+        e.location,
+        e.content,
+        e.read,
+        e.deleted,
+        e.created_at,
+        e.last_modified_at,
+        iw.target AS target
+    FROM entries e
+    JOIN incoming_webmentions iw ON e.location = iw.source
+    JOIN linked_entries le ON iw.target = le.location
+    WHERE iw.status = 'success'
+
+    UNION
+
+    SELECT
+        e.uuid,
+        e.author,
+        e.location,
+        e.content,
+        e.read,
+        e.deleted,
+        e.created_at,
+        e.last_modified_at,
+        ow.target AS target
+    FROM entries e
+    JOIN outgoing_webmentions ow ON e.location = ow.source
+    JOIN linked_entries le ON ow.target = le.location
+    WHERE ow.status = 'success'
+)
+SELECT * FROM linked_entries;
+"""
 
 
 # pylint: disable=too-few-public-methods
@@ -55,11 +110,53 @@ class XForwardedProtoMiddleware:
         await self.app(scope, receive, send)
 
 
+async def get_entry(db: Connection, uuid: UUID) -> Entry | None:
+    """
+    Return an entry with all its replies.
+    """
+    async with db.execute(ENTRY_WITH_CHILDREN, (uuid.hex,)) as cursor:
+        rows = await cursor.fetchall()
+
+    if not rows:
+        return None
+
+    reply_map = defaultdict(list)
+    for row in rows:
+        reply_map[row["target"]].append(
+            Entry(
+                uuid=UUID(row["uuid"]),
+                author=row["author"],
+                location=row["location"],
+                content=Microformats2.model_validate_json(row["content"]),
+                read=row["read"],
+                deleted=row["deleted"],
+                created_at=datetime.fromisoformat(row["created_at"]),
+                last_modified_at=datetime.fromisoformat(row["last_modified_at"]),
+            )
+        )
+
+    root = reply_map[None][0]
+    queue = [root]
+    seen = set()
+    while queue:
+        entry = queue.pop(0)
+        if entry.uuid in seen:
+            continue
+        seen.add(entry.uuid)
+
+        replies = reply_map[entry.location]
+        entry.content.children.extend(reply.content for reply in replies)
+        queue.extend(replies)
+
+    return root
+
+
 async def upsert_entry(db: Connection, hentry: Microformats2) -> Entry:
     """
     Create/update an entry in the database from an h-entry.
     """
     uuid = UUID(hentry.properties["uid"][0])
+    old_entry = await get_entry(db, uuid)
 
     author = location = hentry.properties["url"][0]
     if hcard := hentry.properties.get("author"):
@@ -117,7 +214,7 @@ ON CONFLICT(uuid) DO UPDATE SET
     )
     await db.commit()
 
-    return Entry(
+    new_entry = Entry(
         uuid=uuid,
         author=author,
         location=location,
@@ -127,6 +224,34 @@ ON CONFLICT(uuid) DO UPDATE SET
         created_at=created_at,
         last_modified_at=last_modified_at,
     )
+
+    dispatcher.dispatch(
+        EntryUpdated(old_entry=old_entry, new_entry=new_entry)
+        if old_entry
+        else EntryCreated(new_entry=new_entry)
+    )
+
+    return new_entry
+
+
+async def delete_entry(db: Connection, entry: Entry) -> None:
+    """
+    Delete a given entry.
+    """
+    await db.execute(
+        """
+UPDATE
+    entries
+SET
+    deleted = TRUE
+WHERE
+    uuid = ?;
+        """,
+        (entry.uuid.hex,),
+    )
+    await db.commit()
+
+    dispatcher.dispatch(EntryDeleted(old_entry=entry))
 
 
 def new_hentry() -> Microformats2:

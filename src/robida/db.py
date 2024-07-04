@@ -11,7 +11,6 @@ import aiosqlite
 from quart import Quart
 from quart.helpers import url_for
 
-from robida.helpers import extract_text_from_html
 from robida.models import Entry, Microformats2
 
 
@@ -39,6 +38,9 @@ async def load_entries(app: Quart) -> None:
     """
     Populate the DB with a few entries.
     """
+    # pylint: disable=import-outside-toplevel
+    from robida.helpers import extract_text_from_html
+
     async with app.app_context():
         note = Entry(
             uuid=UUID("1d4f24cc-8c6a-442e-8a42-bc208cb16534"),

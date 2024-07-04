@@ -4,7 +4,6 @@ Helper functions for the feed.
 
 import hashlib
 import json
-from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -26,101 +25,6 @@ from .models import (
     JSONFeedItem,
     JSON_FEED_VERSION,
 )
-
-
-ENTRY_WITH_CHILDREN = """
-WITH RECURSIVE linked_entries AS (
-    SELECT
-        e.uuid,
-        e.author,
-        e.location,
-        e.content,
-        e.read,
-        e.deleted,
-        e.created_at,
-        e.last_modified_at,
-        NULL AS target
-    FROM entries e
-    WHERE e.uuid = ?
-
-    UNION
-
-    SELECT
-        e.uuid,
-        e.author,
-        e.location,
-        e.content,
-        e.read,
-        e.deleted,
-        e.created_at,
-        e.last_modified_at,
-        iw.target AS target
-    FROM entries e
-    JOIN incoming_webmentions iw ON e.location = iw.source
-    JOIN linked_entries le ON iw.target = le.location
-    WHERE iw.status = 'success'
-
-    UNION
-
-    SELECT
-        e.uuid,
-        e.author,
-        e.location,
-        e.content,
-        e.read,
-        e.deleted,
-        e.created_at,
-        e.last_modified_at,
-        ow.target AS target
-    FROM entries e
-    JOIN outgoing_webmentions ow ON e.location = ow.source
-    JOIN linked_entries le ON ow.target = le.location
-    WHERE ow.status = 'success'
-)
-SELECT * FROM linked_entries;
-"""
-
-
-async def get_entry(uuid: UUID) -> Entry | None:
-    """
-    Return an entry with all its replies.
-    """
-    async with get_db(current_app) as db:
-        async with db.execute(ENTRY_WITH_CHILDREN, (uuid.hex,)) as cursor:
-            rows = await cursor.fetchall()
-
-    if not rows:
-        return None
-
-    reply_map = defaultdict(list)
-    for row in rows:
-        reply_map[row["target"]].append(
-            Entry(
-                uuid=UUID(row["uuid"]),
-                author=row["author"],
-                location=row["location"],
-                content=Microformats2(**json.loads(row["content"])),
-                read=row["read"],
-                deleted=row["deleted"],
-                created_at=datetime.fromisoformat(row["created_at"]),
-                last_modified_at=datetime.fromisoformat(row["last_modified_at"]),
-            )
-        )
-
-    root = reply_map[None][0]
-    queue = [root]
-    seen = set()
-    while queue:
-        entry = queue.pop(0)
-        if entry.uuid in seen:
-            continue
-        seen.add(entry.uuid)
-
-        replies = reply_map[entry.location]
-        entry.content.children.extend(reply.content for reply in replies)
-        queue.extend(replies)
-
-    return root
 
 
 async def render_microformat(data: dict[str, Any]) -> str:

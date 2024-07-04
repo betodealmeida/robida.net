@@ -26,6 +26,7 @@ async def test_submit(
     """
     Test the endpoint for submitting new entries
     """
+    mocker.patch("robida.helpers.dispatcher")
     mocker.patch(
         "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),

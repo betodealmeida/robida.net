@@ -24,11 +24,11 @@ async def test_create_entry(
     """
     Test main endpoint.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
+    mocker.patch("robida.helpers.dispatcher")
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
@@ -102,11 +102,11 @@ async def test_create_entry_no_type(
     """
     Test main endpoint with a multipart/form-data payload without the type specified.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
+    mocker.patch("robida.helpers.dispatcher")
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
     response = await client.post(
@@ -179,11 +179,11 @@ async def test_create_entry_from_json(
     """
     Test main endpoint with a JSON request payload.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
+    mocker.patch("robida.helpers.dispatcher")
 
     # https://www.w3.org/TR/micropub/#json-syntax
     response = await client.post(
@@ -260,11 +260,11 @@ async def test_create_entry_from_json_no_type(
     """
     Test main endpoint with a JSON request payload without the type specified.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
+    mocker.patch("robida.helpers.dispatcher")
 
     # https://www.w3.org/TR/micropub/#json-syntax
     response = await client.post(
@@ -337,7 +337,6 @@ async def test_create_entry_with_file(
     """
     Test uploading file directly.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         side_effect=[
@@ -345,6 +344,7 @@ async def test_create_entry_with_file(
             UUID("c35ad471-6c6c-488b-9ffc-8854607192f0"),
         ],
     )
+    mocker.patch("robida.helpers.dispatcher")
     mocker.patch("robida.blueprints.micropub.api.aiofiles")
 
     # h=entry&content=hello+world&category[]=foo&category[]=bar
@@ -458,7 +458,7 @@ async def test_index_source(mocker: MockerFixture, client: testing.QuartClient) 
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
+    mocker.patch("robida.helpers.dispatcher")
 
     response = await client.post(
         "/micropub",
@@ -525,15 +525,10 @@ async def test_index_invalid(client: testing.QuartClient) -> None:
     }
 
 
-async def test_delete_and_undelete(
-    mocker: MockerFixture,
-    client: testing.QuartClient,
-    db: Connection,
-) -> None:
+async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) -> None:
     """
     Test deleting and undeleting an entry.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
 
     response = await client.post(
         "/micropub",
@@ -633,11 +628,11 @@ async def test_update(
     """
     Test updating an entry.
     """
-    mocker.patch("robida.blueprints.micropub.api.send_webmentions")
     mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
+    mocker.patch("robida.helpers.dispatcher")
 
     with freeze_time("2024-01-01 00:00:00"):
         response = await client.post(
@@ -715,7 +710,7 @@ WHERE
                         }
                     ],
                     "published": ["2024-01-01T00:00:00+00:00"],
-                    "updated": ["2024-01-02T00:00:00Z"],
+                    "updated": ["2024-01-02T00:00:00+00:00"],
                     "url": [
                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],

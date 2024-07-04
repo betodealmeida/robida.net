@@ -41,6 +41,7 @@ from robida.blueprints.webmention.helpers import (
 )
 from robida.blueprints.webmention.models import WebMentionStatus
 from robida.db import load_entries
+from robida.helpers import get_entry, new_hentry, upsert_entry
 from robida.models import Microformats2
 
 
@@ -70,10 +71,38 @@ async def test_verify_request(current_app: Quart) -> None:
 
 
 @freeze_time("2024-01-01 00:00:00", auto_tick_seconds=3600)
-async def test_process_webmention(mocker: MockerFixture) -> None:
+async def test_process_webmention(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
     """
     Test the `process_webmention` function.
     """
+    uuid = UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e")
+
+    async with current_app.app_context():
+        hentry = new_hentry()
+        hentry.properties.update(
+            {
+                "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                "uid": [str(uuid)],
+                "in-reply-to": ["http://alice.example.com/post/1"],
+                "author": [
+                    {
+                        "type": ["h-card"],
+                        "properties": {"url": "https://other.example.com"},
+                    }
+                ],
+                "content": [
+                    {
+                        "html": '<a href="http://example.com/">Robida is cool</a>',
+                        "value": "Robida is cool",
+                    },
+                ],
+            },
+        )
+        entry = await upsert_entry(db, hentry)
 
     async def gen() -> AsyncGenerator[tuple[WebMentionStatus, str, str | None], None]:
         """
@@ -92,18 +121,7 @@ async def test_process_webmention(mocker: MockerFixture) -> None:
         yield (
             WebMentionStatus.SUCCESS,
             "The webmention processed successfully and approved.",
-            json.dumps(
-                {
-                    "type": ["h-entry"],
-                    "properties": {
-                        "author": {"url": "https://other.example.com"},
-                        "content": [
-                            "This is a dummy entry created by the webmention processor."
-                        ],
-                    },
-                },
-                separators=(",", ":"),
-            ),
+            entry,
         )
 
     mocker.patch(
@@ -113,7 +131,7 @@ async def test_process_webmention(mocker: MockerFixture) -> None:
     get_db = mocker.patch("robida.blueprints.webmention.helpers.get_db")
 
     await process_webmention(
-        UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+        uuid,
         "https://other.example.com",
         "http://example.com/",
         None,
@@ -138,7 +156,7 @@ WHERE
                         WebMentionStatus.RECEIVED,
                         "The webmention was received and is queued for processing.",
                         None,
-                        datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+                        datetime(2024, 1, 1, 13, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
                 ),
@@ -148,7 +166,7 @@ WHERE
                         WebMentionStatus.PROCESSING,
                         "The webmention is being processed.",
                         None,
-                        datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc),
+                        datetime(2024, 1, 1, 14, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
                 ),
@@ -157,8 +175,36 @@ WHERE
                     (
                         WebMentionStatus.SUCCESS,
                         "The webmention processed successfully and approved.",
-                        '{"type":["h-entry"],"properties":{"author":{"url":"https://other.example.com"},"content":["This is a dummy entry created by the webmention processor."]}}',
-                        datetime(2024, 1, 1, 2, 0, tzinfo=timezone.utc),
+                        json.dumps(
+                            {
+                                "type": ["h-entry"],
+                                "properties": {
+                                    "author": [
+                                        {
+                                            "type": ["h-card"],
+                                            "properties": {
+                                                "url": "https://other.example.com"
+                                            },
+                                        }
+                                    ],
+                                    "published": ["2024-01-01T00:00:00+00:00"],
+                                    "updated": ["2024-01-01T00:00:00+00:00"],
+                                    "url": [
+                                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                                    ],
+                                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                                    "in-reply-to": ["http://alice.example.com/post/1"],
+                                    "content": [
+                                        {
+                                            "html": '<a href="http://example.com/">Robida is cool</a>',
+                                            "value": "Robida is cool",
+                                        }
+                                    ],
+                                },
+                            },
+                            separators=(",", ":"),
+                        ),
+                        datetime(2024, 1, 1, 15, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
                 ),
@@ -187,6 +233,8 @@ async def test_process_webmention_failure(mocker: MockerFixture) -> None:
         return_value=gen(),
     )
     get_db = mocker.patch("robida.blueprints.webmention.helpers.get_db")
+    get_entry = mocker.patch("robida.blueprints.webmention.helpers.get_entry")
+    delete_entry = mocker.patch("robida.blueprints.webmention.helpers.delete_entry")
 
     await process_webmention(
         UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -218,12 +266,12 @@ WHERE
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
                 ),
-                mocker.call(
-                    "UPDATE entries SET deleted = ? WHERE uuid = ?;",
-                    (True, "92cdeabd827843ad871d0214dcb2d12e"),
-                ),
             ]
         )
+
+        get_entry.assert_called_with(db, UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"))
+        entry = await get_entry()
+        delete_entry.assert_called_with(db, entry)
 
 
 async def test_validate_webmention_invalid_scheme(db: Connection) -> None:
@@ -359,23 +407,7 @@ async def test_validate_webmention_needs_moderation(
         (status, message, content) = await anext(validator)
         assert status == WebMentionStatus.PENDING_MODERATION
         assert message == MODERATION_MESSAGE
-        assert content == json.dumps(
-            {
-                "type": ["h-entry"],
-                "properties": {
-                    "url": ["https://other.example.com"],
-                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
-                    "content": [
-                        {
-                            "html": '<a rel="nofollow" href="https://other.example.com">https://other.example.com</a>',
-                            "value": "https://other.example.com",
-                        },
-                    ],
-                    "published": ["2024-01-01T00:00:00+00:00"],
-                },
-            },
-            separators=(",", ":"),
-        )
+        assert content is None
 
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
@@ -403,6 +435,7 @@ async def test_validate_webmention(
         "robida.blueprints.webmention.helpers.send_salmention"
     )
     upsert_entry = mocker.patch("robida.blueprints.webmention.helpers.upsert_entry")
+    entry = await upsert_entry()
     httpx_mock.add_response(
         url="https://other.example.com",
         html='<a href="http://example.com/">Look at this!</a>',
@@ -425,23 +458,7 @@ async def test_validate_webmention(
         (status, message, content) = await anext(validator)
         assert status == WebMentionStatus.SUCCESS
         assert message == "The webmention processed successfully and approved."
-        assert content == json.dumps(
-            {
-                "type": ["h-entry"],
-                "properties": {
-                    "url": ["https://other.example.com"],
-                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
-                    "content": [
-                        {
-                            "html": '<a rel="nofollow" href="https://other.example.com">https://other.example.com</a>',
-                            "value": "https://other.example.com",
-                        }
-                    ],
-                    "published": ["2024-01-01T00:00:00+00:00"],
-                },
-            },
-            separators=(",", ":"),
-        )
+        assert content == entry
 
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
@@ -1351,7 +1368,11 @@ async def test_find_vouch_no_domains(db: Connection, current_app: Quart) -> None
 
 
 @freeze_time("2024-01-01 00:00:00", auto_tick_seconds=3600)
-async def test_send_salmention(mocker: MockerFixture, current_app: Quart) -> None:
+async def test_send_salmention(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
     """
     Test the `send_salmention` function.
     """
@@ -1360,78 +1381,13 @@ async def test_send_salmention(mocker: MockerFixture, current_app: Quart) -> Non
     )
 
     await load_entries(current_app)
+    entry = await get_entry(db, UUID("1d4f24cc-8c6a-442e-8a42-bc208cb16534"))
     async with current_app.app_context():
         await send_salmention(
             "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
         )
 
-    send_webmentions.assert_called_with(
-        "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
-        Microformats2(
-            type=["h-entry"],
-            properties={
-                "url": ["http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"],
-                "content": ["Hello, world!"],
-                "category": ["note"],
-                "published": ["2024-01-01T00:00:00+00:00"],
-                "author": [
-                    {
-                        "type": ["h-card"],
-                        "properties": {
-                            "name": ["Beto Dealmeida"],
-                            "url": ["http://example.com/"],
-                        },
-                    }
-                ],
-            },
-            children=[
-                Microformats2(
-                    type=["h-entry"],
-                    properties={
-                        "url": ["http://alice.example.com/post/1"],
-                        "in-reply-to": [
-                            "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
-                        ],
-                        "content": ["Welcome!"],
-                        "published": ["2024-01-01T09:00:00+00:00"],
-                        "author": [
-                            {
-                                "type": ["h-card"],
-                                "properties": {
-                                    "name": ["Alice"],
-                                    "url": ["http://alice.example.com"],
-                                },
-                            }
-                        ],
-                    },
-                    children=[
-                        Microformats2(
-                            type=["h-entry"],
-                            properties={
-                                "url": [
-                                    "http://example.com/feed/99111091-26c7-4e3e-a0be-436fbeee0d14"
-                                ],
-                                "in-reply-to": ["http://alice.example.com/post/1"],
-                                "content": ["Thank you!"],
-                                "category": ["note"],
-                                "published": ["2024-01-01T12:00:00+00:00"],
-                                "author": [
-                                    {
-                                        "type": ["h-card"],
-                                        "properties": {
-                                            "name": ["Beto Dealmeida"],
-                                            "url": ["http://example.com/"],
-                                        },
-                                    }
-                                ],
-                            },
-                            children=[],
-                        )
-                    ],
-                )
-            ],
-        ),
-    )
+    send_webmentions.assert_called_with(new_entry=entry, old_entry=entry)
 
 
 async def test_send_webmentions(
@@ -1446,60 +1402,149 @@ async def test_send_webmentions(
         "robida.blueprints.webmention.helpers.queue_webmention"
     )
 
-    await db.execute(
-        "INSERT INTO outgoing_webmentions (source, target, status) VALUES (?, ?, ?)",
-        (
-            "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
-            "http://alice.example.com/post/2",
-            WebMentionStatus.SUCCESS,
-        ),
-    )
-    await db.commit()
-
-    data = Microformats2(
-        type=["h-entry"],
-        properties={
-            "in-reply-to": ["http://alice.example.com/post/1"],
-            "content": [
-                {
-                    "html": '<a href="http://example.com/">Robida is cool</a>',
-                    "value": "Robida is cool",
-                },
-            ],
-        },
-    )
     async with current_app.app_context():
-        await send_webmentions(
-            "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
-            data,
+        hentry = new_hentry()
+        uuid = UUID(hentry.properties["uid"][0])
+        hentry.properties.update(
+            {
+                "in-reply-to": ["http://alice.example.com/post/1"],
+                "content": [
+                    {
+                        "html": '<a href="http://example.com/">Robida is cool</a>',
+                        "value": "Robida is cool",
+                    },
+                ],
+            },
         )
+        entry = await upsert_entry(db, hentry)
+
+    async with current_app.app_context():
+        await send_webmentions(new_entry=entry)
 
     queue_webmention.assert_has_calls(
         [
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
-                "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
+                f"http://example.com/feed/{uuid}",
                 "http://example.com/",
-                data,
+                entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
-                "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
+                f"http://example.com/feed/{uuid}",
                 "http://alice.example.com/post/1",
-                data,
+                entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
-                "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
-                "http://alice.example.com/post/2",
-                data,
+                f"http://example.com/feed/{uuid}",
+                "http://example.com/static/img/photo.jpg",
+                entry.content,
             ),
         ],
         any_order=True,
     )
+
+
+async def test_send_webmentions_in_development(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
+    """
+    Test the `send_webmentions` function when in development mode.
+
+    No webmentions should be sent.
+    """
+    queue_webmention = mocker.patch(
+        "robida.blueprints.webmention.helpers.queue_webmention"
+    )
+
+    async with current_app.app_context():
+        hentry = new_hentry()
+        hentry.properties.update(
+            {
+                "in-reply-to": ["http://alice.example.com/post/1"],
+                "content": [
+                    {
+                        "html": '<a href="http://example.com/">Robida is cool</a>',
+                        "value": "Robida is cool",
+                    },
+                ],
+            },
+        )
+
+        current_app.config["ENVIRONMENT"] = "development"
+        entry = await upsert_entry(db, hentry)
+        await send_webmentions(new_entry=entry)
+
+    queue_webmention.assert_not_called()
+
+
+async def test_send_webmentions_not_author(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
+    """
+    Test the `send_webmentions` function when the source is external.
+
+    The `entries` tables store entries from external sources, in case of incoming
+    webmentions. When those entries are modified, we should not send webmentions on their
+    behalf.
+    """
+    queue_webmention = mocker.patch(
+        "robida.blueprints.webmention.helpers.queue_webmention"
+    )
+
+    async with current_app.app_context():
+        hentry = new_hentry()
+        hentry.properties.update(
+            {
+                "author": [
+                    {
+                        "type": ["h-card"],
+                        "properties": {
+                            "name": ["Alice"],
+                            "url": ["http://alice.example.com/"],
+                        },
+                    },
+                ],
+                "in-reply-to": ["http://example.com/post/2"],
+                "content": [
+                    {
+                        "html": '<a href="http://example.com/">Robida is cool</a>',
+                        "value": "Robida is cool",
+                    },
+                ],
+            },
+        )
+        entry = await upsert_entry(db, hentry)
+
+    async with current_app.app_context():
+        await send_webmentions(new_entry=entry)
+
+    queue_webmention.assert_not_called()
+
+
+async def test_send_webmentions_not_data(
+    mocker: MockerFixture,
+    current_app: Quart,
+) -> None:
+    """
+    Test the `send_webmentions` function when no data is found.
+    """
+    queue_webmention = mocker.patch(
+        "robida.blueprints.webmention.helpers.queue_webmention"
+    )
+
+    async with current_app.app_context():
+        await send_webmentions()
+
+    queue_webmention.assert_not_called()
 
 
 @freeze_time("2024-01-01 00:00:00", auto_tick_seconds=3600)

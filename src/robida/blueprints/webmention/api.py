@@ -12,11 +12,36 @@ from quart.helpers import url_for
 from quart_schema import DataSource, validate_request
 
 from robida.db import get_db
+from robida.events import EntryCreated, EntryDeleted, EntryUpdated, dispatcher
 
-from .helpers import process_webmention, verify_request
+from .helpers import process_webmention, send_webmentions, verify_request
 from .models import WebMentionRequest, WebMentionStatus
 
 blueprint = Blueprint("webmention", __name__, url_prefix="/webmention")
+
+
+@dispatcher.register(EntryCreated)
+async def entry_created(event: EntryCreated) -> None:
+    """
+    Handle an entry being created.
+    """
+    await send_webmentions(new_entry=event.new_entry)
+
+
+@dispatcher.register(EntryUpdated)
+async def entry_updated(event: EntryUpdated) -> None:
+    """
+    Handle an entry being updated.
+    """
+    await send_webmentions(new_entry=event.new_entry, old_entry=event.old_entry)
+
+
+@dispatcher.register(EntryDeleted)
+async def entry_deleted(event: EntryDeleted) -> None:
+    """
+    Handle an entry being deleted.
+    """
+    await send_webmentions(old_entry=event.old_entry)
 
 
 @blueprint.route("", methods=["POST"])

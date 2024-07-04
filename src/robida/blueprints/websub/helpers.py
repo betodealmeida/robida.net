@@ -10,7 +10,8 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import httpx
-from quart import current_app
+from aiosqlite import Row
+from quart import current_app, testing
 from quart.helpers import url_for
 
 from robida.db import get_db
@@ -172,7 +173,11 @@ def apply_parameters_to_url(url: str, **kwargs: list[str]) -> str:
     return parsed._replace(query=query).geturl()
 
 
-async def send_to_subscriber(row, quart_client, httpx_client) -> None:
+async def send_to_subscriber(
+    row: Row,
+    quart_client: testing.QuartClient,
+    httpx_client: httpx.AsyncClient,
+) -> None:
     """
     Broadcast URL change to a single subscriber.
     """

@@ -11,11 +11,12 @@ from quart.helpers import redirect, url_for
 from quart_schema import validate_querystring
 
 from robida.constants import MAX_PAGE_SIZE
+from robida.db import get_db
+from robida.helpers import get_entry
 
 from .helpers import (
     build_jsonfeed,
     get_entries,
-    get_entry,
     get_feed_next_url,
     get_feed_previous_url,
     get_title,
@@ -291,7 +292,8 @@ async def entry(uuid: UUID) -> dict:
     Load a single entry.
     """
     # pylint: disable=redefined-outer-name
-    entry = await get_entry(uuid)
+    async with get_db(current_app) as db:
+        entry = await get_entry(db, uuid)
 
     if entry is None:
         return Response(status=404)
