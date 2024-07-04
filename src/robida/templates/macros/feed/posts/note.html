@@ -1,6 +1,3 @@
-{% import 'macros/feed/author.html' as author_macros %}
-{% import 'macros/feed/published.html' as published_macros %}
-
 {% macro note(data, compact=False) %}
 <p class="p-content e-content">
     {% if data.properties.content[0] is mapping %}

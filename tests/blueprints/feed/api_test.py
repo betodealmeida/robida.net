@@ -62,7 +62,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     assert response.headers["Last-Modified"] == "Mon, 01 Jan 2024 00:00:00 GMT"
     assert (
         response.headers["ETag"]
-        == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
+        == "6c07533892a937cb31037af074c295e165dd8abe0f8d11eccd33ede1682abd0f"
     )
     assert await response.json == {
         "title": "Robida",
@@ -89,6 +89,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             {
                 "id": "92cdeabd827843ad871d0214dcb2d12e",
                 "url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                "tags": ["foo", "bar"],
                 "content_html": "hello world",
                 "content_text": "hello world",
                 "date_published": "2024-01-01T00:00:00Z",
@@ -263,7 +264,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     assert response.headers["Last-Modified"] == "Mon, 01 Jan 2024 00:00:00 GMT"
     assert (
         response.headers["ETag"]
-        == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
+        == "6c07533892a937cb31037af074c295e165dd8abe0f8d11eccd33ede1682abd0f"
     )
 
 
@@ -347,7 +348,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     assert response.headers["Last-Modified"] == "Mon, 01 Jan 2024 00:00:00 GMT"
     assert (
         response.headers["ETag"]
-        == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
+        == "6c07533892a937cb31037af074c295e165dd8abe0f8d11eccd33ede1682abd0f"
     )
 
 
@@ -431,7 +432,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     assert response.headers["Last-Modified"] == "Mon, 01 Jan 2024 00:00:00 GMT"
     assert (
         response.headers["ETag"]
-        == "faeee22f6d53d26e38c317f7197c22911ab5cfa4781979a4d792d13118c973cb"
+        == "6c07533892a937cb31037af074c295e165dd8abe0f8d11eccd33ede1682abd0f"
     )
 
 
@@ -476,7 +477,7 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "e4f00d1a3dc8c3ed4289ba94cbdc9b3143b55fc7352002b2a98baa7569a67532"
+        == "eed8d2521e55b1bdedee8ae16e4dfd36db3b65cc1d3d5c3f4be2ec7743c51586"
     )
 
     html = await response.data
@@ -496,8 +497,8 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
                             "lang": "en",
                             "html": """<p>
     This blog runs a custom-built Python web framework called
-    <a href="https://github.com/betodealmeida/robida.net/">Robida</a>, built for the
-    <a href="https://indieweb.org/">IndieWeb</a>.
+    <a href="https://github.com/betodealmeida/robida.net/" rel="noopener noreferrer">Robida</a>, built for the
+    <a href="https://indieweb.org/" rel="noopener noreferrer">IndieWeb</a>.
 </p>""",
                         }
                     ],
@@ -528,6 +529,14 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             "hub": ["/websub"],
             "alternate": ["/feed.json", "/feed.rss", "/feed.xml", "/feed.html"],
             "stylesheet": ["/static/css/main.css"],
+            "noopener": [
+                "https://github.com/betodealmeida/robida.net/",
+                "https://indieweb.org/",
+            ],
+            "noreferrer": [
+                "https://github.com/betodealmeida/robida.net/",
+                "https://indieweb.org/",
+            ],
         },
         "rel-urls": {
             "/micropub": {"text": "", "rels": ["micropub"]},
@@ -543,6 +552,14 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             "/feed.xml": {"text": "", "rels": ["alternate"]},
             "/feed.html": {"text": "", "rels": ["alternate"]},
             "/static/css/main.css": {"text": "", "rels": ["stylesheet"]},
+            "https://github.com/betodealmeida/robida.net/": {
+                "text": "Robida",
+                "rels": ["noopener", "noreferrer"],
+            },
+            "https://indieweb.org/": {
+                "text": "IndieWeb",
+                "rels": ["noopener", "noreferrer"],
+            },
         },
         "debug": {
             "description": "mf2py - microformats2 parser for python",
@@ -590,7 +607,7 @@ async def test_entry_not_modified(
     response = await client.get(
         "/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad",
         headers={
-            "If-None-Match": "e4f00d1a3dc8c3ed4289ba94cbdc9b3143b55fc7352002b2a98baa7569a67532"
+            "If-None-Match": "eed8d2521e55b1bdedee8ae16e4dfd36db3b65cc1d3d5c3f4be2ec7743c51586"
         },
     )
 

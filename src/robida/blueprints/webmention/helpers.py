@@ -16,13 +16,12 @@ import httpx
 import mf2py
 from aiosqlite import Connection
 from bs4 import BeautifulSoup
-from pydantic import ValidationError
 from quart import current_app
 from quart.helpers import url_for
 
 from robida.blueprints.feed.helpers import get_entry
 from robida.db import get_db
-from robida.helpers import rfc822_to_iso
+from robida.helpers import rfc822_to_iso, upsert_entry
 from robida.models import Microformats2
 
 from .models import WebMentionStatus
@@ -150,7 +149,7 @@ async def validate_webmention(
             return
 
         # store the content of the webmention
-        hentry = get_webmention_hentry(response, source, target)
+        hentry = get_webmention_hentry(response, source, target, uuid)
         content = hentry.model_dump_json(exclude_unset=True)
 
         if not await is_domain_trusted(db, source) and not await is_vouch_valid(
@@ -162,7 +161,7 @@ async def validate_webmention(
             return
 
         # create a proper entry for the webmention
-        await create_entry(db, uuid, source, hentry)
+        await upsert_entry(db, hentry)
 
         # re-send webmentions upstream
         await send_salmention(target)
@@ -187,6 +186,7 @@ def get_webmention_hentry(
     response: httpx.Response,
     source: str,
     target: str,
+    uuid: UUID,
 ) -> Microformats2:
     """
     Fetch the webmention payload from the source.
@@ -194,10 +194,11 @@ def get_webmention_hentry(
     This function tries to find a proper h-entry in the source, and falls back to a
     dummy entry if it can't find one.
     """
-    dummy_hentry = Microformats2(
+    hentry = Microformats2(
         type=["h-entry"],
         properties={
             "url": [source],
+            "uid": [str(uuid)],
             "content": [
                 {
                     "html": f'<a rel="nofollow" href="{source}">{source}</a>',
@@ -218,14 +219,14 @@ def get_webmention_hentry(
         return target in content
 
     if "text/html" in response.headers.get("Content-Type", ""):
-        parser = mf2py.Parser(response.text)
+        parser = mf2py.Parser(response.text, url=str(response.url))
 
         for entry in parser.to_dict(filter_by_type="h-entry"):
             # find the h-entry that references the target URL
             if find_in_json(entry, matcher):
-                return Microformats2(**entry)
+                hentry.properties.update(entry["properties"])
 
-        return dummy_hentry
+        return hentry
 
     # I have never seen a JSON webmention in the wild, so here I'm just assuming that
     # it would look like a Microformats2 JSON object.
@@ -239,14 +240,12 @@ def get_webmention_hentry(
                 break
 
             if element.get("type") == ["h-entry"] and find_in_json(element, matcher):
-                try:
-                    return Microformats2(**element)
-                except ValidationError:
-                    continue
+                hentry.properties.update(element.get("properties", {}))
+                return hentry
 
             queue.extend(element.get("children", []))
 
-    return dummy_hentry
+    return hentry
 
 
 async def is_domain_trusted(db: Connection, source: str) -> bool:
@@ -280,67 +279,6 @@ async def is_vouch_valid(db: Connection, vouch: str | None, source: str) -> bool
             return False
 
         return links_back(response, source, domain_only=True)
-
-
-async def create_entry(
-    db: Connection,
-    uuid: UUID,
-    location: str,
-    hentry: Microformats2,
-) -> None:
-    """
-    Create an entry for an accepted webmention.
-
-    If an entry already exists, it will be updated.
-    """
-    author = location
-    if hcard := hentry.properties.get("author"):
-        if "url" in hcard:
-            author = hcard["url"]
-
-    try:
-        created_at = datetime.fromisoformat(hentry.properties["published"][0])
-    except (KeyError, ValueError):
-        created_at = datetime.now(timezone.utc)
-
-    try:
-        last_modified_at = datetime.fromisoformat(hentry.properties["updated"][0])
-    except (KeyError, ValueError):
-        last_modified_at = created_at
-
-    await db.execute(
-        """
-INSERT INTO entries (
-    uuid,
-    author,
-    location,
-    content,
-    read,
-    deleted,
-    created_at,
-    last_modified_at
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT (uuid) DO UPDATE SET
-    author = excluded.author,
-    location = excluded.location,
-    content = excluded.content,
-    read = FALSE,
-    deleted = FALSE,
-    last_modified_at = excluded.last_modified_at;
-        """,
-        (
-            uuid.hex,
-            author,
-            location,
-            hentry.model_dump_json(exclude_unset=True),
-            False,
-            False,
-            created_at,
-            last_modified_at,
-        ),
-    )
-    await db.commit()
 
 
 def match_url(target: str, domain_only: bool = False) -> Callable[[str], bool]:

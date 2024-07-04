@@ -11,6 +11,7 @@ My website.
 - [X] Centralized login
 - [X] IndieAuth provider
 - [X] Robots.txt
+- [ ] Backup
 - [ ] Firefox storage
 - [ ] OpenStreetMap provider
 - [ ] Passkeys?
@@ -20,13 +21,13 @@ My website.
 - [X] MicroPub server
 - [X] WebSub
 - [ ] Feed: h-feed, RSS/ATOM (with XSL), JSON
-  - [X] note
   - [X] card
+  - [X] note
   - [X] article
-  - [X] reply
-  - [ ] repost
-  - [ ] like
+  - [X] like
   - [ ] bookmark
+  - [ ] reply
+  - [ ] repost
   - [ ] event
   - [ ] issue
   - [ ] rsvp
@@ -36,6 +37,8 @@ My website.
   - [ ] trip
   - [ ] venue (h-card)
   - [ ] song
+  - [ ] listens (use song.link)
+  - [ ] photo/image
 - [X] Search
 - [X] Single entry display
 - [ ] WebMentions
@@ -49,12 +52,21 @@ My website.
   - [X] Contact
   - [X] Now
 - [ ] CRUD
+- [ ] Event handler
 - [ ] Bookmarklets
+- [ ] Local replies/likes
 - [ ] PWA
 - [ ] Syndication (FAWM, Archive.org, Bandcamp, IndieWeb News)
 - [ ] MicroPub client
 - [ ] ActivityPub
 - [ ] Payments
+
+### Quantified self
+
+- [ ] Oura (steps, sleep hours, hearbeat)
+- [ ] Withings
+- [ ] Listens
+- [ ] Air quality
 
 ### Reader
 
@@ -77,25 +89,27 @@ My website.
 
 ### Notes
 
-- robots.txt
-
+- send webmention on CRUD
+- fix rel="self" so it works in categories, main page, etc
+- call /publish on new entries
 https://indieweb.org/h-x-app#Properties
 - extract more info when app requests a token
 
 - render responses (https://indieweb.org/responses), and return in feed
-    - use bleach.clean (better: https://nh3.readthedocs.io/en/latest/)
     - do more work to populate a summary, specially for websites without an h-entry
 
-- private/draft
+- private/unlisted/public and draft/published
+- store logins in a table
+- UI for seeing applications and revoking access
 
-- webmention moderation
+- webmention moderation (simply make it a draft)
 - replies to places that don't receive webmentions?
 
 - move get_entry to robida.helpers
 - on auth.html, ask for confirmation on giving refresh token and the expiration time of the access token
 
 /bookmarklet blueprint
-- Gives Bookmarkelt with token pre-filled if logged in
+- Gives Bookmarklets pre-filled if logged in
 - Used for like/bookmark/repost/reply/song
 
 - move db.execute out of API?
@@ -104,4 +118,4 @@ https://indieweb.org/h-x-app#Properties
 - https://chatgpt.com/c/aa0c1dc8-03e7-40e7-91dd-7cc6708f23d6
 - if category is URL, convert to hcard for people tagging
 - likes and replies by logging in with URL in my website
-    - if the website supports micropub we could even post to it (repost? like?)
+    - if the website supports micropub we could even post to it (repost/reply/like)

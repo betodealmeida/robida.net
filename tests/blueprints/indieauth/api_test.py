@@ -24,7 +24,7 @@ async def test_authorization(
     Test the authorization endpoint.
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://example.com/"},
     )
     mocker.patch(
@@ -79,7 +79,7 @@ async def test_authorization_invalid_me(
     Test the authorization endpoint when `me` in the session is incorrect.
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://alice.example.com/"},
     )
 
@@ -109,7 +109,10 @@ async def test_authorization_unauthenticated(
     Test the authorization endpoint when the user is not authenticated.
     """
     session: dict[str, str] = {}
-    mocker.patch("robida.blueprints.indieauth.api.session", new=session)
+    mocker.patch(
+        "robida.blueprints.auth.helpers.session",
+        new=session,
+    )
     mocker.patch(
         "robida.blueprints.indieauth.api.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
@@ -133,7 +136,8 @@ async def test_authorization_unauthenticated(
     assert response.headers["Location"] == "/login"
     assert session == {
         "next": (
-            "/auth?response_type=code&"
+            "http://example.com/auth?"
+            "response_type=code&"
             "client_id=https://app.example.com/&"
             "redirect_uri=https://app.example.com/redirect&"
             "state=1234567890&"
@@ -155,7 +159,7 @@ async def test_authorization_with_id(
     https://aaronparecki.com/2020/12/03/1/indieauth-2020#response-type
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://example.com/"},
     )
     mocker.patch(
@@ -211,7 +215,7 @@ async def test_authorization_without_me(
     https://aaronparecki.com/2020/12/03/1/indieauth-2020#the-me-parameter
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://example.com/"},
     )
     mocker.patch(
@@ -264,7 +268,7 @@ async def test_authorization_invalid_response_type(
     Test the authorization endpoint with an invalid response type.
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://example.com/"},
     )
     response = await client.get(
@@ -293,7 +297,7 @@ async def test_authorization_invalid_code_challenge_method(
     Test the authorization endpoint with an invalid code challenge method.
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://example.com/"},
     )
     response = await client.get(
@@ -322,7 +326,7 @@ async def test_authorization_invalid_redirect(
     Test validating the authorization redirect URI.
     """
     mocker.patch(
-        "robida.blueprints.indieauth.api.session",
+        "robida.blueprints.auth.helpers.session",
         new={"me": "http://example.com/"},
     )
     mocker.patch(

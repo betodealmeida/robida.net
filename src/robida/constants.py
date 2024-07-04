@@ -4,6 +4,7 @@ Constants for the application
 
 # mapping between blueprint endpoints and rels
 links = [
+    # {"rel": "self", "endpoint": "feed.index"},
     {"rel": "micropub", "endpoint": "micropub.index"},
     {"rel": "indieauth-metadata", "endpoint": "wellknown.oauth_authorization_server"},
     {"rel": "authorization_endpoint", "endpoint": "indieauth.authorization"},

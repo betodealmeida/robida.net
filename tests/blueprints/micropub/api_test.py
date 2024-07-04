@@ -57,11 +57,31 @@ async def test_create_entry(
                 "properties": {
                     "content": ["hello world"],
                     "category": ["foo", "bar"],
-                    "author": "http://example.com/",
-                    "dt-published": "2024-01-01T00:00:00Z",
-                    "dt-updated": "2024-01-01T00:00:00Z",
-                    "u-url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                    "u-uid": "92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "value": "http://example.com/",
+                            "properties": {
+                                "name": ["Beto Dealmeida"],
+                                "url": ["http://example.com/"],
+                                "photo": [
+                                    {
+                                        "alt": "This is my photo",
+                                        "value": "http://example.com/static/img/photo.jpg",
+                                    }
+                                ],
+                                "email": ["me@example.com"],
+                                "note": ["I like turtles."],
+                            },
+                            "children": [],
+                        }
+                    ],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "url": [
+                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                    ],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 },
             },
             separators=(",", ":"),
@@ -114,11 +134,31 @@ async def test_create_entry_no_type(
                 "properties": {
                     "content": ["hello world"],
                     "category": ["foo", "bar"],
-                    "author": "http://example.com/",
-                    "dt-published": "2024-01-01T00:00:00Z",
-                    "dt-updated": "2024-01-01T00:00:00Z",
-                    "u-url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                    "u-uid": "92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "value": "http://example.com/",
+                            "properties": {
+                                "name": ["Beto Dealmeida"],
+                                "url": ["http://example.com/"],
+                                "photo": [
+                                    {
+                                        "alt": "This is my photo",
+                                        "value": "http://example.com/static/img/photo.jpg",
+                                    }
+                                ],
+                                "email": ["me@example.com"],
+                                "note": ["I like turtles."],
+                            },
+                            "children": [],
+                        }
+                    ],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "url": [
+                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                    ],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 },
             },
             separators=(",", ":"),
@@ -175,11 +215,31 @@ async def test_create_entry_from_json(
                     "content": ["hello world"],
                     "category": ["foo", "bar"],
                     "photo": ["https://photos.example.com/592829482876343254.jpg"],
-                    "author": "http://example.com/",
-                    "dt-published": "2024-01-01T00:00:00Z",
-                    "dt-updated": "2024-01-01T00:00:00Z",
-                    "u-url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                    "u-uid": "92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "value": "http://example.com/",
+                            "properties": {
+                                "name": ["Beto Dealmeida"],
+                                "url": ["http://example.com/"],
+                                "photo": [
+                                    {
+                                        "alt": "This is my photo",
+                                        "value": "http://example.com/static/img/photo.jpg",
+                                    }
+                                ],
+                                "email": ["me@example.com"],
+                                "note": ["I like turtles."],
+                            },
+                            "children": [],
+                        }
+                    ],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "url": [
+                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                    ],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 },
             },
             separators=(",", ":"),
@@ -214,11 +274,16 @@ async def test_create_entry_from_json_no_type(
                 "content": ["hello world"],
                 "category": ["foo", "bar"],
                 "photo": ["https://photos.example.com/592829482876343254.jpg"],
-                "author": "http://example.com/",
-                "dt-published": "2024-01-01T00:00:00Z",
-                "dt-updated": "2024-01-01T00:00:00Z",
-                "u-url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                "u-uid": "92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                "author": [
+                    {
+                        "type": ["h-card"],
+                        "properties": {
+                            "url": ["http://example.com/"],
+                        },
+                    },
+                ],
+                "published": ["2024-01-01T00:00:00Z"],
+                "updated": ["2024-01-01T00:00:00Z"],
             },
         },
         auth=Authorization("bearer", token="create"),
@@ -240,11 +305,18 @@ async def test_create_entry_from_json_no_type(
                     "content": ["hello world"],
                     "category": ["foo", "bar"],
                     "photo": ["https://photos.example.com/592829482876343254.jpg"],
-                    "author": "http://example.com/",
-                    "dt-published": "2024-01-01T00:00:00Z",
-                    "dt-updated": "2024-01-01T00:00:00Z",
-                    "u-url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                    "u-uid": "92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "properties": {"url": ["http://example.com/"]},
+                        }
+                    ],
+                    "published": ["2024-01-01T00:00:00Z"],
+                    "updated": ["2024-01-01T00:00:00Z"],
+                    "url": [
+                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                    ],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 },
             },
             separators=(",", ":"),
@@ -305,11 +377,31 @@ async def test_create_entry_with_file(
                     "photo": [
                         "http://example.com/media/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
-                    "author": "http://example.com/",
-                    "dt-published": "2024-01-01T00:00:00Z",
-                    "dt-updated": "2024-01-01T00:00:00Z",
-                    "u-url": "http://example.com/feed/c35ad471-6c6c-488b-9ffc-8854607192f0",
-                    "u-uid": "c35ad471-6c6c-488b-9ffc-8854607192f0",
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "value": "http://example.com/",
+                            "properties": {
+                                "name": ["Beto Dealmeida"],
+                                "url": ["http://example.com/"],
+                                "photo": [
+                                    {
+                                        "alt": "This is my photo",
+                                        "value": "http://example.com/static/img/photo.jpg",
+                                    }
+                                ],
+                                "email": ["me@example.com"],
+                                "note": ["I like turtles."],
+                            },
+                            "children": [],
+                        }
+                    ],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "url": [
+                        "http://example.com/feed/c35ad471-6c6c-488b-9ffc-8854607192f0"
+                    ],
+                    "uid": ["c35ad471-6c6c-488b-9ffc-8854607192f0"],
                 },
             },
             separators=(",", ":"),
@@ -362,6 +454,10 @@ async def test_index_source(mocker: MockerFixture, client: testing.QuartClient) 
     """
     Test fetching information about an entry.
     """
+    mocker.patch(
+        "robida.blueprints.micropub.api.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
     mocker.patch("robida.blueprints.micropub.api.send_webmentions")
 
     response = await client.post(
@@ -372,11 +468,14 @@ async def test_index_source(mocker: MockerFixture, client: testing.QuartClient) 
                 "published": ["2016-02-21T12:50:53-08:00"],
                 "content": ["Hello World"],
                 "category": ["foo", "bar"],
-                "author": "http://example.com/",
-                "dt-published": "2024-01-01T00:00:00Z",
-                "dt-updated": "2024-01-01T00:00:00Z",
-                "u-uid": "55ab86d9-a618-4adb-8792-44481bf7d90d",
-                "u-url": "http://example.com/feed/55ab86d9-a618-4adb-8792-44481bf7d90d",
+                "author": [
+                    {
+                        "type": ["h-card"],
+                        "properties": {
+                            "url": ["http://example.com/"],
+                        },
+                    }
+                ],
             },
         },
         auth=Authorization("bearer", token="create"),
@@ -398,17 +497,18 @@ async def test_index_source(mocker: MockerFixture, client: testing.QuartClient) 
     response = await client.get("/micropub", query_string={"q": "source", "url": url})
     assert response.status_code == 200
     assert await response.json == {
-        "type": ["h-entry"],
         "properties": {
+            "author": [
+                {"properties": {"url": ["http://example.com/"]}, "type": ["h-card"]}
+            ],
             "category": ["foo", "bar"],
             "content": ["Hello World"],
             "published": ["2016-02-21T12:50:53-08:00"],
-            "author": "http://example.com/",
-            "dt-published": "2024-01-01T00:00:00Z",
-            "dt-updated": "2024-01-01T00:00:00Z",
-            "u-uid": "55ab86d9-a618-4adb-8792-44481bf7d90d",
-            "u-url": "http://example.com/feed/55ab86d9-a618-4adb-8792-44481bf7d90d",
+            "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "updated": ["2024-01-01T00:00:00+00:00"],
+            "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
         },
+        "type": ["h-entry"],
     }
 
 
@@ -595,11 +695,31 @@ WHERE
                 "properties": {
                     "content": ["hello world, updated"],
                     "category": ["foo", "bar", "baz"],
-                    "author": "http://example.com/",
-                    "dt-published": "2024-01-01T00:00:00Z",
-                    "dt-updated": "2024-01-02T00:00:00Z",
-                    "u-url": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
-                    "u-uid": "92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                    "author": [
+                        {
+                            "type": ["h-card"],
+                            "value": "http://example.com/",
+                            "properties": {
+                                "name": ["Beto Dealmeida"],
+                                "url": ["http://example.com/"],
+                                "photo": [
+                                    {
+                                        "alt": "This is my photo",
+                                        "value": "http://example.com/static/img/photo.jpg",
+                                    }
+                                ],
+                                "email": ["me@example.com"],
+                                "note": ["I like turtles."],
+                            },
+                            "children": [],
+                        }
+                    ],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-02T00:00:00Z"],
+                    "url": [
+                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                    ],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 },
             },
             separators=(",", ":"),

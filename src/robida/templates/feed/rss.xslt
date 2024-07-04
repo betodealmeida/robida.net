@@ -51,6 +51,7 @@
                     <nav>
                         <ul>
                             <li>
+                                🏡
                                 <strong>
                                     <a href="{{ url_for('homepage.index') }}">
                                         Home
@@ -59,9 +60,14 @@
                             </li>
                         </ul>
                         <ul>
-                            <li><a href="{{ url_for('feed.index') }}">Feed</a></li>
-                            <li><a href="{{ url_for('feed.entry', uuid='8bf10ece-be18-4b96-af91-04e5c2a931ad') }}">About</a></li>
-                            <li><a href="https://github.com/betodealmeida/robida.net/">Source</a></li>
+                            <li>📓 <a href="{{ url_for('feed.index') }}">Feed</a></li>
+                            <li>💁🏽 <a href="/about">About</a></li>
+                            {% if session.me %}
+                            <li><strong>{{ session.me }}</strong></li>
+                            <li>🔑 <a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                            {% else %}
+                            <li>🔑 <a href="{{ url_for('auth.login') }}">Login</a></li>
+                            {% endif %}
                         </ul>
                     </nav>
                 </header>
@@ -103,7 +109,7 @@
 
                 <footer>
                     <p>
-                        <form role="search" method="GET" action="/search">
+                        <form role="search" method="GET" action="{{ url_for('search.index') }}">
                             <input
                                 name="q"
                                 type="search"
@@ -146,15 +152,14 @@
                         </hgroup>
                     </header>
 
-                    <div class="e-content safe">
+                    <div class="safe">
                         <xsl:value-of select="description" disable-output-escaping="yes"/>
                     </div>
                 </xsl:when>
                 <xsl:otherwise>
-                    <!-- note -->
-                    <p class="p-content e-content">
-                        <xsl:value-of select="description"/>
-                    </p>
+                    <div class="safe">
+                        <xsl:value-of select="description" disable-output-escaping="yes"/>
+                    </div>
                 </xsl:otherwise>
             </xsl:choose>
 
@@ -171,9 +176,17 @@
                         </time>
                         ⚓
                     </a>
+
+                    <xsl:apply-templates select="category"/>
                 </p>
             </footer>
         </article>
+    </xsl:template>
+
+    <xsl:template match="category">
+        <a href="{@extensions:category_url}" class="p-category">
+            <mark><xsl:value-of select="."/></mark>
+        </a>
     </xsl:template>
 
     <xsl:template match="extensions:author">

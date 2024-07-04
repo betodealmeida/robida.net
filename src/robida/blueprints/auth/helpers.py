@@ -2,8 +2,13 @@
 Helpers for RelMeAuth.
 """
 
+from typing import Any, Callable
+from functools import wraps
+
 import httpx
 from bs4 import BeautifulSoup
+from quart import Response, request, session
+from quart.helpers import make_response, redirect, url_for
 
 
 async def get_soup(url: str) -> BeautifulSoup:
@@ -36,3 +41,24 @@ async def get_profiles(url: str) -> list[str]:
                 profiles.append(href)
 
     return profiles
+
+
+def protected(f: Callable[..., Response]) -> Callable[..., Response]:
+    """
+    Decorator that checks if the request comes from us.
+    """
+
+    @wraps(f)
+    async def decorated_function(*args: Any, **kwargs: Any) -> Response:
+        me = url_for("homepage.index", _external=True)
+
+        if "me" not in session:
+            session["next"] = request.url
+            return redirect(url_for("auth.login"))
+
+        if session["me"] != me:
+            return await make_response("insufficient_scope", 403)
+
+        return await f(*args, **kwargs)
+
+    return decorated_function
