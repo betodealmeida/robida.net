@@ -60,6 +60,7 @@ async def load_entries(app: Quart) -> None:
                             _external=True,
                         )
                     ],
+                    "uid": ["1d4f24cc-8c6a-442e-8a42-bc208cb16534"],
                     "content": ["Hello, world!"],
                     "published": [datetime.now(timezone.utc).isoformat()],
                     "author": [
@@ -97,6 +98,7 @@ async def load_entries(app: Quart) -> None:
                             _external=True,
                         )
                     ],
+                    "uid": ["37c9ed45-5c0c-43e4-b088-0e904ed849d7"],
                     "content": ["Hello, world!"],
                     "published": [datetime.now(timezone.utc).isoformat()],
                     "author": [
@@ -143,6 +145,7 @@ async def load_entries(app: Quart) -> None:
                             _external=True,
                         )
                     ],
+                    "uid": ["8bf10ece-be18-4b96-af91-04e5c2a931ad"],
                     "content": [
                         {
                             "value": extract_text_from_html(html).strip(),
@@ -176,6 +179,7 @@ async def load_entries(app: Quart) -> None:
                 type=["h-entry"],
                 properties={
                     "url": ["http://alice.example.com/post/1"],
+                    "uid": ["68e50fbd-69c0-4e12-bf2f-208ace952ffd"],
                     "in-reply-to": [
                         url_for(
                             "feed.entry",
@@ -219,6 +223,7 @@ async def load_entries(app: Quart) -> None:
                             _external=True,
                         )
                     ],
+                    "uid": ["99111091-26c7-4e3e-a0be-436fbeee0d14"],
                     "in-reply-to": ["http://alice.example.com/post/1"],
                     "content": ["Thank you!"],
                     "published": [datetime.now(timezone.utc).isoformat()],

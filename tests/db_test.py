@@ -38,6 +38,7 @@ async def test_load_entries(current_app: Quart) -> None:
                         "url": [
                             "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
                         ],
+                        "uid": ["1d4f24cc-8c6a-442e-8a42-bc208cb16534"],
                         "content": ["Hello, world!"],
                         "published": ["2024-01-01T00:00:00+00:00"],
                         "author": [
@@ -73,6 +74,7 @@ async def test_load_entries(current_app: Quart) -> None:
                         "url": [
                             "http://example.com/feed/37c9ed45-5c0c-43e4-b088-0e904ed849d7"
                         ],
+                        "uid": ["37c9ed45-5c0c-43e4-b088-0e904ed849d7"],
                         "content": ["Hello, world!"],
                         "published": ["2024-01-01T00:00:00+00:00"],
                         "author": [
@@ -109,6 +111,7 @@ async def test_load_entries(current_app: Quart) -> None:
                         "url": [
                             "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
                         ],
+                        "uid": ["8bf10ece-be18-4b96-af91-04e5c2a931ad"],
                         "content": [
                             {
                                 "value": (
@@ -155,6 +158,7 @@ async def test_load_entries(current_app: Quart) -> None:
                     "type": ["h-entry"],
                     "properties": {
                         "url": ["http://alice.example.com/post/1"],
+                        "uid": ["68e50fbd-69c0-4e12-bf2f-208ace952ffd"],
                         "in-reply-to": [
                             "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534"
                         ],
@@ -192,6 +196,7 @@ async def test_load_entries(current_app: Quart) -> None:
                         "url": [
                             "http://example.com/feed/99111091-26c7-4e3e-a0be-436fbeee0d14"
                         ],
+                        "uid": ["99111091-26c7-4e3e-a0be-436fbeee0d14"],
                         "in-reply-to": ["http://alice.example.com/post/1"],
                         "content": ["Thank you!"],
                         "published": ["2024-01-01T00:00:00+00:00"],

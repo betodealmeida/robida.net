@@ -3,6 +3,7 @@ Main application.
 """
 
 import asyncio
+import json
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,7 @@ def create_app(
         {
             "summarize": summarize,
             "clean": clean,
+            "json": json.dumps,
         },
     )
 

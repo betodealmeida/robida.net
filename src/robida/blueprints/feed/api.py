@@ -305,6 +305,7 @@ async def entry(uuid: UUID) -> dict:
             hentry={
                 "type": ["h-entry"],
                 "properties": {
+                    "uid": [str(uuid)],
                     "name": ["Entry deleted"],
                     "content": ["This entry has been deleted. 🗑️"],
                     "published": [entry.last_modified_at.isoformat()],

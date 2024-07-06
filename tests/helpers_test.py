@@ -53,7 +53,7 @@ async def test_get_type_emoji() -> None:
 
     assert (
         get_type_emoji({"type": ["h-entry"], "properties": {"name": ["A title"]}})
-        == '<span title="An article (h-entry)">📄</span>'
+        == '<span title="An article">📄</span>'
     )
     assert (
         get_type_emoji(
@@ -65,17 +65,17 @@ async def test_get_type_emoji() -> None:
                 },
             }
         )
-        == '<span title="A reply (h-entry)">💬</span>'
+        == '<span title="A reply">💬</span>'
     )
     assert (
         get_type_emoji({"type": ["h-entry"], "properties": {}})
-        == '<span title="A note (h-entry)">📔</span>'
+        == '<span title="A note">📔</span>'
     )
     assert (
         get_type_emoji(
             {"type": ["h-entry"], "properties": {"like-of": ["http://example.com/"]}}
         )
-        == '<span title="A like (h-entry)">❤️</span>'
+        == '<span title="A like">❤️</span>'
     )
     assert (
         get_type_emoji(
@@ -84,7 +84,7 @@ async def test_get_type_emoji() -> None:
                 "properties": {"bookmark-of": ["http://example.com/"]},
             }
         )
-        == '<span title="A bookmark (h-entry)">🔖</span>'
+        == '<span title="A bookmark">🔖</span>'
     )
     assert (
         get_type_emoji({"type": ["h-new"], "properties": {}})

@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>New entry</h2>
+<h2>Edit entry</h2>
 
-<form id="createEntry" method="POST" action="{{ url_for('crud.submit') }}">
+{% set template = data.properties['post-template'][0] if 'post-template' in data.properties else 'generic' %}
+
+<form id="updateEntry" method="POST" action="{{ url_for('crud.submit') }}">
+    <input type="hidden" name="uuid" value="{{ data.properties['uid'][0] }}"/>
     <fieldset>
         <label for="published">
             <input name="published" id="published" type="checkbox" role="switch" checked/>
@@ -23,6 +26,7 @@
             </select>
         <label>
 
+        {% if template != 'generic' %}
         <label for="options">Template</label>
         <select
             name="template"
@@ -31,16 +35,19 @@
             required
             hx-get="{{ url_for('crud.template') }}"
             hx-params="*"
-            hx-trigger="load,change"
+            hx-trigger="change"
             hx-target="#fields"
         >
-            <option value="article">Article</option>
-            <option value="bookmark">Bookmark</option>
-            <option value="like">Like</option>
-            <option selected value="note">Note</option>
+            <option {{ 'selected' if template == 'article' }} value="article">Article</option>
+            <option {{ 'selected' if template == 'bookmark' }} value="bookmark">Bookmark</option>
+            <option {{ 'selected' if template == 'like' }} value="like">Like</option>
+            <option {{ 'selected' if template == 'note' }} value="note">Note</option>
         </select>
+        {% endif %}
     </fieldset>
 
-    <div id="fields"></div>
+    <div id="fields">
+        {% include 'crud/' ~ template ~ '.html' %}
+    </div>
 </form>
 {% endblock %}

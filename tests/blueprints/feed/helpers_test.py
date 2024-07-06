@@ -285,27 +285,29 @@ async def test_render_microformat(httpx_mock: HTTPXMock, current_app: Quart) -> 
     )
 
     async with current_app.app_context():
-        rendered = await render_microformat(
-            {
-                "type": ["h-entry"],
-                "properties": {
-                    "published": ["2013-03-07"],
-                    "content": ["I ate a cheese sandwich."],
-                    "author": ["https://tantek.com/"],
-                },
-            }
-        )
+        async with current_app.test_request_context("/", method="GET"):
+            rendered = await render_microformat(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                        "published": ["2013-03-07"],
+                        "content": ["I ate a cheese sandwich."],
+                        "author": ["https://tantek.com/"],
+                    },
+                }
+            )
 
     space = " "
     assert (
         rendered
-        == f"""<article class="h-entry">
+        == f"""<article class="h-entry" id="entry-92cdeabd-8278-43ad-871d-0214dcb2d12e">
     <p class="p-content e-content">
         I ate a cheese sandwich.
 </p>
     <footer>
         <p>
-            <span title="A note (h-entry)">📔</span>
+            <span title="A note">📔</span>
             Published by                 <a class="h-card" href="https://tantek.com/">
             Tantek Çelik
         </a>
@@ -315,6 +317,8 @@ async def test_render_microformat(httpx_mock: HTTPXMock, current_app: Quart) -> 
             <time class="dt-published" datetime="2013-03-07">
     Thu, 07 Mar 2013 00:00:00{space}
 </time>
+
+
 
 
         </p>

@@ -2,6 +2,7 @@
 Tests for the CRUD functions.
 """
 
+import json
 from uuid import UUID
 
 from bs4 import BeautifulSoup
@@ -16,6 +17,8 @@ from robida.blueprints.crud.helpers import (
     get_content,
     get_metadata,
     get_title,
+    get_type_properties,
+    update_hentry,
 )
 from robida.blueprints.crud.models import ExternalSitePayload
 from robida.models import Microformats2
@@ -178,6 +181,7 @@ async def test_create_article(mocker: MockerFixture, current_app: Quart) -> None
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-template": ["article"],
             "post-status": ["published"],
             "visibility": ["public"],
             "sensitive": ["false"],
@@ -191,6 +195,58 @@ async def test_create_article(mocker: MockerFixture, current_app: Quart) -> None
                 }
             ],
             "category": ["blog", "meta"],
+        },
+        children=[],
+    )
+
+
+@freeze_time("2024-01-01 00:00:00")
+async def test_create_generic(mocker: MockerFixture, current_app: Quart) -> None:
+    """
+    Test the `create_generic` function.
+    """
+    mocker.patch(
+        "robida.helpers.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
+
+    data = {
+        "template": "generic",
+        "published": "on",
+        "visibility": "public",
+        "sensitive": "false",
+        "properties": json.dumps({"name": ["Title"]}),
+    }
+
+    hentry = Microformats2(
+        type=["h-entry"],
+        properties={
+            "post-status": ["draft"],
+            "visibility": ["private"],
+            "name": ["This is the title"],
+            "summary": ["Just an article"],
+            "content": [
+                {"html": "<p>This is the content</p>", "value": "This is the content"}
+            ],
+        },
+    )
+
+    async with current_app.app_context():
+        hentry = await update_hentry(hentry, data)
+
+    assert hentry == Microformats2(
+        type=["h-entry"],
+        value=None,
+        properties={
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "name": ["Title"],
+            "summary": ["Just an article"],
+            "content": [
+                {"html": "<p>This is the content</p>", "value": "This is the content"}
+            ],
+            "post-template": ["generic"],
+            "sensitive": ["false"],
         },
         children=[],
     )
@@ -252,6 +308,7 @@ async def test_create_bookmark(mocker: MockerFixture, current_app: Quart) -> Non
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-template": ["bookmark"],
             "post-status": ["published"],
             "visibility": ["public"],
             "sensitive": ["false"],
@@ -329,6 +386,7 @@ async def test_create_like(mocker: MockerFixture, current_app: Quart) -> None:
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-template": ["like"],
             "post-status": ["published"],
             "visibility": ["public"],
             "sensitive": ["false"],
@@ -398,6 +456,7 @@ async def test_create_note(mocker: MockerFixture, current_app: Quart) -> None:
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-template": ["note"],
             "post-status": ["published"],
             "visibility": ["public"],
             "sensitive": ["false"],
@@ -571,3 +630,64 @@ def test_get_author_none() -> None:
     Test the `get_author` function when the page has no metadata.
     """
     assert get_author([], [], "http://example.com/posts/1") == "http://example.com/"
+
+
+async def test_update_hentry(mocker: MockerFixture, current_app: Quart) -> None:
+    """
+    Test the `update_hentry` function.
+    """
+    mocker.patch(
+        "robida.helpers.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
+
+    data = {
+        "template": "note",
+        "content": "This is a *test* note.",
+        "category": "blog, meta",
+        "visibility": "public",
+        "published": "on",
+    }
+
+    hentry = Microformats2(
+        type=["h-entry"],
+        properties={
+            "post-status": ["draft"],
+            "visibility": ["private"],
+            "name": ["This is the title"],
+            "summary": ["Just an article"],
+            "content": [
+                {"html": "<p>This is the content</p>", "value": "This is the content"}
+            ],
+        },
+    )
+
+    async with current_app.app_context():
+        hentry = await update_hentry(hentry, data)
+
+    assert hentry == Microformats2(
+        type=["h-entry"],
+        value=None,
+        properties={
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "content": [
+                {
+                    "html": "<p>This is a <em>test</em> note.</p>\n",
+                    "value": "This is a test note.\n",
+                    "data-markdown": "This is a *test* note.",
+                }
+            ],
+            "post-template": ["note"],
+            "sensitive": ["false"],
+            "category": ["blog", "meta"],
+        },
+        children=[],
+    )
+
+
+async def test_get_type_properties_invalid_type():
+    """
+    Test the `get_type_properties` function when the type is invalid.
+    """
+    assert await get_type_properties("invalid", {}) == {}

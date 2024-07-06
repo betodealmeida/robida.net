@@ -36,6 +36,7 @@ async def test_categories(current_app: Quart) -> None:
                     "url": [
                         "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad"
                     ],
+                    "uid": ["8bf10ece-be18-4b96-af91-04e5c2a931ad"],
                     "content": [
                         {
                             "value": (

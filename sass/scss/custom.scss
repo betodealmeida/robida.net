@@ -6,7 +6,7 @@ article footer {
   font-size: 0.875em;
 }
 
-a.copyright {
+a.copyright, a.action {
   text-decoration: none;
 }
 
@@ -55,4 +55,22 @@ dt {
 
 .honey {
   display: none;
+}
+
+/* Prevent conflict between Ace Editor and PicoCSS */
+.ace_fold-widget {
+  padding-left: 0;
+  padding-right: 0;
+  border: none;
+  --pico-background-color: #inherit;
+}
+
+.ace_gutter_annotation {
+  border: none;
+  --pico-background-color: #inherit;
+}
+
+.htmx-swapping td {
+  opacity: 0;
+  transition: opacity 1s ease-out;
 }
