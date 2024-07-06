@@ -19,10 +19,9 @@ from bs4 import BeautifulSoup
 from quart import current_app
 from quart.helpers import url_for
 
-from robida.blueprints.feed.helpers import get_entry
 from robida.db import get_db
-from robida.helpers import rfc822_to_iso, upsert_entry
-from robida.models import Microformats2
+from robida.helpers import delete_entry, get_entry, rfc822_to_iso, upsert_entry
+from robida.models import Entry, Microformats2
 
 from .models import WebMentionStatus
 
@@ -52,13 +51,17 @@ async def process_webmention(
     updates in the database so that the API can return them to the client.
     """
     async with get_db(current_app) as db:
-        async for status, message, content in validate_webmention(
+        async for status, message, entry in validate_webmention(
             db,
             uuid,
             source,
             target,
             vouch,
         ):
+            content = (
+                entry.content.model_dump_json(exclude_unset=True) if entry else None
+            )
+
             await db.execute(
                 """
 UPDATE incoming_webmentions
@@ -70,17 +73,21 @@ SET
 WHERE
     uuid = ?;
                 """,
-                (status, message, content, datetime.now(timezone.utc), uuid.hex),
+                (
+                    status,
+                    message,
+                    content,
+                    datetime.now(timezone.utc),
+                    uuid.hex,
+                ),
             )
 
             # Delete any existing entries when the webmention fails. This could happen
             # when a webmention is sent after a source has been deleted, or updated so
             # it no longer has incoming links.
             if status == WebMentionStatus.FAILURE:
-                await db.execute(
-                    "UPDATE entries SET deleted = ? WHERE uuid = ?;",
-                    (True, uuid.hex),
-                )
+                if entry := await get_entry(db, uuid):
+                    await delete_entry(db, entry)
 
             await db.commit()
 
@@ -110,7 +117,7 @@ async def validate_webmention(
     source: str,
     target: str,
     vouch: str | None = None,
-) -> AsyncGenerator[tuple[WebMentionStatus, str, str | None], None]:
+) -> AsyncGenerator[tuple[WebMentionStatus, str, Entry | None], None]:
     """
     Webmention workflow.
 
@@ -148,20 +155,17 @@ async def validate_webmention(
             )
             return
 
-        # store the content of the webmention
-        hentry = get_webmention_hentry(response, source, target, uuid)
-        content = hentry.model_dump_json(exclude_unset=True)
-
         if not await is_domain_trusted(db, source) and not await is_vouch_valid(
             db,
             vouch,
             source,
         ):
-            yield WebMentionStatus.PENDING_MODERATION, MODERATION_MESSAGE, content
+            yield WebMentionStatus.PENDING_MODERATION, MODERATION_MESSAGE, None
             return
 
         # create a proper entry for the webmention
-        await upsert_entry(db, hentry)
+        hentry = get_webmention_hentry(response, source, target, uuid)
+        entry = await upsert_entry(db, hentry)
 
         # re-send webmentions upstream
         await send_salmention(target)
@@ -169,7 +173,7 @@ async def validate_webmention(
         yield (
             WebMentionStatus.SUCCESS,
             "The webmention processed successfully and approved.",
-            content,
+            entry,
         )
 
 
@@ -178,8 +182,9 @@ async def send_salmention(source: str) -> None:
     Re-send webmentions when the source receives a webmention.
     """
     uuid = UUID(urllib.parse.urlparse(source).path.split("/")[-1])
-    if entry := await get_entry(uuid):
-        await send_webmentions(source, entry.content)
+    async with get_db(current_app) as db:
+        if entry := await get_entry(db, uuid):
+            await send_webmentions(new_entry=entry, old_entry=entry)
 
 
 def get_webmention_hentry(
@@ -406,30 +411,48 @@ def extract_urls(data: Microformats2) -> set[str]:
     return urls
 
 
-async def send_webmentions(source: str, data: Microformats2) -> None:
+async def send_webmentions(
+    new_entry: Entry | None = None,
+    old_entry: Entry | None = None,
+) -> None:
     """
     Discover outgoing links and notify them with webmentions.
     """
-    targets = {target for target in extract_urls(data) if target != source}
+    # do not send webmentions when testing
+    if current_app.config["ENVIRONMENT"].lower() == "development":
+        return
+
+    # only send webmentions for entries authored by us
+    me = url_for("homepage.index", _external=True)
+    if (new_entry and new_entry.author != me) or (old_entry and old_entry.author != me):
+        return
+
+    targets: set[str] = set()
+    source: str | None = None
+    data: Microformats2 | None = None
+
+    if old_entry:
+        targets.update(
+            target
+            for target in extract_urls(old_entry.content)
+            if target != old_entry.location
+        )
+        source = old_entry.location
+        data = old_entry.content
+
+    if new_entry:
+        targets.update(
+            target
+            for target in extract_urls(new_entry.content)
+            if target != new_entry.location
+        )
+        source = new_entry.location
+        data = new_entry.content
+
+    if source is None or data is None:
+        return
 
     async with get_db(current_app) as db:
-        # collect existing links, in case the entry has been updated or deleted
-        async with db.execute(
-            """
-SELECT
-    target
-FROM
-    outgoing_webmentions
-WHERE
-    source = ?
-    AND status = ?;
-            """,
-            (source, WebMentionStatus.SUCCESS),
-        ) as cursor:
-            rows = await cursor.fetchall()
-
-        targets.update({row["target"] for row in rows})
-
         async with httpx.AsyncClient() as client:
             await asyncio.gather(
                 *[

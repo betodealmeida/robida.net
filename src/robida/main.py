@@ -91,6 +91,17 @@ def create_app(
     if not Path(app.config["MEDIA"]).exists():
         Path(app.config["MEDIA"]).mkdir()  # pragma: no cover
 
+    @app.route("/health")
+    async def health() -> dict[str, str]:
+        """
+        Health check.
+        """
+        return {
+            "debug": app.config["DEBUG"] == "TRUE",
+            "environment": app.config["ENVIRONMENT"],
+            "testing": app.config["TESTING"] == "TRUE",
+        }
+
     @app.before_request
     def before_request() -> None:
         """

@@ -3,6 +3,7 @@ Test the main module.
 """
 
 from pytest_mock import MockerFixture
+from quart import testing
 
 from robida.main import init_db_sync, load_entries_sync, run
 
@@ -46,3 +47,17 @@ def test_run(mocker: MockerFixture) -> None:
 
     create_app.assert_called_once()
     app.run.assert_called_once()
+
+
+async def test_health(client: testing.QuartClient) -> None:
+    """
+    Test the health endpoint.
+    """
+    response = await client.get("/health")
+
+    assert response.status_code == 200
+    assert await response.json == {
+        "debug": True,
+        "environment": "testing",
+        "testing": True,
+    }

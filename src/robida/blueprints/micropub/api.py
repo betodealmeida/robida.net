@@ -23,9 +23,8 @@ from quart.helpers import url_for
 from werkzeug.datastructures import MultiDict
 
 from robida.blueprints.indieauth.helpers import requires_scope
-from robida.blueprints.webmention.helpers import send_webmentions
 from robida.db import get_db
-from robida.helpers import get_hcard, upsert_entry
+from robida.helpers import delete_entry, get_entry, get_hcard, upsert_entry
 from robida.models import Microformats2
 
 from .helpers import process_form
@@ -157,7 +156,7 @@ async def post() -> Response:
 
 
 @requires_scope("create")
-async def create(data: Microformats2) -> Response:
+async def create(hentry: Microformats2) -> Response:
     """
     Create a new Micropub entry.
     """
@@ -166,16 +165,14 @@ async def create(data: Microformats2) -> Response:
     url = url_for("feed.entry", uuid=str(uuid), _external=True)
     hcard = get_hcard()
 
-    data.properties.setdefault("author", [hcard.model_dump()])
-    data.properties.setdefault("published", [created_at.isoformat()])
-    data.properties.setdefault("updated", [last_modified_at.isoformat()])
-    data.properties.setdefault("url", [url])
-    data.properties.setdefault("uid", [str(uuid)])
+    hentry.properties.setdefault("author", [hcard.model_dump()])
+    hentry.properties.setdefault("published", [created_at.isoformat()])
+    hentry.properties.setdefault("updated", [last_modified_at.isoformat()])
+    hentry.properties.setdefault("url", [url])
+    hentry.properties.setdefault("uid", [str(uuid)])
 
     async with get_db(current_app) as db:
-        await upsert_entry(db, data)
-
-    current_app.add_background_task(send_webmentions, url, data)
+        await upsert_entry(db, hentry)
 
     return Response(status=201, headers={"Location": url})
 
@@ -189,60 +186,33 @@ async def update(payload) -> Response:
     uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with get_db(current_app) as db:
-        async with db.execute(
-            """
-SELECT
-    content
-FROM
-    entries
-WHERE
-    uuid = ?
-        """,
-            (uuid.hex,),
-        ) as cursor:
-            row = await cursor.fetchone()
+        entry = await get_entry(db, uuid)
 
-    if row is None:
-        return Response(status=404)
+        if entry is None:
+            return Response(status=404)
 
-    data = Microformats2.model_validate_json(row["content"])
+        data = entry.content
 
-    last_modified_at = datetime.now(timezone.utc)
-    data.properties["updated"] = [last_modified_at]
+        data.properties["updated"] = [datetime.now(timezone.utc).isoformat()]
 
-    if "replace" in payload:
-        for key, value in payload["replace"].items():
-            data.properties[key] = value
+        if "replace" in payload:
+            for key, value in payload["replace"].items():
+                data.properties[key] = value
 
-    if "add" in payload:
-        for key, value in payload["add"].items():
-            data.properties.setdefault(key, [])
-            data.properties[key].extend(value)
+        if "add" in payload:
+            for key, value in payload["add"].items():
+                data.properties.setdefault(key, [])
+                data.properties[key].extend(value)
 
-    if "delete" in payload:
-        for key, value in payload["delete"].items():
-            data.properties[key] = [
-                item for item in data.properties[key] if item not in set(value)
-            ]
-            if not data.properties[key]:
-                del data.properties[key]
+        if "delete" in payload:
+            for key, value in payload["delete"].items():
+                data.properties[key] = [
+                    item for item in data.properties[key] if item not in set(value)
+                ]
+                if not data.properties[key]:
+                    del data.properties[key]
 
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
-UPDATE
-    entries
-SET
-    content = ?,
-    last_modified_at = ?
-WHERE
-    uuid = ?
-            """,
-            (data.model_dump_json(exclude_unset=True), last_modified_at, uuid.hex),
-        )
-        await db.commit()
-
-    current_app.add_background_task(send_webmentions, url, data)
+        await upsert_entry(db, data)
 
     return Response(
         status=204,
@@ -259,38 +229,12 @@ async def delete(payload) -> Response:
     uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with get_db(current_app) as db:
-        async with db.execute(
-            """
-SELECT
-    content
-FROM
-    entries
-WHERE
-    uuid = ?
-        """,
-            (uuid.hex,),
-        ) as cursor:
-            row = await cursor.fetchone()
+        entry = await get_entry(db, uuid)
 
-    if row is None:
-        return Response(status=404)
+        if entry is None:
+            return Response(status=404)
 
-    data = Microformats2.model_validate_json(row["content"])
-    current_app.add_background_task(send_webmentions, url, data)
-
-    async with get_db(current_app) as db:
-        await db.execute(
-            """
-UPDATE
-    entries
-SET
-    deleted = TRUE
-WHERE
-    uuid = ?
-        """,
-            (uuid.hex,),
-        )
-        await db.commit()
+        await delete_entry(db, entry)
 
     return Response(status=204)
 

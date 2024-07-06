@@ -31,4 +31,4 @@ jobs:
     - name: Test with pytest
       run: |
         poetry run pre-commit run -a
-        poetry run pytest --cov-fail-under=100 --cov=src/robida --cov-report term-missing tests/
+        poetry run pytest -vv --cov-fail-under=100 --cov=src/robida --cov-report term-missing tests/

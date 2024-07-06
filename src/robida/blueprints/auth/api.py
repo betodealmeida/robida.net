@@ -20,9 +20,9 @@ from .models import LoginRequest
 blueprint = Blueprint("auth", __name__, url_prefix="/")
 
 providers: list[type[Provider]] = [
+    IndieAuthProvider,
     ASFProvider,
     EmailProvider,
-    IndieAuthProvider,
 ]
 
 
