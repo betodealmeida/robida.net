@@ -14,7 +14,7 @@ My website.
 - [X] Backup
 - [ ] Firefox storage
 - [ ] OpenStreetMap provider
-- [ ] Passkeys?
+- [ ] Passkeys
 
 ### Blog
 
@@ -61,7 +61,15 @@ My website.
   - [ ] Contacts
 - [ ] Logging
 - [ ] CRUD
+  - [X] Create
+  - [ ] Edit
+  - [ ] Delete
 - [ ] Bookmarklets
+  - [ ] Like
+  - [ ] Bookmark
+  - [ ] Reply
+  - [ ] Repost
+  - [ ] Song (FAWM, Bandcamp, YouTube, etc.)
 - [ ] Local replies/likes
 - [ ] PWA
 - [ ] Syndication (FAWM, Archive.org, Bandcamp, IndieWeb News)
@@ -84,12 +92,6 @@ My website.
     - Add to trusted domains
 - [ ] ActivityPub
 
-### Music
-
-- [ ] <link rel="music-collection" />
-    - Or maybe just post to micropub endpoint?
-- [ ] bookmarklet to get song from Bandcamp, FAWM, etc.
-
 ### Other
 
 - [ ] Gemini
@@ -97,11 +99,7 @@ My website.
 
 ### Notes
 
-- get_entry should remove private children if not logged in
-
-- webmention moderation (simply make it private)
-- create untrusted webmentions as private
-- remove content coumn from incoming_webmentions and outgoing_webmentions
+- add icons for private/unlisted
 
 - call /publish on new entries => event
 - fix rel="self" so it works in categories, main page, etc
@@ -112,7 +110,6 @@ https://indieweb.org/h-x-app#Properties
 - render responses (https://indieweb.org/responses), and return in feed
     - do more work to populate a summary, specially for websites without an h-entry
 
-
 - store logins in a table
 - UI for seeing applications and revoking/extending access
 
@@ -121,12 +118,7 @@ https://indieweb.org/h-x-app#Properties
 - on auth.html, ask for confirmation on giving refresh token and the expiration time of the access token
     - need this for indiepass, which doesn't refresh the token!
 
-/bookmarklet blueprint
-- Gives Bookmarklets pre-filled
-- Used for like/bookmark/repost/reply/song
-
-- ask for scope when using indieauth
-  - put indieauth as the first provider
+- ask for scope when using indieauth to login
 
 
 - move db.execute out of API?

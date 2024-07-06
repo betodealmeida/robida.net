@@ -55,7 +55,6 @@ async def test_receive(
         "vouch": None,
         "status": "received",
         "message": "The webmention was received and is queued for processing.",
-        "content": None,
         "created_at": "2024-01-01 00:00:00+00:00",
         "last_modified_at": "2024-01-01 00:00:00+00:00",
     }
@@ -72,7 +71,7 @@ async def test_receive_existing(
     """
     Test the WebMention API when it receives an update to an existing webmention.
     """
-    mocker.patch("robida.blueprints.webmention.api.send_webmentions")
+    mocker.patch("robida.blueprints.webmention.helpers.send_webmentions")
     mocker.patch(
         "robida.blueprints.webmention.helpers.is_domain_trusted",
         return_value=True,

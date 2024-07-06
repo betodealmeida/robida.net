@@ -61,7 +61,6 @@ CREATE TABLE incoming_webmentions (
     vouch TEXT,
     status TEXT NOT NULL,
     message TEXT,
-    content TEXT,
     created_at TIMESTAMP,
     last_modified_at TIMESTAMP,
     UNIQUE(source, target)
@@ -78,7 +77,6 @@ CREATE TABLE outgoing_webmentions (
     vouch TEXT,
     status TEXT NOT NULL,
     message TEXT,
-    content TEXT,
     created_at TIMESTAMP,
     last_modified_at TIMESTAMP,
     UNIQUE(source, target)

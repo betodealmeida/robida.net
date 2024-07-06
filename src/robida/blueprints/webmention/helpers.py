@@ -51,24 +51,19 @@ async def process_webmention(
     updates in the database so that the API can return them to the client.
     """
     async with get_db(current_app) as db:
-        async for status, message, entry in validate_webmention(
+        async for status, message in validate_webmention(
             db,
             uuid,
             source,
             target,
             vouch,
         ):
-            content = (
-                entry.content.model_dump_json(exclude_unset=True) if entry else None
-            )
-
             await db.execute(
                 """
 UPDATE incoming_webmentions
 SET
     status = ?,
     message = ?,
-    content = ?,
     last_modified_at = ?
 WHERE
     uuid = ?;
@@ -76,7 +71,6 @@ WHERE
                 (
                     status,
                     message,
-                    content,
                     datetime.now(timezone.utc),
                     uuid.hex,
                 ),
@@ -117,7 +111,7 @@ async def validate_webmention(
     source: str,
     target: str,
     vouch: str | None = None,
-) -> AsyncGenerator[tuple[WebMentionStatus, str, Entry | None], None]:
+) -> AsyncGenerator[tuple[WebMentionStatus, str], None]:
     """
     Webmention workflow.
 
@@ -130,10 +124,10 @@ async def validate_webmention(
     try:
         verify_request(source, target)
     except ValueError as ex:
-        yield WebMentionStatus.FAILURE, str(ex), None
+        yield WebMentionStatus.FAILURE, str(ex)
         return
 
-    yield WebMentionStatus.PROCESSING, "The webmention is being processed.", None
+    yield WebMentionStatus.PROCESSING, "The webmention is being processed."
 
     async with httpx.AsyncClient() as client:
         try:
@@ -144,37 +138,37 @@ async def validate_webmention(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as ex:
-            yield WebMentionStatus.FAILURE, f"Failed to fetch source URL: {ex}", None
+            yield WebMentionStatus.FAILURE, f"Failed to fetch source URL: {ex}"
             return
 
         if not links_back(response, target):
             yield (
                 WebMentionStatus.FAILURE,
                 "The target URL is not mentioned in the source.",
-                None,
             )
             return
+
+        # create a proper entry for the webmention
+        hentry = get_webmention_hentry(response, source, target, uuid)
 
         if not await is_domain_trusted(db, source) and not await is_vouch_valid(
             db,
             vouch,
             source,
         ):
-            yield WebMentionStatus.PENDING_MODERATION, MODERATION_MESSAGE, None
-            return
+            # mark the entry as private and pending moderation
+            hentry.properties["visibility"] = ["private"]
+            yield WebMentionStatus.PENDING_MODERATION, MODERATION_MESSAGE
 
-        # create a proper entry for the webmention
-        hentry = get_webmention_hentry(response, source, target, uuid)
-        entry = await upsert_entry(db, hentry)
+        else:
+            # re-send webmentions upstream
+            await send_salmention(target)
+            yield (
+                WebMentionStatus.SUCCESS,
+                "The webmention processed successfully and approved.",
+            )
 
-        # re-send webmentions upstream
-        await send_salmention(target)
-
-        yield (
-            WebMentionStatus.SUCCESS,
-            "The webmention processed successfully and approved.",
-            entry,
-        )
+        await upsert_entry(db, hentry)
 
 
 async def send_salmention(source: str) -> None:
@@ -204,6 +198,9 @@ def get_webmention_hentry(
         properties={
             "url": [source],
             "uid": [str(uuid)],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "content": [
                 {
                     "html": f'<a rel="nofollow" href="{source}">{source}</a>',
@@ -429,7 +426,6 @@ async def send_webmentions(
 
     targets: set[str] = set()
     source: str | None = None
-    data: Microformats2 | None = None
 
     if old_entry:
         targets.update(
@@ -438,7 +434,6 @@ async def send_webmentions(
             if target != old_entry.location
         )
         source = old_entry.location
-        data = old_entry.content
 
     if new_entry:
         targets.update(
@@ -447,18 +442,14 @@ async def send_webmentions(
             if target != new_entry.location
         )
         source = new_entry.location
-        data = new_entry.content
 
-    if source is None or data is None:
+    if source is None:
         return
 
     async with get_db(current_app) as db:
         async with httpx.AsyncClient() as client:
             await asyncio.gather(
-                *[
-                    queue_webmention(db, client, source, target, data)
-                    for target in targets
-                ]
+                *[queue_webmention(db, client, source, target) for target in targets]
             )
 
 
@@ -518,7 +509,6 @@ async def queue_webmention(
     client: httpx.AsyncClient,
     source: str,
     target: str,
-    data: Microformats2,
 ) -> None:
     """
     Start the process of sending a webmention to a target.
@@ -535,15 +525,13 @@ INSERT INTO outgoing_webmentions (
     vouch,
     status,
     message,
-    content,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (source, target) DO UPDATE SET
     status = excluded.status,
     message = excluded.message,
-    content = excluded.content,
     last_modified_at = excluded.last_modified_at;
             """,
         (
@@ -553,7 +541,6 @@ ON CONFLICT (source, target) DO UPDATE SET
             None,
             WebMentionStatus.PROCESSING,
             "The webmention is being processed.",
-            data.model_dump_json(exclude_unset=True),
             created_at,
             last_modified_at,
         ),
