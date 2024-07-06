@@ -4,7 +4,6 @@ Tests for the helper functions.
 
 # pylint: disable=redefined-outer-name, line-too-long, too-many-lines
 
-import json
 import urllib.parse
 from datetime import datetime, timezone
 from collections.abc import AsyncGenerator
@@ -102,26 +101,23 @@ async def test_process_webmention(
                 ],
             },
         )
-        entry = await upsert_entry(db, hentry)
+        await upsert_entry(db, hentry)
 
-    async def gen() -> AsyncGenerator[tuple[WebMentionStatus, str, str | None], None]:
+    async def gen() -> AsyncGenerator[tuple[WebMentionStatus, str], None]:
         """
         Simulate webmention processing.
         """
         yield (
             WebMentionStatus.RECEIVED,
             "The webmention was received and is queued for processing.",
-            None,
         )
         yield (
             WebMentionStatus.PROCESSING,
             "The webmention is being processed.",
-            None,
         )
         yield (
             WebMentionStatus.SUCCESS,
             "The webmention processed successfully and approved.",
-            entry,
         )
 
     mocker.patch(
@@ -142,7 +138,6 @@ UPDATE incoming_webmentions
 SET
     status = ?,
     message = ?,
-    content = ?,
     last_modified_at = ?
 WHERE
     uuid = ?;
@@ -155,7 +150,6 @@ WHERE
                     (
                         WebMentionStatus.RECEIVED,
                         "The webmention was received and is queued for processing.",
-                        None,
                         datetime(2024, 1, 1, 13, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
@@ -165,7 +159,6 @@ WHERE
                     (
                         WebMentionStatus.PROCESSING,
                         "The webmention is being processed.",
-                        None,
                         datetime(2024, 1, 1, 14, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
@@ -175,38 +168,6 @@ WHERE
                     (
                         WebMentionStatus.SUCCESS,
                         "The webmention processed successfully and approved.",
-                        json.dumps(
-                            {
-                                "type": ["h-entry"],
-                                "properties": {
-                                    "author": [
-                                        {
-                                            "type": ["h-card"],
-                                            "properties": {
-                                                "url": "https://other.example.com"
-                                            },
-                                        }
-                                    ],
-                                    "url": [
-                                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
-                                    ],
-                                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
-                                    "post-status": ["published"],
-                                    "visibility": ["public"],
-                                    "sensitive": ["false"],
-                                    "published": ["2024-01-01T00:00:00+00:00"],
-                                    "updated": ["2024-01-01T00:00:00+00:00"],
-                                    "in-reply-to": ["http://alice.example.com/post/1"],
-                                    "content": [
-                                        {
-                                            "html": '<a href="http://example.com/">Robida is cool</a>',
-                                            "value": "Robida is cool",
-                                        }
-                                    ],
-                                },
-                            },
-                            separators=(",", ":"),
-                        ),
                         datetime(2024, 1, 1, 15, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
@@ -221,14 +182,13 @@ async def test_process_webmention_failure(mocker: MockerFixture) -> None:
     Test the `process_webmention` function failing.
     """
 
-    async def gen() -> AsyncGenerator[tuple[WebMentionStatus, str, str | None], None]:
+    async def gen() -> AsyncGenerator[tuple[WebMentionStatus, str], None]:
         """
         Simulate webmention processing.
         """
         yield (
             WebMentionStatus.FAILURE,
             "An unknown error occurred. I blame the goblins.",
-            None,
         )
 
     mocker.patch(
@@ -251,7 +211,6 @@ UPDATE incoming_webmentions
 SET
     status = ?,
     message = ?,
-    content = ?,
     last_modified_at = ?
 WHERE
     uuid = ?;
@@ -264,7 +223,6 @@ WHERE
                     (
                         WebMentionStatus.FAILURE,
                         "An unknown error occurred. I blame the goblins.",
-                        None,
                         datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
                         "92cdeabd827843ad871d0214dcb2d12e",
                     ),
@@ -288,10 +246,9 @@ async def test_validate_webmention_invalid_scheme(db: Connection) -> None:
         "http://example.com/",
     )
 
-    (status, message, content) = await anext(validator)
+    (status, message) = await anext(validator)
     assert status == WebMentionStatus.FAILURE
     assert message == 'Invalid scheme ("gemini") in source. Must be one of: http, https'
-    assert content is None
 
     with pytest.raises(StopAsyncIteration):
         await anext(validator)
@@ -315,12 +272,11 @@ async def test_validate_webmention_invalid_url(
             "http://example.com/",
         )
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.PROCESSING
         assert message == "The webmention is being processed."
-        assert content is None
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.FAILURE
         assert message == (
             "Failed to fetch source URL: Client error '404 Not Found' for url "
@@ -328,7 +284,6 @@ async def test_validate_webmention_invalid_url(
             "For more information check: "
             "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404"
         )
-        assert content is None
 
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
@@ -356,15 +311,13 @@ async def test_validate_webmention_no_backlink(
             "http://example.com/",
         )
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.PROCESSING
         assert message == "The webmention is being processed."
-        assert content is None
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.FAILURE
         assert message == "The target URL is not mentioned in the source."
-        assert content is None
 
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
@@ -402,15 +355,13 @@ async def test_validate_webmention_needs_moderation(
             "http://example.com/",
         )
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.PROCESSING
         assert message == "The webmention is being processed."
-        assert content is None
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.PENDING_MODERATION
         assert message == MODERATION_MESSAGE
-        assert content is None
 
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
@@ -438,7 +389,6 @@ async def test_validate_webmention(
         "robida.blueprints.webmention.helpers.send_salmention"
     )
     upsert_entry = mocker.patch("robida.blueprints.webmention.helpers.upsert_entry")
-    entry = await upsert_entry()
     httpx_mock.add_response(
         url="https://other.example.com",
         html='<a href="http://example.com/">Look at this!</a>',
@@ -453,15 +403,13 @@ async def test_validate_webmention(
             "http://example.com/",
         )
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.PROCESSING
         assert message == "The webmention is being processed."
-        assert content is None
 
-        (status, message, content) = await anext(validator)
+        (status, message) = await anext(validator)
         assert status == WebMentionStatus.SUCCESS
         assert message == "The webmention processed successfully and approved."
-        assert content == entry
 
         with pytest.raises(StopAsyncIteration):
             await anext(validator)
@@ -473,6 +421,9 @@ async def test_validate_webmention(
             properties={
                 "url": ["https://other.example.com"],
                 "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                "post-status": ["published"],
+                "visibility": ["public"],
+                "sensitive": ["true"],
                 "content": [
                     {
                         "html": '<a rel="nofollow" href="https://other.example.com">https://other.example.com</a>',
@@ -518,6 +469,9 @@ async def test_get_webmention_hentry() -> None:
         properties={
             "url": ["http://other.example.com/"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "name": ["Microformats are amazing"],
             "author": [
                 {
@@ -561,6 +515,9 @@ async def test_get_webmention_hentry_no_microformats() -> None:
         properties={
             "url": ["http://other.example.com/"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "content": [
                 {
                     "html": '<a rel="nofollow" href="http://other.example.com/">http://other.example.com/</a>',
@@ -599,6 +556,9 @@ async def test_get_webmention_hentry_json() -> None:
         properties={
             "url": ["http://other.example.com/"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "content": ["Microformats are amazing"],
             "published": ["2024-01-01T00:00:00+00:00"],
             "in-reply-to": ["http://example.com/"],
@@ -639,6 +599,9 @@ async def test_get_webmention_hentry_json_nested() -> None:
         properties={
             "url": ["http://other.example.com/"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "content": ["Microformats are amazing"],
             "published": ["2024-01-01T00:00:00+00:00"],
             "in-reply-to": ["http://example.com/"],
@@ -666,6 +629,9 @@ async def test_get_webmention_hentry_json_not_dict() -> None:
         properties={
             "url": ["http://other.example.com/"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "content": [
                 {
                     "html": '<a rel="nofollow" href="http://other.example.com/">http://other.example.com/</a>',
@@ -696,6 +662,9 @@ async def test_get_webmention_hentry_json_no_microformats() -> None:
         properties={
             "url": ["http://other.example.com/"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["true"],
             "content": [
                 {
                     "html": '<a rel="nofollow" href="http://other.example.com/">http://other.example.com/</a>',
@@ -1431,21 +1400,18 @@ async def test_send_webmentions(
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://example.com/",
-                entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://alice.example.com/post/1",
-                entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://example.com/static/img/photo.jpg",
-                entry.content,
             ),
         ],
         any_order=True,
@@ -1481,7 +1447,7 @@ async def test_send_webmentions_updated_entry(
         )
         old_entry = await upsert_entry(db, hentry)
 
-    new_entry = old_entry.copy(deep=True)
+    new_entry = old_entry.model_copy(deep=True)
     new_entry.content.properties["content"] = [
         {
             "html": '<a href="http://example.com/post/2">Love this more</a>',
@@ -1499,28 +1465,24 @@ async def test_send_webmentions_updated_entry(
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://example.com/",
-                new_entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://example.com/post/1",
-                new_entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://example.com/post/2",
-                new_entry.content,
             ),
             mocker.call(
                 mocker.ANY,
                 mocker.ANY,
                 f"http://example.com/feed/{uuid}",
                 "http://example.com/static/img/photo.jpg",
-                new_entry.content,
             ),
         ],
         any_order=True,
@@ -1658,18 +1620,6 @@ async def test_queue_webmention_happy_path(mocker: MockerFixture) -> None:
             client,
             "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
             "http://example.com/",
-            Microformats2(
-                type=["h-entry"],
-                properties={
-                    "in-reply-to": ["http://alice.example.com/post/1"],
-                    "content": [
-                        {
-                            "html": '<a href="http://example.com/">Robida is cool</a>',
-                            "value": "Robida is cool",
-                        },
-                    ],
-                },
-            ),
         )
 
     db.execute.assert_has_calls(
@@ -1683,15 +1633,13 @@ INSERT INTO outgoing_webmentions (
     vouch,
     status,
     message,
-    content,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (source, target) DO UPDATE SET
     status = excluded.status,
     message = excluded.message,
-    content = excluded.content,
     last_modified_at = excluded.last_modified_at;
             """,
                 (
@@ -1701,21 +1649,6 @@ ON CONFLICT (source, target) DO UPDATE SET
                     None,
                     WebMentionStatus.PROCESSING,
                     "The webmention is being processed.",
-                    json.dumps(
-                        {
-                            "type": ["h-entry"],
-                            "properties": {
-                                "in-reply-to": ["http://alice.example.com/post/1"],
-                                "content": [
-                                    {
-                                        "html": '<a href="http://example.com/">Robida is cool</a>',
-                                        "value": "Robida is cool",
-                                    }
-                                ],
-                            },
-                        },
-                        separators=(",", ":"),
-                    ),
                     datetime(2024, 1, 1, tzinfo=timezone.utc),
                     datetime(2024, 1, 1, tzinfo=timezone.utc),
                 ),
@@ -1780,18 +1713,6 @@ async def test_queue_webmention_no_endpoint(mocker: MockerFixture) -> None:
             client,
             "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
             "http://example.com/",
-            Microformats2(
-                type=["h-entry"],
-                properties={
-                    "in-reply-to": ["http://alice.example.com/post/1"],
-                    "content": [
-                        {
-                            "html": '<a href="http://example.com/">Robida is cool</a>',
-                            "value": "Robida is cool",
-                        },
-                    ],
-                },
-            ),
         )
 
     db.execute.assert_has_calls(
@@ -1805,15 +1726,13 @@ INSERT INTO outgoing_webmentions (
     vouch,
     status,
     message,
-    content,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (source, target) DO UPDATE SET
     status = excluded.status,
     message = excluded.message,
-    content = excluded.content,
     last_modified_at = excluded.last_modified_at;
             """,
                 (
@@ -1823,21 +1742,6 @@ ON CONFLICT (source, target) DO UPDATE SET
                     None,
                     WebMentionStatus.PROCESSING,
                     "The webmention is being processed.",
-                    json.dumps(
-                        {
-                            "type": ["h-entry"],
-                            "properties": {
-                                "in-reply-to": ["http://alice.example.com/post/1"],
-                                "content": [
-                                    {
-                                        "html": '<a href="http://example.com/">Robida is cool</a>',
-                                        "value": "Robida is cool",
-                                    }
-                                ],
-                            },
-                        },
-                        separators=(",", ":"),
-                    ),
                     datetime(2024, 1, 1, tzinfo=timezone.utc),
                     datetime(2024, 1, 1, tzinfo=timezone.utc),
                 ),

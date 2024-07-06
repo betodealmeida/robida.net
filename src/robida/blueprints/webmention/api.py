@@ -87,11 +87,10 @@ INSERT INTO incoming_webmentions (
     vouch,
     status,
     message,
-    content,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (source, target) DO UPDATE SET
     vouch = excluded.vouch,
     status = excluded.status,
@@ -106,7 +105,6 @@ RETURNING uuid;
                 data.vouch,
                 WebMentionStatus.RECEIVED,
                 "The webmention was received and is queued for processing.",
-                None,
                 created_at,
                 last_modified_at,
             ),
