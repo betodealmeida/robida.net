@@ -31,6 +31,9 @@ WITH RECURSIVE linked_entries AS (
         e.author,
         e.location,
         e.content,
+        e.published,
+        e.visibility,
+        e.sensitive,
         e.read,
         e.deleted,
         e.created_at,
@@ -46,6 +49,9 @@ WITH RECURSIVE linked_entries AS (
         e.author,
         e.location,
         e.content,
+        e.published,
+        e.visibility,
+        e.sensitive,
         e.read,
         e.deleted,
         e.created_at,
@@ -54,7 +60,10 @@ WITH RECURSIVE linked_entries AS (
     FROM entries e
     JOIN incoming_webmentions iw ON e.location = iw.source
     JOIN linked_entries le ON iw.target = le.location
-    WHERE iw.status = 'success'
+    WHERE
+        iw.status = 'success' AND
+        e.published = TRUE
+        {protected}
 
     UNION
 
@@ -63,6 +72,9 @@ WITH RECURSIVE linked_entries AS (
         e.author,
         e.location,
         e.content,
+        e.published,
+        e.visibility,
+        e.sensitive,
         e.read,
         e.deleted,
         e.created_at,
@@ -71,7 +83,10 @@ WITH RECURSIVE linked_entries AS (
     FROM entries e
     JOIN outgoing_webmentions ow ON e.location = ow.source
     JOIN linked_entries le ON ow.target = le.location
-    WHERE ow.status = 'success'
+    WHERE
+        ow.status = 'success'
+        AND e.published = TRUE
+        {protected}
 )
 SELECT * FROM linked_entries;
 """
@@ -110,11 +125,20 @@ class XForwardedProtoMiddleware:
         await self.app(scope, receive, send)
 
 
-async def get_entry(db: Connection, uuid: UUID) -> Entry | None:
+async def get_entry(
+    db: Connection,
+    uuid: UUID,
+    include_private_children: bool = True,
+) -> Entry | None:
     """
     Return an entry with all its replies.
     """
-    async with db.execute(ENTRY_WITH_CHILDREN, (uuid.hex,)) as cursor:
+    protected = "" if include_private_children else "AND e.visibility = 'public'"
+
+    async with db.execute(
+        ENTRY_WITH_CHILDREN.format(protected=protected),
+        (uuid.hex,),
+    ) as cursor:
         rows = await cursor.fetchall()
 
     if not rows:
@@ -128,6 +152,9 @@ async def get_entry(db: Connection, uuid: UUID) -> Entry | None:
                 author=row["author"],
                 location=row["location"],
                 content=Microformats2.model_validate_json(row["content"]),
+                published=row["published"],
+                visibility=row["visibility"],
+                sensitive=row["sensitive"],
                 read=row["read"],
                 deleted=row["deleted"],
                 created_at=datetime.fromisoformat(row["created_at"]),
@@ -163,6 +190,29 @@ async def upsert_entry(db: Connection, hentry: Microformats2) -> Entry:
         if url := hcard[0]["properties"].get("url"):
             author = url[0]
 
+    # "In most implementations, not passing a post-status is assumed to be published."
+    # https://indieweb.org/Micropub-extensions#Post_Status
+    if "post-status" in hentry.properties:
+        published = hentry.properties["post-status"][0] != "draft"
+    else:
+        published = True
+
+    # "If no visibility is set, a server SHOULD assume the visibility is meant to be
+    # public."
+    # https://indieweb.org/Micropub-extensions#Visibility
+    visibility = (
+        hentry.properties["visibility"][0]
+        if "visibility" in hentry.properties
+        and hentry.properties["visibility"][0] in {"public", "unlisted", "private"}
+        else "public"
+    )
+
+    sensitive = (
+        hentry.properties["sensitive"][0] == "true"
+        if "sensitive" in hentry.properties
+        else False
+    )
+
     try:
         created_at = datetime.fromisoformat(hentry.properties["published"][0])
     except (KeyError, ValueError):
@@ -180,16 +230,22 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
+    sensitive,
     read,
     deleted,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(uuid) DO UPDATE SET
     author = excluded.author,
     location = excluded.location,
     content = excluded.content,
+    published = excluded.published,
+    visibility = excluded.visibility,
+    sensitive = excluded.sensitive,
     read = FALSE,
     deleted = FALSE,
     last_modified_at = excluded.last_modified_at;
@@ -199,6 +255,9 @@ ON CONFLICT(uuid) DO UPDATE SET
             author,
             location,
             hentry.model_dump_json(exclude_unset=True),
+            published,
+            visibility,
+            sensitive,
             False,
             False,
             created_at,
@@ -219,6 +278,9 @@ ON CONFLICT(uuid) DO UPDATE SET
         author=author,
         location=location,
         content=hentry,
+        published=published,
+        visibility=visibility,
+        sensitive=sensitive,
         read=False,
         deleted=False,
         created_at=created_at,
@@ -254,6 +316,26 @@ WHERE
     dispatcher.dispatch(EntryDeleted(old_entry=entry))
 
 
+async def undelete_entry(db: Connection, entry: Entry) -> None:
+    """
+    Undelete a given entry.
+    """
+    await db.execute(
+        """
+UPDATE
+    entries
+SET
+    deleted = FALSE
+WHERE
+    uuid = ?;
+        """,
+        (entry.uuid.hex,),
+    )
+    await db.commit()
+
+    dispatcher.dispatch(EntryCreated(new_entry=entry))
+
+
 def new_hentry() -> Microformats2:
     """
     Create a new entry.
@@ -265,10 +347,13 @@ def new_hentry() -> Microformats2:
 
     properties = {
         "author": [hcard.model_dump()],
-        "published": [created_at.isoformat()],
-        "updated": [last_modified_at.isoformat()],
         "url": [url],
         "uid": [str(uuid)],
+        "post-status": ["published"],
+        "visibility": ["public"],
+        "sensitive": ["false"],
+        "published": [created_at.isoformat()],
+        "updated": [last_modified_at.isoformat()],
     }
 
     return Microformats2(type=["h-entry"], properties=properties)
@@ -298,6 +383,27 @@ def get_hcard() -> Microformats2:
             "note": [current_app.config["NOTE"]],
         },
     )
+
+
+def hentry_from_entry(entry: Entry) -> dict[str, Any]:
+    """
+    Build an h-entry from an entry.
+    """
+    entry.content.properties.setdefault("uid", [str(entry.uuid)])
+    entry.content.properties.setdefault("url", [entry.location])
+    entry.content.properties.setdefault(
+        "post-status", ["published" if entry.published else "draft"]
+    )
+    entry.content.properties.setdefault("visibility", [entry.visibility])
+    entry.content.properties.setdefault(
+        "sensitive", ["true" if entry.sensitive else "false"]
+    )
+    entry.content.properties.setdefault(
+        "published",
+        [entry.last_modified_at.isoformat()],
+    )
+
+    return entry.content.model_dump()
 
 
 def extract_text_from_html(html: str) -> str:

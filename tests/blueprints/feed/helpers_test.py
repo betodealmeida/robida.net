@@ -34,16 +34,18 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
     read,
     deleted,
     created_at,
     last_modified_at
 )
 VALUES
-(?, ?, ?, ?, ?, ?, ?, ?),
-(?, ?, ?, ?, ?, ?, ?, ?),
-(?, ?, ?, ?, ?, ?, ?, ?),
-(?, ?, ?, ?, ?, ?, ?, ?)
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             # new, not deleted
@@ -60,6 +62,8 @@ VALUES
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -78,6 +82,8 @@ VALUES
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             True,
             "2024-01-02 00:00:00+00:00",
@@ -96,6 +102,8 @@ VALUES
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -114,6 +122,8 @@ VALUES
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2023-01-01 00:00:00+00:00",
@@ -123,7 +133,8 @@ VALUES
     await db.commit()
 
     async with current_app.app_context():
-        entries = await get_entries(since="2023-12-01 00:00:00+00:00")
+        async with current_app.test_request_context("/", method="GET"):
+            entries = await get_entries(since="2023-12-01 00:00:00+00:00")
 
     assert entries == [
         Entry(

@@ -49,6 +49,9 @@ async def test_create_entry(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
@@ -126,6 +129,9 @@ async def test_create_entry_no_type(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
@@ -206,6 +212,9 @@ async def test_create_entry_from_json(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
@@ -296,6 +305,9 @@ async def test_create_entry_from_json_no_type(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
@@ -366,6 +378,9 @@ async def test_create_entry_with_file(
 
     assert dict(row) == {
         "uuid": "c35ad4716c6c488b9ffc8854607192f0",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/c35ad471-6c6c-488b-9ffc-8854607192f0",
         "content": json.dumps(
@@ -525,10 +540,15 @@ async def test_index_invalid(client: testing.QuartClient) -> None:
     }
 
 
-async def test_delete_and_undelete(client: testing.QuartClient, db: Connection) -> None:
+async def test_delete_and_undelete(
+    mocker: MockerFixture,
+    client: testing.QuartClient,
+    db: Connection,
+) -> None:
     """
     Test deleting and undeleting an entry.
     """
+    mocker.patch("robida.helpers.dispatcher")
 
     response = await client.post(
         "/micropub",
@@ -606,7 +626,7 @@ WHERE
 
 async def test_delete_not_found(client: testing.QuartClient) -> None:
     """
-    Test deleting and undeleting an entry that doesn't exist.
+    Test deleting an entry that doesn't exist.
     """
     response = await client.post(
         "/micropub",
@@ -615,6 +635,22 @@ async def test_delete_not_found(client: testing.QuartClient) -> None:
             "action": "delete",
         },
         auth=Authorization("bearer", token="delete"),
+    )
+
+    assert response.status_code == 404
+
+
+async def test_undelete_not_found(client: testing.QuartClient) -> None:
+    """
+    Test undeleting an entry that doesn't exist.
+    """
+    response = await client.post(
+        "/micropub",
+        json={
+            "url": "http://example.com/feed/96135d01-f6be-4e1c-99d0-cc5a6a4f1d10",
+            "action": "undelete",
+        },
+        auth=Authorization("bearer", token="undelete"),
     )
 
     assert response.status_code == 404

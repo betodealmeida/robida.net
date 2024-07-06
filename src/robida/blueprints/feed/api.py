@@ -6,13 +6,13 @@ Feed for entries.
 
 from uuid import UUID
 
-from quart import Blueprint, Response, current_app, render_template, request
+from quart import Blueprint, Response, current_app, render_template, request, session
 from quart.helpers import redirect, url_for
 from quart_schema import validate_querystring
 
 from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
-from robida.helpers import get_entry
+from robida.helpers import get_entry, hentry_from_entry
 
 from .helpers import (
     build_jsonfeed,
@@ -20,7 +20,6 @@ from .helpers import (
     get_feed_next_url,
     get_feed_previous_url,
     get_title,
-    hentry_from_entry,
     hfeed_from_entries,
     make_conditional_response,
     reformat_html,
@@ -291,9 +290,11 @@ async def entry(uuid: UUID) -> dict:
     """
     Load a single entry.
     """
+    authorized = session.get("me") == url_for("homepage.index", _external=True)
+
     # pylint: disable=redefined-outer-name
     async with get_db(current_app) as db:
-        entry = await get_entry(db, uuid)
+        entry = await get_entry(db, uuid, include_private_children=authorized)
 
     if entry is None:
         return Response(status=404)
@@ -312,6 +313,9 @@ async def entry(uuid: UUID) -> dict:
             title=f'Entry deleted — {current_app.config["SITE_NAME"]}',
         )
         return Response(html, status=410)
+
+    if entry.visibility == "private" and not authorized:
+        return Response("insufficient_scope", status=403)
 
     response = make_conditional_response([entry])
     if response.status_code == 304:

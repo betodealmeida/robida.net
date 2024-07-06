@@ -21,7 +21,8 @@ async def test_search(current_app: Quart) -> None:
     await load_entries(current_app)
 
     async with current_app.app_context():
-        entries = await search_entries("world")
+        async with current_app.test_request_context("/", method="GET"):
+            entries = await search_entries("world")
 
     assert entries == [
         Entry(
@@ -65,7 +66,8 @@ async def test_search_invalid_query(current_app: Quart) -> None:
     await load_entries(current_app)
 
     async with current_app.app_context():
-        entries = await search_entries("(world OR hello) there")
+        async with current_app.test_request_context("/", method="GET"):
+            entries = await search_entries("(world OR hello) there")
 
     assert entries == [
         Entry(

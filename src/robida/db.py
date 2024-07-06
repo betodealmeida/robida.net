@@ -74,6 +74,9 @@ async def load_entries(app: Quart) -> None:
                     "category": ["note"],
                 },
             ),
+            published=True,
+            visibility="public",
+            sensitive=False,
         )
 
         deleted = Entry(
@@ -108,6 +111,9 @@ async def load_entries(app: Quart) -> None:
                     "category": ["note"],
                 },
             ),
+            published=True,
+            visibility="public",
+            sensitive=False,
             deleted=True,
         )
 
@@ -157,6 +163,9 @@ async def load_entries(app: Quart) -> None:
                     "category": ["about", "blog", "python"],
                 },
             ),
+            published=True,
+            visibility="public",
+            sensitive=False,
         )
 
         reply = Entry(
@@ -187,6 +196,9 @@ async def load_entries(app: Quart) -> None:
                     ],
                 },
             ),
+            published=True,
+            visibility="public",
+            sensitive=False,
         )
 
         another_reply = Entry(
@@ -222,6 +234,9 @@ async def load_entries(app: Quart) -> None:
                     "category": ["note"],
                 },
             ),
+            published=True,
+            visibility="public",
+            sensitive=False,
         )
 
     entries = [note, deleted, article, reply, another_reply]
@@ -235,17 +250,23 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
+    sensitive,
     deleted,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 (
                     entry.uuid.hex,
                     entry.author,
                     entry.location,
                     entry.content.model_dump_json(exclude_unset=True),
+                    entry.published,
+                    entry.visibility,
+                    entry.sensitive,
                     entry.deleted,
                     entry.created_at,
                     entry.last_modified_at,

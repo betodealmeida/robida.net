@@ -158,6 +158,94 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 
 @freeze_time("2024-01-01 00:00:00")
+async def test_receive_existing_error(
+    mocker: MockerFixture,
+    httpx_mock: HTTPXMock,
+    db: Connection,
+    current_app: Quart,
+    client: testing.QuartClient,
+) -> None:
+    """
+    Test webmention update when a link no longer exists in the source.
+    """
+    mocker.patch("robida.blueprints.webmention.api.send_webmentions")
+    mocker.patch(
+        "robida.blueprints.webmention.helpers.is_domain_trusted",
+        return_value=True,
+    )
+
+    # UUID for the new webmention (will be replaced by the existing one)
+    mocker.patch(
+        "robida.blueprints.webmention.api.uuid4",
+        return_value=UUID("c35ad471-6c6c-488b-9ffc-8854607192f0"),
+    )
+
+    uuid = UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e")
+    target = f"http://example.com/feed/{uuid}"
+    source = "http://other.example.com/"
+
+    httpx_mock.add_response(
+        url=source,
+        html="This post was deleted.",
+        status_code=410,
+        headers={"Content-Type": "text/plain"},
+    )
+
+    # create an entry
+    async with current_app.app_context():
+        hentry = new_hentry()
+        hentry.properties.update(
+            {
+                "url": [target],
+                "uid": [str(uuid)],
+                "content": ["This is cool"],
+            },
+        )
+        entry = await upsert_entry(db, hentry)
+        assert entry.content.properties["content"][0] == "This is cool"
+
+    # create an existing webmention
+    await db.execute(
+        """
+INSERT INTO incoming_webmentions (
+    uuid,
+    source,
+    target,
+    vouch,
+    status,
+    message,
+    created_at,
+    last_modified_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        """,
+        (
+            uuid.hex,
+            source,
+            target,
+            None,
+            "received",
+            "The webmention was received and is queued for processing.",
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
+
+    # Note: if we set an `auto_tick_seconds` value in the `freeze_time` decorator,
+    # the background tasks might time out!
+    async with current_app.test_app():
+        await client.post(
+            "/webmention",
+            form={"source": source, "target": target},
+        )
+
+    # check that the existing entry was deleterd
+    deleted_entry = await get_entry(db, uuid)
+    assert deleted_entry and deleted_entry.deleted
+
+
+@freeze_time("2024-01-01 00:00:00")
 async def test_receive_require_vouch(
     mocker: MockerFixture,
     current_app: Quart,

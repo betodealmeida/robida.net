@@ -52,6 +52,13 @@ My website.
   - [X] Contact
   - [X] Now
 - [X] Event dispatcher
+- [ ] MicroPub extensions
+  - [X] Post status
+  - [X] Visibility
+  - [ ] Supported vocabulary
+  - [ ] Post list
+  - [ ] Category list
+  - [ ] Contacts
 - [ ] Logging
 - [ ] CRUD
 - [ ] Bookmarklets
@@ -90,6 +97,12 @@ My website.
 
 ### Notes
 
+- get_entry should remove private children if not logged in
+
+- webmention moderation (simply make it private)
+- create untrusted webmentions as private
+- remove content coumn from incoming_webmentions and outgoing_webmentions
+
 - call /publish on new entries => event
 - fix rel="self" so it works in categories, main page, etc
 
@@ -99,20 +112,17 @@ https://indieweb.org/h-x-app#Properties
 - render responses (https://indieweb.org/responses), and return in feed
     - do more work to populate a summary, specially for websites without an h-entry
 
-- private/unlisted/public and draft/published
-    - create untrusted webmentions as private/draft
-    - remove content coumn from incoming_webmentions and outgoing_webmentions
 
 - store logins in a table
-- UI for seeing applications and revoking access
+- UI for seeing applications and revoking/extending access
 
-- webmention moderation (simply make it a draft)
 - replies to places that don't receive webmentions?
 
 - on auth.html, ask for confirmation on giving refresh token and the expiration time of the access token
+    - need this for indiepass, which doesn't refresh the token!
 
 /bookmarklet blueprint
-- Gives Bookmarklets pre-filled if logged in
+- Gives Bookmarklets pre-filled
 - Used for like/bookmark/repost/reply/song
 
 - ask for scope when using indieauth
