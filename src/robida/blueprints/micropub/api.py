@@ -24,7 +24,13 @@ from werkzeug.datastructures import MultiDict
 
 from robida.blueprints.indieauth.helpers import requires_scope
 from robida.db import get_db
-from robida.helpers import delete_entry, get_entry, get_hcard, upsert_entry
+from robida.helpers import (
+    delete_entry,
+    get_entry,
+    get_hcard,
+    undelete_entry,
+    upsert_entry,
+)
 from robida.models import Microformats2
 
 from .helpers import process_form
@@ -230,7 +236,6 @@ async def delete(payload) -> Response:
 
     async with get_db(current_app) as db:
         entry = await get_entry(db, uuid)
-
         if entry is None:
             return Response(status=404)
 
@@ -248,17 +253,10 @@ async def undelete(payload) -> Response:
     uuid = UUID(urllib.parse.urlparse(url).path.split("/")[-1])
 
     async with get_db(current_app) as db:
-        await db.execute(
-            """
-UPDATE
-    entries
-SET
-    deleted = FALSE
-WHERE
-    uuid = ?
-        """,
-            (uuid.hex,),
-        )
-        await db.commit()
+        entry = await get_entry(db, uuid)
+        if entry is None:
+            return Response(status=404)
+
+        await undelete_entry(db, entry)
 
     return Response(status=204)

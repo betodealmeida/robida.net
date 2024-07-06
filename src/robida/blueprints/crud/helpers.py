@@ -30,6 +30,16 @@ async def create_hentry(data: dict[str, Any]) -> Microformats2:
     Create an h-entry from the CRUD payload.
     """
     hentry = new_hentry()
+    hentry.properties.update(
+        {
+            "post-status": [
+                "published" if data.pop("published", False) == "on" else "draft"
+            ],
+            "visibility": [data.pop("visibility")],
+            "sensitive": ["true" if data.pop("sensitive", False) == "on" else "false"],
+        },
+    )
+
     template = data.pop("template")
 
     custom_properties: CustomPropertiesType = {

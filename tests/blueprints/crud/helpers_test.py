@@ -144,6 +144,8 @@ async def test_create_article(mocker: MockerFixture, current_app: Quart) -> None
         "content": "This is a *test* article\n\nTest.",
         "summary": "Just a test.",
         "category": "blog, meta",
+        "visibility": "public",
+        "published": "on",
     }
 
     async with current_app.app_context():
@@ -176,6 +178,9 @@ async def test_create_article(mocker: MockerFixture, current_app: Quart) -> None
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["false"],
             "name": ["My test article"],
             "summary": ["Just a test."],
             "content": [
@@ -213,6 +218,8 @@ async def test_create_bookmark(mocker: MockerFixture, current_app: Quart) -> Non
         "url": "http://alice.example.com/",
         "title": "Alice's restaurant",
         "category": "blog, food",
+        "visibility": "public",
+        "published": "on",
     }
 
     async with current_app.app_context():
@@ -245,6 +252,9 @@ async def test_create_bookmark(mocker: MockerFixture, current_app: Quart) -> Non
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["false"],
             "name": ["http://example.com/"],
             "summary": ["Bookmark of http://alice.example.com/"],
             "bookmark-of": [
@@ -285,6 +295,8 @@ async def test_create_like(mocker: MockerFixture, current_app: Quart) -> None:
         "template": "like",
         "url": "http://alice.example.com/",
         "title": "Alice's restaurant",
+        "visibility": "public",
+        "published": "on",
     }
 
     async with current_app.app_context():
@@ -317,6 +329,9 @@ async def test_create_like(mocker: MockerFixture, current_app: Quart) -> None:
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["false"],
             "name": ["http://example.com/"],
             "summary": ["Like of http://alice.example.com/"],
             "like-of": [
@@ -349,6 +364,8 @@ async def test_create_note(mocker: MockerFixture, current_app: Quart) -> None:
         "template": "note",
         "content": "This is a *test* note.",
         "category": "blog, meta",
+        "visibility": "public",
+        "published": "on",
     }
 
     async with current_app.app_context():
@@ -381,6 +398,9 @@ async def test_create_note(mocker: MockerFixture, current_app: Quart) -> None:
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "post-status": ["published"],
+            "visibility": ["public"],
+            "sensitive": ["false"],
             "content": [
                 {
                     "html": "<p>This is a <em>test</em> note.</p>\n",

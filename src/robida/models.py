@@ -29,6 +29,9 @@ class Entry(BaseModel):
     author: str
     location: str
     content: Microformats2
+    published: bool = True
+    visibility: str = "public"
+    sensitive: bool = False
     read: bool = False
     deleted: bool = False
     created_at: Annotated[datetime, Field(default_factory=utcnow)]

@@ -2,6 +2,8 @@
 Tests for the generic helper functions.
 """
 
+# pylint: disable=too-many-lines
+
 import json
 from datetime import datetime, timezone
 from uuid import UUID
@@ -159,6 +161,7 @@ async def test_upsert_entry(db: Connection, current_app: Quart) -> None:
                 properties={
                     "url": ["https://other.example.com"],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -182,6 +185,9 @@ async def test_upsert_entry(db: Connection, current_app: Quart) -> None:
 
     assert dict(entry) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "https://other.example.com",
         "location": "https://other.example.com",
         "content": json.dumps(
@@ -190,6 +196,7 @@ async def test_upsert_entry(db: Connection, current_app: Quart) -> None:
                 "properties": {
                     "url": ["https://other.example.com"],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -248,6 +255,9 @@ async def test_upsert_entry_published(db: Connection, current_app: Quart) -> Non
 
     assert dict(entry) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "author": "https://other.example.com",
         "location": "https://other.example.com",
         "content": json.dumps(
@@ -344,6 +354,9 @@ async def test_new_hentry(mocker: MockerFixture, current_app: Quart) -> None:
                 "updated": ["2024-01-01T00:00:00+00:00"],
                 "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
                 "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                "post-status": ["published"],
+                "visibility": ["public"],
+                "sensitive": ["false"],
             },
             children=[],
         )
@@ -550,6 +563,252 @@ VALUES
                         ],
                     },
                     children=[],
+                ),
+            ],
+        ),
+        read=False,
+        deleted=False,
+        created_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+        last_modified_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+    )
+
+
+async def test_get_entry_private(current_app: Quart, db: Connection) -> None:
+    """
+    Test that `get_entry` function can ommit private entries.
+    """
+    await db.execute(
+        """
+INSERT INTO entries (
+    uuid,
+    author,
+    location,
+    content,
+    visibility,
+    read,
+    deleted,
+    created_at,
+    last_modified_at
+)
+VALUES
+(?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            #
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["Hello, world!"],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "public",
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+            #
+            "d2f5229639d946e1a6c539e33d119403",
+            "http://alice.example.com/",
+            "http://alice.example.com/post/1",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "in-reply-to": [
+                            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                        ],
+                        "content": ["Welcome!"],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "public",
+            False,
+            False,
+            "2024-01-02 00:00:00+00:00",
+            "2024-01-02 00:00:00+00:00",
+            #
+            "96135d01f6be4e1c99d0cc5a6a4f1d10",
+            "http://example.com/",
+            "http://example.com/feed/96135d01-f6be-4e1c-99d0-cc5a6a4f1d10",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "in-reply-to": [
+                            "http://alice.example.com/post/1",
+                        ],
+                        "content": ["Thank you!"],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "public",
+            False,
+            False,
+            "2024-01-03 00:00:00+00:00",
+            "2024-01-03 00:00:00+00:00",
+            # private
+            "12f1ba3d33d6422b87932b6ac17275a9",
+            "http://bob.example.com/",
+            "http://bob.example.com/posts/42",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "visibility": ["private"],
+                        "like-of": [
+                            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+                        ],
+                        "summary": [
+                            "Liked: http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                        ],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            "private",
+            False,
+            False,
+            "2024-01-07 00:00:00+00:00",
+            "2024-01-07 00:00:00+00:00",
+        ),
+    )
+    await db.execute(
+        """
+INSERT INTO incoming_webmentions (
+    source,
+    target,
+    status
+)
+VALUES
+(?, ?, ?),
+(?, ?, ?);
+        """,
+        (
+            "http://alice.example.com/post/1",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            "success",
+            "http://bob.example.com/posts/42",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            "success",
+        ),
+    )
+    await db.execute(
+        """
+INSERT INTO outgoing_webmentions (
+    source,
+    target,
+    status
+)
+VALUES
+(?, ?, ?);
+        """,
+        (
+            "http://example.com/feed/96135d01-f6be-4e1c-99d0-cc5a6a4f1d10",
+            "http://alice.example.com/post/1",
+            "success",
+        ),
+    )
+    await db.commit()
+
+    async with current_app.app_context():
+        entry = await get_entry(
+            db,
+            UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+            include_private_children=True,
+        )
+
+    assert entry == Entry(
+        uuid=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+        author="http://example.com/",
+        location="http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+        content=Microformats2(
+            type=["h-entry"],
+            properties={"content": ["Hello, world!"]},
+            children=[
+                Microformats2(
+                    type=["h-entry"],
+                    properties={
+                        "in-reply-to": [
+                            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                        ],
+                        "content": ["Welcome!"],
+                    },
+                    children=[
+                        Microformats2(
+                            type=["h-entry"],
+                            properties={
+                                "in-reply-to": ["http://alice.example.com/post/1"],
+                                "content": ["Thank you!"],
+                            },
+                            children=[],
+                        ),
+                    ],
+                ),
+                Microformats2(
+                    type=["h-entry"],
+                    properties={
+                        "visibility": ["private"],
+                        "like-of": [
+                            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                        ],
+                        "summary": [
+                            "Liked: http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                        ],
+                    },
+                    children=[],
+                ),
+            ],
+        ),
+        read=False,
+        deleted=False,
+        created_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+        last_modified_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+    )
+
+    async with current_app.app_context():
+        entry = await get_entry(
+            db,
+            UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+            include_private_children=False,
+        )
+
+    assert entry == Entry(
+        uuid=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+        author="http://example.com/",
+        location="http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+        content=Microformats2(
+            type=["h-entry"],
+            properties={"content": ["Hello, world!"]},
+            children=[
+                Microformats2(
+                    type=["h-entry"],
+                    properties={
+                        "in-reply-to": [
+                            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                        ],
+                        "content": ["Welcome!"],
+                    },
+                    children=[
+                        Microformats2(
+                            type=["h-entry"],
+                            properties={
+                                "in-reply-to": ["http://alice.example.com/post/1"],
+                                "content": ["Thank you!"],
+                            },
+                            children=[],
+                        ),
+                    ],
                 ),
             ],
         ),

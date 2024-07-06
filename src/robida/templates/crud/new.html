@@ -4,25 +4,45 @@
 <h2>New entry</h2>
 
 <form method="POST" action="{{ url_for('crud.submit') }}">
-    <label for="options">Select a template</label>
-    <select
-        id="template"
-        name="template"
-        aria-label="Select a template"
-        required
-        hx-get="{{ url_for('crud.template') }}"
-        hx-params="*"
-        hx-trigger="change"
-        hx-target="#fields"
-    >
-        <option selected disabled value="">
-            ⋯
-        </option>
-        <option value="article">Article</option>
-        <option value="bookmark">Bookmark</option>
-        <option value="like">Like</option>
-        <option value="note">Note</option>
-    </select>
+    <fieldset>
+        <label for="published">
+            <input name="published" id="published" type="checkbox" role="switch" checked/>
+            Published
+        </label>
+
+        <label for="sensitive">
+            <input name="sensitive" id="sensitive" type="checkbox" role="switch"/>
+            Sensitive
+        </label>
+
+        <label for="visibility">Visibility</label>
+            <select name="visibility" id="visibility">
+                <option selected value="private">Private</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="public">Public</option>
+            </select>
+        <label>
+
+        <label for="options">Template</label>
+        <select
+            name="template"
+            id="template"
+            aria-label="Select a template"
+            required
+            hx-get="{{ url_for('crud.template') }}"
+            hx-params="*"
+            hx-trigger="change"
+            hx-target="#fields"
+        >
+            <option selected disabled value="">
+                ⋯
+            </option>
+            <option value="article">Article</option>
+            <option value="bookmark">Bookmark</option>
+            <option value="like">Like</option>
+            <option value="note">Note</option>
+        </select>
+    </fieldset>
 
     <div id="fields"></div>
 </form>

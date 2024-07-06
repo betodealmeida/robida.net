@@ -10,12 +10,12 @@ from uuid import UUID
 
 from bs4 import BeautifulSoup
 from bs4.formatter import HTMLFormatter
-from quart import Response, current_app, request
+from quart import Response, current_app, request, session
 from quart.helpers import url_for
 
 from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
-from robida.helpers import extract_text_from_html, fetch_hcard
+from robida.helpers import extract_text_from_html, fetch_hcard, hentry_from_entry
 from robida.models import Entry, Microformats2
 
 from .models import (
@@ -25,6 +25,36 @@ from .models import (
     JSONFeedItem,
     JSON_FEED_VERSION,
 )
+
+
+ENTRIES_QUERY = """
+SELECT
+    entries.uuid,
+    entries.author,
+    entries.location,
+    entries.content,
+    entries.published,
+    entries.visibility,
+    entries.sensitive,
+    entries.read,
+    entries.deleted,
+    entries.created_at,
+    entries.last_modified_at
+FROM
+    entries
+WHERE
+    entries.last_modified_at >= ? AND
+    entries.author = ? AND
+    entries.deleted = ?
+    {protected}
+ORDER BY
+    entries.last_modified_at DESC
+LIMIT
+    ?
+OFFSET
+    ?
+;
+"""
 
 
 async def render_microformat(data: dict[str, Any]) -> str:
@@ -64,31 +94,17 @@ async def get_entries(
     """
     Load all the entries.
     """
+    # extra predicate
+    me = url_for("homepage.index", _external=True)
+    protected = (
+        "AND entries.published = TRUE AND entries.visibility = 'public'"
+        if session.get("me") != me
+        else ""
+    )
+
     async with get_db(current_app) as db:
         async with db.execute(
-            """
-SELECT
-    uuid,
-    author,
-    location,
-    content,
-    read,
-    deleted,
-    created_at,
-    last_modified_at
-FROM
-    entries
-WHERE
-    last_modified_at >= ? AND
-    author = ? AND
-    deleted = ?
-ORDER BY
-    last_modified_at DESC
-LIMIT
-    ?
-OFFSET
-    ?
-            """,
+            ENTRIES_QUERY.format(protected=protected),
             (
                 since or "1970-01-01 00:00:00+00:00",
                 url_for("homepage.index", _external=True),
@@ -105,6 +121,9 @@ OFFSET
             author=row["author"],
             location=row["location"],
             content=Microformats2(**json.loads(row["content"])),
+            published=row["published"],
+            visibility=row["visibility"],
+            sensitive=row["sensitive"],
             read=row["read"],
             deleted=row["deleted"],
             created_at=datetime.fromisoformat(row["created_at"]),
@@ -268,20 +287,6 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
         },
         "children": [hentry_from_entry(entry) for entry in entries],
     }
-
-
-def hentry_from_entry(entry: Entry) -> dict[str, Any]:
-    """
-    Build an h-entry from an entry.
-    """
-    entry.content.properties.setdefault("uid", [str(entry.uuid)])
-    entry.content.properties.setdefault("url", [entry.location])
-    entry.content.properties.setdefault(
-        "published",
-        [entry.last_modified_at.isoformat()],
-    )
-
-    return entry.content.model_dump()
 
 
 def get_title(hentry: dict[str, Any]) -> str:

@@ -21,7 +21,8 @@ async def test_categories(current_app: Quart) -> None:
     await load_entries(current_app)
 
     async with current_app.app_context():
-        entries = await list_entries("python")
+        async with current_app.test_request_context("/", method="GET"):
+            entries = await list_entries("python")
 
     assert entries == [
         Entry(

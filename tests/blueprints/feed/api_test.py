@@ -12,6 +12,7 @@ from quart import Quart, testing
 from robida.db import load_entries
 
 
+@freeze_time("2024-01-01 00:00:00")
 async def test_feed_json(db: Connection, client: testing.QuartClient) -> None:
     """
     Test the JSON Feed endpoint.
@@ -23,12 +24,14 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
     read,
     deleted,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """,
         (
             "92cdeabd827843ad871d0214dcb2d12e",
@@ -44,6 +47,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -106,6 +111,102 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     }
 
 
+async def load_public_and_private_entries(db: Connection) -> None:
+    """
+    Load public and private entries into the database.
+    """
+    await db.execute(
+        """
+INSERT INTO entries (
+    uuid,
+    author,
+    location,
+    content,
+    published,
+    visibility,
+    read,
+    deleted,
+    created_at,
+    last_modified_at
+)
+VALUES
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """,
+        (
+            # Public entry
+            "92cdeabd827843ad871d0214dcb2d12e",
+            "http://example.com/",
+            "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["hello world"],
+                        "category": ["foo", "bar"],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            True,
+            "public",
+            False,
+            False,
+            "2024-01-01 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+            # Private entry
+            "d2f5229639d946e1a6c539e33d119403",
+            "http://example.com/",
+            "http://example.com/feed/d2f52296-39d9-46e1-a6c5-39e33d119403",
+            json.dumps(
+                {
+                    "type": ["h-entry"],
+                    "properties": {
+                        "content": ["secret code"],
+                        "category": ["password"],
+                    },
+                },
+                separators=(",", ":"),
+            ),
+            True,
+            "private",
+            False,
+            False,
+            "2024-01-02 00:00:00+00:00",
+            "2024-01-02 00:00:00+00:00",
+        ),
+    )
+    await db.commit()
+
+
+async def test_feed_json_private(
+    db: Connection,
+    client: testing.QuartClient,
+) -> None:
+    """
+    Test the JSON Feed endpoint with private entries.
+    """
+    await load_public_and_private_entries(db)
+
+    response = await client.get("/feed.json")
+    payload = await response.json
+    assert len(payload["items"]) == 1
+
+
+async def test_feed_json_private_authorized(
+    db: Connection,
+    authorized_client: testing.QuartClient,
+) -> None:
+    """
+    Test the JSON Feed endpoint with private entries when authorized.
+    """
+    await load_public_and_private_entries(db)
+
+    response = await authorized_client.get("/feed.json")
+    payload = await response.json
+    assert len(payload["items"]) == 2
+
+
 async def test_feed_json_content_negotiation(client: testing.QuartClient) -> None:
     """
     Test the JSON Feed endpoint via content negotiation.
@@ -149,14 +250,16 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
     read,
     deleted,
     created_at,
     last_modified_at
 )
 VALUES
-(?, ?, ?, ?, ?, ?, ?, ?),
-(?, ?, ?, ?, ?, ?, ?, ?)
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             "92cdeabd827843ad871d0214dcb2d12e",
@@ -172,6 +275,8 @@ VALUES
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -189,6 +294,8 @@ VALUES
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-02 00:00:00+00:00",
@@ -225,12 +332,14 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
     read,
     deleted,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             "92cdeabd827843ad871d0214dcb2d12e",
@@ -246,6 +355,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -309,12 +420,14 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
     read,
     deleted,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             "92cdeabd827843ad871d0214dcb2d12e",
@@ -330,6 +443,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -393,12 +508,14 @@ INSERT INTO entries (
     author,
     location,
     content,
+    published,
+    visibility,
     read,
     deleted,
     created_at,
     last_modified_at
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             "92cdeabd827843ad871d0214dcb2d12e",
@@ -414,6 +531,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 },
                 separators=(",", ":"),
             ),
+            True,
+            "public",
             False,
             False,
             "2024-01-01 00:00:00+00:00",
@@ -574,6 +693,35 @@ async def test_entry(client: testing.QuartClient, current_app: Quart) -> None:
             {"url": "/feed.html", "text": ""},
         ],
     }
+
+
+async def test_entry_private(client: testing.QuartClient, db: Connection) -> None:
+    """
+    Test loading a private entry.
+    """
+    await load_public_and_private_entries(db)
+
+    response = await client.get("/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e")
+    assert response.status_code == 200
+
+    response = await client.get("/feed/d2f52296-39d9-46e1-a6c5-39e33d119403")
+    assert response.status_code == 403
+
+
+async def test_entry_private_authenticated(
+    authorized_client: testing.QuartClient,
+    db: Connection,
+) -> None:
+    """
+    Test loading a private entry.
+    """
+    await load_public_and_private_entries(db)
+
+    response = await authorized_client.get("/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e")
+    assert response.status_code == 200
+
+    response = await authorized_client.get("/feed/d2f52296-39d9-46e1-a6c5-39e33d119403")
+    assert response.status_code == 200
 
 
 async def test_entry_not_found(client: testing.QuartClient) -> None:

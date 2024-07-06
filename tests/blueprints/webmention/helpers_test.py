@@ -187,12 +187,15 @@ WHERE
                                             },
                                         }
                                     ],
-                                    "published": ["2024-01-01T00:00:00+00:00"],
-                                    "updated": ["2024-01-01T00:00:00+00:00"],
                                     "url": [
                                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                                     ],
                                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                                    "post-status": ["published"],
+                                    "visibility": ["public"],
+                                    "sensitive": ["false"],
+                                    "published": ["2024-01-01T00:00:00+00:00"],
+                                    "updated": ["2024-01-01T00:00:00+00:00"],
                                     "in-reply-to": ["http://alice.example.com/post/1"],
                                     "content": [
                                         {
@@ -1449,6 +1452,81 @@ async def test_send_webmentions(
     )
 
 
+async def test_send_webmentions_updated_entry(
+    mocker: MockerFixture,
+    db: Connection,
+    current_app: Quart,
+) -> None:
+    """
+    Test the `send_webmentions` function on an updated entry.
+
+    We need to make sure that we send webmentions for links that were removed as well.
+    """
+    queue_webmention = mocker.patch(
+        "robida.blueprints.webmention.helpers.queue_webmention"
+    )
+
+    async with current_app.app_context():
+        hentry = new_hentry()
+        uuid = UUID(hentry.properties["uid"][0])
+        hentry.properties.update(
+            {
+                "content": [
+                    {
+                        "html": '<a href="http://example.com/post/1">Love this</a>',
+                        "value": "Love this",
+                    },
+                ],
+            },
+        )
+        old_entry = await upsert_entry(db, hentry)
+
+    new_entry = old_entry.copy(deep=True)
+    new_entry.content.properties["content"] = [
+        {
+            "html": '<a href="http://example.com/post/2">Love this more</a>',
+            "value": "Love this more",
+        },
+    ]
+
+    async with current_app.app_context():
+        await send_webmentions(new_entry=new_entry, old_entry=old_entry)
+
+    queue_webmention.assert_has_calls(
+        [
+            mocker.call(
+                mocker.ANY,
+                mocker.ANY,
+                f"http://example.com/feed/{uuid}",
+                "http://example.com/",
+                new_entry.content,
+            ),
+            mocker.call(
+                mocker.ANY,
+                mocker.ANY,
+                f"http://example.com/feed/{uuid}",
+                "http://example.com/post/1",
+                new_entry.content,
+            ),
+            mocker.call(
+                mocker.ANY,
+                mocker.ANY,
+                f"http://example.com/feed/{uuid}",
+                "http://example.com/post/2",
+                new_entry.content,
+            ),
+            mocker.call(
+                mocker.ANY,
+                mocker.ANY,
+                f"http://example.com/feed/{uuid}",
+                "http://example.com/static/img/photo.jpg",
+                new_entry.content,
+            ),
+        ],
+        any_order=True,
+    )
+
+
 async def test_send_webmentions_in_development(
     mocker: MockerFixture,
     db: Connection,
@@ -1530,7 +1608,7 @@ async def test_send_webmentions_not_author(
     queue_webmention.assert_not_called()
 
 
-async def test_send_webmentions_not_data(
+async def test_send_webmentions_no_data(
     mocker: MockerFixture,
     current_app: Quart,
 ) -> None:

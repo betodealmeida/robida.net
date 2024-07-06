@@ -26,6 +26,9 @@ async def test_load_entries(current_app: Quart) -> None:
     assert [dict(row) for row in rows] == [
         {
             "uuid": "1d4f24cc8c6a442e8a42bc208cb16534",
+            "published": 1,
+            "visibility": "public",
+            "sensitive": 0,
             "author": "http://example.com/",
             "location": "http://example.com/feed/1d4f24cc-8c6a-442e-8a42-bc208cb16534",
             "content": json.dumps(
@@ -58,6 +61,9 @@ async def test_load_entries(current_app: Quart) -> None:
         },
         {
             "uuid": "37c9ed455c0c43e4b0880e904ed849d7",
+            "published": 1,
+            "visibility": "public",
+            "sensitive": 0,
             "author": "http://example.com/",
             "location": "http://example.com/feed/37c9ed45-5c0c-43e4-b088-0e904ed849d7",
             "content": json.dumps(
@@ -90,6 +96,9 @@ async def test_load_entries(current_app: Quart) -> None:
         },
         {
             "uuid": "8bf10ecebe184b96af9104e5c2a931ad",
+            "published": 1,
+            "visibility": "public",
+            "sensitive": 0,
             "author": "http://example.com/",
             "location": "http://example.com/feed/8bf10ece-be18-4b96-af91-04e5c2a931ad",
             "content": json.dumps(
@@ -136,6 +145,9 @@ async def test_load_entries(current_app: Quart) -> None:
         },
         {
             "uuid": "68e50fbd69c04e12bf2f208ace952ffd",
+            "published": 1,
+            "visibility": "public",
+            "sensitive": 0,
             "author": "http://alice.example.com",
             "location": "http://alice.example.com/post/1",
             "content": json.dumps(
@@ -168,6 +180,9 @@ async def test_load_entries(current_app: Quart) -> None:
         },
         {
             "uuid": "9911109126c74e3ea0be436fbeee0d14",
+            "published": 1,
+            "visibility": "public",
+            "sensitive": 0,
             "author": "http://example.com/",
             "location": "http://example.com/feed/99111091-26c7-4e3e-a0be-436fbeee0d14",
             "content": json.dumps(
