@@ -78,7 +78,7 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
             "token_endpoint": ["/token"],
             "hub": ["/websub"],
             "alternate": ["/feed.json", "/feed.rss", "/feed.xml", "/feed.html"],
-            "stylesheet": ["/static/css/main.css"],
+            "stylesheet": ["/static/css/leaflet.css", "/static/css/main.css"],
             "noopener": [
                 "https://github.com/betodealmeida/robida.net/",
                 "https://indieweb.org/",
@@ -101,6 +101,10 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
             "/feed.rss": {"text": "", "rels": ["alternate"]},
             "/feed.xml": {"text": "", "rels": ["alternate"]},
             "/feed.html": {"text": "", "rels": ["alternate"]},
+            "/static/css/leaflet.css": {
+                "rels": ["stylesheet"],
+                "text": "",
+            },
             "/static/css/main.css": {"text": "", "rels": ["stylesheet"]},
             "https://github.com/betodealmeida/robida.net/": {
                 "text": "Robida",

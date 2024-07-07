@@ -2,7 +2,11 @@
 Homepage blueprint.
 """
 
-from quart import Blueprint, Response, render_template
+import yaml
+
+from quart import Blueprint, Response, current_app, render_template
+
+from robida.helpers import reformat_html
 
 blueprint = Blueprint("homepage", __name__, url_prefix="/")
 
@@ -12,4 +16,8 @@ async def index() -> Response:
     """
     Serve the main homepage.
     """
-    return await render_template("index.html")
+    with open(current_app.config["HCARD"], "r", encoding="utf-8") as input:
+        hcard = yaml.safe_load(input)
+
+    html = await render_template("index.html", data=hcard)
+    return reformat_html(html)

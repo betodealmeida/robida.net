@@ -1,0 +1,114 @@
+{% if data %}
+    {% set content = data.properties.content[0] %}
+    {% set metadata = get_checkin_metadata(data.properties['checkin'][0]) %}
+{% else %}
+    {% set content = None %}
+    {% set metadata = None %}
+{% endif %}
+
+<fieldset>
+    <label>
+        Name
+        <input
+            name="name"
+            autofocus
+            placeholder="Location name"
+            tabindex="1"
+
+            {% if metadata and metadata.name %}
+            value="{{ metadata.name }}"
+            {% endif %}
+        />
+    </label>
+    <label>
+        URL
+        <input
+            name="url"
+            placeholder="https://"
+            autocomplete="url"
+            tabindex="2"
+
+            {% if metadata and metadata.url %}
+            value="{{ metadata.url }}"
+            {% endif %}
+        />
+    </label>
+    <label>
+        Content
+        <textarea
+            name="content"
+            placeholder="Location address or something interesting about it."
+            aria-label="Location information"
+            tabindex="3"
+        >
+            {%- if content is mapping -%}
+            {{ content.value }}
+            {%- elif content -%}
+            {{ content }}
+            {%- endif -%}
+        </textarea>
+        <small>
+            <a href="https://www.markdownguide.org/" tabindex="6">Markdown</a> supported.
+        </small>
+    </label>
+    <label>
+        Categories
+        <input
+            name="category"
+            placeholder="foo, bar"
+            tabindex="4"
+            {% if data and 'category' in data.properties %}
+                value="{{ ', '.join(data.properties.category) }}"
+            {% endif %}
+        />
+        <small>Comma separated list.</small>
+    </label>
+
+    <div id="map"></div>
+
+    <script>
+        {% if metadata %}
+        var latitude = {{ metadata.latitude }};
+        var longitude = {{ metadata.longitude }};
+        {% else %}
+        var latitude = null;
+        var longitude = null;
+        {% endif %}
+
+        function renderMap(latitude, longitude) {
+            var map = L.map('map').setView([latitude, longitude], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            var marker = L.marker([latitude, longitude]).addTo(map);
+
+            // event handler to move the marker
+            map.on('click', function(e) {
+                var latlng = e.latlng;
+                marker.setLatLng(latlng);
+            });
+
+            function getMarkerPosition() {
+                var position = marker.getLatLng();
+                return `geo:${position.lat},${position.lng}`;
+            }
+
+            var form = document.querySelector("#createEntry, #updateEntry");
+            form.addEventListener("submit", function(event) {
+                var hiddenInput = document.getElementById("coordinates");
+                hiddenInput.value = getMarkerPosition();
+            });
+        }
+
+        if (latitude && longitude) {
+            renderMap(latitude, longitude);
+        } else {
+            navigator.geolocation.getCurrentPosition((position) => {
+                renderMap(position.coords.latitude, position.coords.longitude);
+            });
+        }
+    </script>
+</fieldset>
+
+<input type="hidden" name="coordinates" id="coordinates"/>
+<input type="submit" value="{{ 'Update' if data else 'Create' }}" tabindex="5"/>

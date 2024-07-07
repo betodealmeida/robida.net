@@ -79,3 +79,16 @@ class NotePayload:
 
     # optional
     category: str | None = None
+
+
+@dataclass
+class CheckinPayload:
+    """
+    A check-in.
+    """
+
+    coordinates: str
+    name: str | None = None
+    url: str | None = None
+    content: str | None = None
+    category: str | None = None

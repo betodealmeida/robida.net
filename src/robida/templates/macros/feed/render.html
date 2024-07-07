@@ -3,13 +3,13 @@
 {% import 'macros/feed/h-feed.html' as h_feed_macros %}
 
 {% macro render_microformat(data) %}
-    {% if "type" not in data %}
-        {{ data }}
-    {% elif data.type[0] == 'h-feed' %}
+    {% if data.type == ['h-feed'] %}
         {{ h_feed_macros.h_feed(data) }}
-    {% elif data.type[0] == 'h-entry' %}
+    {% elif data.type == ['h-entry'] %}
         {{ h_entry_macros.h_entry(data) }}
-    {% elif data.type[0] == 'h-card' %}
+    {% elif data.type == ['h-card'] %}
         {{ h_card_macros.h_card(data) }}
+    {% else %}
+        {{ data }}
     {% endif %}
 {% endmacro %}

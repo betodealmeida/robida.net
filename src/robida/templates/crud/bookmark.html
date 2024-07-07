@@ -1,3 +1,9 @@
+{% if data %}
+    {% set bookmark_of = data.properties['bookmark-of'][0] %}
+{% else %}
+    {% set bookmark_of = None %}
+{% endif %}
+
 <fieldset>
     <label>
         URL
@@ -8,8 +14,11 @@
             tabindex="1"
             required
             autofocus
-            {% if data and 'bookmark-of' in data.properties %}
-                value="{{ data.properties['bookmark-of'][0].properties.url[0] }}"
+
+            {% if bookmark_of is mapping %}
+            value="{{ bookmark_of.properties.url[0] }}"
+            {% elif bookmark_of %}
+            value="{{ bookmark_of }}"
             {% endif %}
         />
     </label>
@@ -19,8 +28,9 @@
             name="title"
             placeholder="Leave blank for page title"
             tabindex="2"
+
             {% if data and 'name' in data.properties %}
-                value="{{ data.properties.name[0] }}"
+            value="{{ data.properties.name[0] }}"
             {% endif %}
         />
     </label>
@@ -30,8 +40,9 @@
             name="category"
             placeholder="foo, bar"
             tabindex="3"
+
             {% if data and 'category' in data.properties %}
-                value="{{ ', '.join(data.properties.category) }}"
+            value="{{ ', '.join(data.properties.category) }}"
             {% endif %}
         />
         <small>Comma separated list.</small>

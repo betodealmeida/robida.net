@@ -15,7 +15,7 @@ from quart.helpers import url_for
 
 from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
-from robida.helpers import extract_text_from_html, fetch_hcard, hentry_from_entry
+from robida.helpers import extract_text_from_html, hentry_from_entry, reformat_html
 from robida.models import Entry, Microformats2
 
 from .models import (
@@ -64,26 +64,10 @@ async def render_microformat(data: dict[str, Any]) -> str:
     This function is used to test the Microformat templates.
     """
     env = current_app.jinja_env
-    env.globals["fetch_hcard"] = fetch_hcard
-
-    template = env.get_template("feed/generic.html")
+    template = env.get_template("feed/microformats2.html")
     html = await template.render_async(data=data)
 
     return reformat_html(html)
-
-
-def reformat_html(html: str) -> str:
-    """
-    Reformat HTML so it looks nice.
-    """
-    formatter = HTMLFormatter(indent=4)
-    html = BeautifulSoup(
-        html,
-        "html.parser",
-        preserve_whitespace_tags=["p"],
-    ).prettify(formatter=formatter)
-
-    return html
 
 
 async def get_entries(
@@ -254,7 +238,7 @@ def build_jsonfeed(entries: list[Entry], next_url: str | None) -> JSONFeed:
     )
 
 
-def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
+def hfeed_from_entries(entries: list[Entry], url: str) -> Microformats2:
     """
     Build an h-feed from entries.
     """
@@ -264,39 +248,39 @@ def hfeed_from_entries(entries: list[Entry], url: str) -> dict[str, Any]:
         else datetime.now(timezone.utc)
     )
 
-    return {
-        "type": ["h-feed"],
-        "properties": {
+    return Microformats2(
+        type=["h-feed"],
+        properties={
             "name": [current_app.config["SITE_NAME"]],
             "url": [url],
             "summary": [current_app.config["SITE_DESCRIPTION"]],
             "published": [last_modified_at.isoformat()],
             "language": [current_app.config["LANGUAGE"]],
             "author": [
-                {
-                    "type": ["h-card"],
-                    "properties": {
+                Microformats2(
+                    type=["h-card"],
+                    properties={
                         "name": [current_app.config["NAME"]],
                         "url": [url_for("homepage.index", _external=True)],
                         "photo": [
                             url_for("static", filename="img/photo.jpg", _external=True)
                         ],
                     },
-                }
+                ),
             ],
         },
-        "children": [hentry_from_entry(entry) for entry in entries],
-    }
+        children=[hentry_from_entry(entry) for entry in entries],
+    )
 
 
-def get_title(hentry: dict[str, Any]) -> str:
+def get_title(hentry: Microformats2) -> str:
     """
     Get the title of an h-entry.
     """
-    if name := hentry["properties"].get("name"):
+    if name := hentry.properties.get("name"):
         return name[0]
 
-    if content := hentry["properties"].get("content"):
+    if content := hentry.properties.get("content"):
         return content[0]["value"] if isinstance(content[0], dict) else content[0]
 
     return "Untitled"

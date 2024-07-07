@@ -20,7 +20,7 @@ from robida.blueprints.feed.helpers import (
     render_microformat,
 )
 from robida.blueprints.feed.models import JSONFeedAuthor, JSONFeedItem
-from robida.models import Entry
+from robida.models import Entry, Microformats2
 
 
 async def test_get_entries(db: Connection, current_app: Quart) -> None:
@@ -333,18 +333,24 @@ async def test_get_title() -> None:
     Test the `get_title` helper function.
     """
 
-    assert get_title({"properties": {"name": ["Hello, World!"]}}) == "Hello, World!"
-    assert get_title({"properties": {"content": ["Hello, World!"]}}) == "Hello, World!"
+    assert (
+        get_title(Microformats2(properties={"name": ["Hello, World!"]}))
+        == "Hello, World!"
+    )
+    assert (
+        get_title(Microformats2(properties={"content": ["Hello, World!"]}))
+        == "Hello, World!"
+    )
     assert (
         get_title(
-            {
-                "properties": {
+            Microformats2(
+                properties={
                     "content": [
                         {"value": "Hello, World!", "html": "<h1>Hello, world!</h1>"}
                     ]
                 }
-            }
+            )
         )
         == "Hello, World!"
     )
-    assert get_title({"properties": {}}) == "Untitled"
+    assert get_title(Microformats2(properties={})) == "Untitled"

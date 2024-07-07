@@ -30,7 +30,7 @@ a[href^="http://localhost"]::after, a[href^="https://robida.net"]::after {
   display: none !important;
 }
 
-a.copyright::after {
+a.copyright::after, div.leaflet-control-attribution a::after {
   display: none !important;
 }
 
@@ -44,33 +44,44 @@ dt {
   width: 256px;
 }
 
-.u-logo {
-  display: none;
-}
-
 .p-category {
   font-size: 0.875em;
   padding: 0.25rem;
 }
 
-.honey {
+[aria-hidden="true"] {
   display: none;
 }
 
-/* Prevent conflict between Ace Editor and PicoCSS */
-.ace_fold-widget {
-  padding-left: 0;
-  padding-right: 0;
-  border: none;
-  --pico-background-color: #inherit;
+/* Remove PicoCSS styling from role="button" elements */
+.ace_fold-widget, .leaflet-control-zoom-in, .leaflet-control-zoom-out {
+  padding: 0;
 }
 
-.ace_gutter_annotation {
+.ace_gutter_annotation, .ace_fold-widget, .leaflet-marker-icon, .leaflet-control-zoom-in, .leaflet-control-zoom-out {
   border: none;
-  --pico-background-color: #inherit;
+  background-color: inherit;
+  --pico-background-color: inherit;
 }
 
 .htmx-swapping td {
   opacity: 0;
   transition: opacity 1s ease-out;
+}
+
+#map {
+  height: 500px;
+  width: 100%;
+  border-radius: 1.0em;
+  border: none;
+  --pico-background-color: inherit;
+}
+
+[data-audio-url] {
+  cursor: help;
+}
+
+article article {
+  border-left-width: 1px;
+  border-left-style: dashed;
 }

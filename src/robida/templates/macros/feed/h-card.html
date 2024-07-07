@@ -1,31 +1,179 @@
-{% macro h_card(data, compact=False) %}
+{% macro h_card(data, compact=False, extra_classes=None) %}
     {% if compact %}
-        {% if data.properties.url %}
-        <a class="h-card" href="{{ data.properties.url[0] }}">
-            {{ data.properties.name[0] }}
-        </a>
-        {% else %}
-        <span class="h-card">{{ data.properties.name[0] }}</span>
-        {% endif %}
+        {{ compact_h_card(data, extra_classes) }}
     {% else %}
-        <div class="h-card">
-            {% if data.properties.url %}
-            <a class="p-name u-url" href="{{ data.properties.url[0] }}">
-                {{ data.properties.name[0] }}
-            </a>
-            {% else %}
-            <span class="p-name">
-                {{ data.properties.name[0] }}
-            </span>
-            {% endif %}
-
-            {% if data.properties.photo %}
-                <img
-                    class="u-photo"
-                    src="{{ data.properties.photo[0] }}"
-                    alt="{{ data.properties.name[0] }}"
-                />
-            {% endif %}
-        </div>
+        {{ full_h_card(data, extra_classes) }}
     {% endif %}
+{% endmacro %}
+
+{% macro get_name(data) %}
+    <span class="p-name">{{ data.properties.name | join(' / ') }}</span>
+{% endmacro %}
+
+{% macro add_pronounciation(name, data) %}
+    {% if data.properties.ipa %}
+        <ruby>
+            {{ name }}
+            <rt
+                {% if data.properties.sound %}
+                    data-audio-url="{{ data.properties.sound | tojson | forceescape }}"
+                    {# role="button" #}
+                    aria-label="Pronunciation"
+                {% endif %}
+            >
+                / 
+                {% for ipa in data.properties.ipa %}
+                    <span class="p-ipa">{{ ipa }}</span>
+                    {%- if not loop.last %} / {% endif -%}
+                {% endfor %}
+                /
+            </rt>
+        </ruby>
+    {% else %}
+        {{ name }}
+    {% endif %}
+{% endmacro %}
+
+{% macro add_honorifics(name, data) %}
+    {%- if data.properties['honorific-prefix'] -%}
+        {%- for honorific in data.properties['honorific-prefix'] -%}
+            <span class="p-honorific-prefix">{{ honorific }}</span>
+            {%- if not loop.last %} {% endif -%}
+        {%- endfor -%}
+    {%- endif -%}
+        {{ name }}
+    {%- if data.properties['honorific-suffix'] -%}
+        {%- for honorific in data.properties['honorific-suffix'] -%}
+            ,
+            <span class="p-honorific-suffix">{{ honorific }}</span>
+        {%- endfor -%}
+    {%- endif -%}
+{% endmacro %}
+
+{% macro add_links(name, data) %}
+    {% if not data.properties.url %}
+        {# If there is no URL, just display the name #}
+        <span>{{ name }}</span>
+    {% elif data.properties.url | length == 1 %}
+        {# Single URL #}
+        <a class="u-url" href="{{ data.properties.url[0] }}">
+            {{ name }}
+        </a>
+    {% else %}
+        {# Multiple URLs #}
+        <span>
+            {{ name }}
+            ({%- for url in data.properties.url -%}
+                <a class="u-url" href="{{ url }}">{{ URL(url).host }}</a>{%- if not loop.last %}, {% endif -%}
+            {%- endfor -%})
+    {% endif %}
+{% endmacro %}
+
+{% macro add_pronouns(name, data) %}
+    {{ name }}
+    {% if data.properties.pronoun %}
+        <small>(
+        {%- for pronoun in data.properties.pronoun -%}
+            <span class="p-pronoun">{{ pronoun }}</span>
+            {%- if not loop.last %}/{% endif -%}
+        {%- endfor -%}
+        )</small>
+    {% endif %}
+{% endmacro %}
+
+{% macro compact_h_card(data, extra_classes=None) %}
+    {% set name = get_name(data) %}
+    {% set name = add_pronounciation(name, data) %}
+    {% set name = add_honorifics(name, data) %}
+    {% set name = add_links(name, data) %}
+    {% set name = add_pronouns(name, data) %}
+    {{ name }}
+{% endmacro %}
+
+{% macro full_h_card(data, extra_classes=None) %}
+    <article class="h-card{% if extra_classes %} {{ extra_classes }}{% endif %}">
+        <header>
+            <span>{{ compact_h_card(data, extra_classes) }}</span>
+        </header>
+
+        <section>
+            {% for note in data.properties.note %}
+                {% if note is mapping %}
+                    {% if note.html %}
+                        <div class="e-note">{{ note.html }}</div>
+                    {% elif note.value %}
+                        <p class="p-note">{{ note.value }}</p>
+                    {% endif %}
+                {% else %}
+                    <p class="p-note">{{ note }}</p>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+        <section>
+            {% for org in data.properties.org %}
+                {% if org.type and org.type[0] == 'h-card' %}
+                    {{ h_card(org, extra_classes='p-org') }}
+                {% else %}
+                    <span>{{ org }}</span>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+        <section>
+            {% for tel in data.properties.tel %}
+                <p>☎️ <a class="p-tel" href="tel:{{ tel }}">{{ tel }}</a></p>
+            {% endfor %}
+
+            {% for email in data.properties.email %}
+                <p>📧 <a class="u-email" href="{{ email }}">{{ URL(email).name }}</a></p>
+            {% endfor %}
+
+            {% for birthday in data.properties.bday %}
+                <p>🎂 <time class="dt-bday" datetime="{{ birthday }}">{{ birthday }}</time></p>
+            {% endfor %}
+
+            {% for address in data.properties.adr %}
+                <address class="p-adr h-adr">
+                    🌐
+                    {% for street in address.properties['street-address'] %}
+                        <span class="p-street-address">{{ street }}</span>
+                    {% endfor %}
+                    {% for extended in address.properties['extended-address'] %}
+                        <span class="p-extended-address">{{ extended }}</span>
+                    {% endfor %}
+                    {% for pobox in address.properties['post-office-box'] %}
+                        <span class="p-post-office-box">{{ pobox }}</span>
+                    {% endfor %}
+                    {% for locality in address.properties.locality %}
+                        <span class="p-locality">{{ locality }}</span>
+                    {% endfor %}
+                    {% for region in address.properties.region %}
+                        <span class="p-region">{{ region }}</span>
+                    {% endfor %}
+                    {% for postal_code in address.properties['postal-code'] %}
+                        <span class="p-postal-code">{{ postal_code }}</span>
+                    {% endfor %}
+                    {% for country in address.properties['country-name'] %}
+                        <span class="p-country-name">{{ country }}</span>
+                    {% endfor %}
+                </address>
+            {% endfor %}
+
+            {% for key in data.properties.key %}
+            <details>
+                <summary>🔐 GPG key</summary>
+                <pre class="p-key">{{ key }}</pre>
+            </details>
+            {% endfor %}
+        </section>
+
+        <footer>
+            {% if data.properties.summary %}
+                <span class="p-summary">{{ data.properties.summary | join(' / ') }}</span>
+            {% endif %}
+        </footer>
+
+        {# XXX children #}
+    </article>
 {% endmacro %}

@@ -1,9 +1,9 @@
-{% import 'macros/feed/h-feed.html' as feed_macros %}
+{% import 'macros/feed/h-feed.html' as h_feed_macros %}
 
 {% extends "base.html" %}
 
 {% block content %}
-    {{ feed_macros.h_feed(hfeed, compact=compact) }}
+    {{ h_feed_macros.h_feed(hfeed, compact=compact) }}
 
     <footer class="pagination">
         {% if previous_url %}

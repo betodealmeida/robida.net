@@ -1,7 +1,7 @@
 {% if data %}
-{% set content = data.properties.content[0] %}
+    {% set content = data.properties.content[0] %}
 {% else %}
-{% set content = None %}
+    {% set content = None %}
 {% endif %}
 
 <fieldset>
@@ -13,10 +13,11 @@
             tabindex="1"
             required
             autofocus
+
             {% if content is mapping %}
-                value="{{ content.value }}"
+            value="{{ content.value }}"
             {% elif content %}
-                value="{{ content }}"
+            value="{{ content }}"
             {% endif %}
         />
         <small><a href="https://www.markdownguide.org/" tabindex="4">Markdown</a> supported.</small>
@@ -27,8 +28,9 @@
             name="category"
             placeholder="foo, bar"
             tabindex="2"
+
             {% if data and 'category' in data.properties %}
-                value="{{ ', '.join(data.properties.category) }}"
+            value="{{ ', '.join(data.properties.category) }}"
             {% endif %}
         />
         <small>Comma separated list.</small>

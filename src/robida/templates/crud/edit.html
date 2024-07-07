@@ -3,26 +3,42 @@
 {% block content %}
 <h2>Edit entry</h2>
 
+{% set post_status = data.properties['post-status'][0] if 'post-status' in data.properties else 'published' %}
+{% set visibility = data.properties['visibility'][0] if 'visibility' in data.properties else 'public' %}
+{% set sensitive = data.properties['sensitive'][0] if 'sensitive' in data.properties else 'false' %}
 {% set template = data.properties['post-template'][0] if 'post-template' in data.properties else 'generic' %}
+
 
 <form id="updateEntry" method="POST" action="{{ url_for('crud.submit') }}">
     <input type="hidden" name="uuid" value="{{ data.properties['uid'][0] }}"/>
     <fieldset>
         <label for="published">
-            <input name="published" id="published" type="checkbox" role="switch" checked/>
+            <input
+                name="published"
+                id="published"
+                type="checkbox"
+                role="switch"
+                {{ 'checked' if post_status == 'published' }}
+            />
             Published
         </label>
 
         <label for="sensitive">
-            <input name="sensitive" id="sensitive" type="checkbox" role="switch"/>
+            <input
+                name="sensitive"
+                id="sensitive"
+                type="checkbox"
+                role="switch"
+                {{ 'checked' if sensitive == 'true' }}
+            />
             Sensitive
         </label>
 
         <label for="visibility">Visibility</label>
             <select name="visibility" id="visibility">
-                <option selected value="public">Public</option>
-                <option value="unlisted">Unlisted</option>
-                <option value="private">Private</option>
+                <option {{ 'selected' if visibility == 'public' }} value="public">Public</option>
+                <option {{ 'selected' if visibility == 'unlisted' }} value="unlisted">Unlisted</option>
+                <option {{ 'selected' if visibility == 'private' }} value="private">Private</option>
             </select>
         <label>
 
@@ -40,6 +56,7 @@
         >
             <option {{ 'selected' if template == 'article' }} value="article">Article</option>
             <option {{ 'selected' if template == 'bookmark' }} value="bookmark">Bookmark</option>
+            <option {{ 'selected' if template == 'checkin' }} value="checkin">Check-in</option>
             <option {{ 'selected' if template == 'like' }} value="like">Like</option>
             <option {{ 'selected' if template == 'note' }} value="note">Note</option>
         </select>

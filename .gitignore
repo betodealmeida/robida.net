@@ -1,7 +1,7 @@
 .python-version
 .coverage
 .env
-robida.sqlite
+robida.sqlite*
 __pycache__
 media
 node_modules

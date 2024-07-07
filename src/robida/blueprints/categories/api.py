@@ -9,8 +9,8 @@ from quart_schema import validate_querystring
 from robida.blueprints.feed.helpers import (
     hfeed_from_entries,
     make_conditional_response,
-    reformat_html,
 )
+from robida.helpers import reformat_html
 
 from .helpers import list_entries
 from .models import CategoryRequest

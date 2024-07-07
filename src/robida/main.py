@@ -11,6 +11,7 @@ from dotenv import dotenv_values
 from nh3 import clean  # pylint: disable=no-member, no-name-in-module
 from quart import Quart, Response, g, request, session, url_for
 from quart_schema import QuartSchema
+from yarl import URL
 
 from robida.blueprints.auth import api as auth
 from robida.blueprints.categories import api as categories
@@ -30,6 +31,7 @@ from robida.db import init_db, load_entries
 from robida.helpers import (
     XForwardedProtoMiddleware,
     fetch_hcard,
+    get_checkin_metadata,
     get_type_emoji,
     iso_to_rfc822,
     summarize,
@@ -76,9 +78,11 @@ def create_app(
     app.jinja_env.globals.update(
         {
             "fetch_hcard": fetch_hcard,
-            "iso_to_rfc822": iso_to_rfc822,
+            "get_checkin_metadata": get_checkin_metadata,
             "get_type_emoji": get_type_emoji,
+            "iso_to_rfc822": iso_to_rfc822,
             "summarize": summarize,
+            "URL": URL,
         }
     )
     app.jinja_env.filters.update(

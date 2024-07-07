@@ -1,0 +1,63 @@
+{% import 'macros/feed/author.html' as author_macros %}
+
+{% macro checkin(data, compact=False) %}
+
+{% set metadata = get_checkin_metadata(data.properties['checkin'][0]) %}
+
+{% if data.properties.content %}
+    {% set content = data.properties.content[0] %}
+{% else %}
+    {% set content = None %}
+{% endif %}
+
+<article class="p-name u-checkin h-card">
+    <header>
+        <span>At:
+            <span>
+                {% if metadata.name %}
+                    {% if metadata.url %}
+                        <a href="{{ metadata.url }}" class="p-name">{{ metadata.name }}</a>
+                    {% else %}
+                        <span class="p-name">{{ metadata.name }}</span>
+                    {% endif %}
+                {% endif %}
+            </span>
+        </span>
+    </header>
+
+    {% if content is mapping %}
+    <div class="e-content">{{ content.html | replace('\n', '<br/>') | clean | safe }}</div>
+    {% elif content %}
+    <div class="p-content">{{ content }}</div>
+    {% endif %}
+
+    <footer>
+        <code>&gt; {{ data.properties['checkin'][0] }}</code>
+        <data class="p-latitude" value="{{ metadata.latitude }}"></data>
+        <data class="p-longitude" value="{{ metadata.longitude }}"></data>
+        {% if metadata.altitude %}
+        <data class="p-altitude" value="{{ metadata.altitude }}"></data>
+        {% endif %}
+    </footer>
+</article>
+
+<div id="map"></div>
+
+<script>
+    var map = L.map('map').setView([{{ metadata.latitude }}, {{ metadata.longitude }}], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    {% if content is mapping %}
+    var marker = L.marker([{{ metadata.latitude }}, {{ metadata.longitude }}]).addTo(map)
+        .bindPopup(`{{ content.html | replace('\n', '<br/>') | clean | safe }}`);
+    {% elif content %}
+    var marker = L.marker([{{ metadata.latitude }}, {{ metadata.longitude }}]).addTo(map)
+        .bindPopup(`{{ content }}`);
+    {% else %}
+    var marker = L.marker([{{ metadata.latitude }}, {{ metadata.longitude }}]).addTo(map);
+    {% endif %}
+</script>
+
+{% endmacro %}

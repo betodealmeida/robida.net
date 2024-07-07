@@ -14,11 +14,12 @@ import httpx
 import mf2py
 from aiosqlite import Connection
 from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4.formatter import HTMLFormatter
 from quart import current_app
 from quart.helpers import url_for
 
 from robida.events import EntryCreated, EntryDeleted, EntryUpdated, dispatcher
-from robida.models import Entry, Microformats2
+from robida.models import Entry, HCard, Microformats2
 
 # inspired by Mastodon
 SUMMARY_LENGTH = 500
@@ -132,6 +133,8 @@ async def get_entry(
 ) -> Entry | None:
     """
     Return an entry with all its replies.
+
+    TODO: set author to get_hcard() if not set
     """
     protected = "" if include_private_children else "AND e.visibility = 'public'"
 
@@ -151,7 +154,7 @@ async def get_entry(
                 uuid=UUID(row["uuid"]),
                 author=row["author"],
                 location=row["location"],
-                content=Microformats2.model_validate_json(row["content"]),
+                content=Microformats2.from_json(row["content"]),
                 published=row["published"],
                 visibility=row["visibility"],
                 sensitive=row["sensitive"],
@@ -222,6 +225,11 @@ async def upsert_entry(db: Connection, hentry: Microformats2) -> Entry:
         last_modified_at = datetime.fromisoformat(hentry.properties["updated"][0])
     except (KeyError, ValueError):
         last_modified_at = created_at
+
+    # Set a template, if one was not defined. This allows for easier editing on the
+    # web UI of entries created from an external MicroPub client.
+    template = get_template(hentry)
+    hentry.properties.setdefault("post-template", [template])
 
     await db.execute(
         """
@@ -386,25 +394,26 @@ def get_hcard() -> Microformats2:
     )
 
 
-def hentry_from_entry(entry: Entry) -> dict[str, Any]:
+def hentry_from_entry(entry: Entry) -> Microformats2:
     """
     Build an h-entry from an entry.
     """
-    entry.content.properties.setdefault("uid", [str(entry.uuid)])
-    entry.content.properties.setdefault("url", [entry.location])
-    entry.content.properties.setdefault(
-        "post-status", ["published" if entry.published else "draft"]
-    )
-    entry.content.properties.setdefault("visibility", [entry.visibility])
-    entry.content.properties.setdefault(
-        "sensitive", ["true" if entry.sensitive else "false"]
-    )
-    entry.content.properties.setdefault(
-        "published",
-        [entry.last_modified_at.isoformat()],
-    )
+    defaults = {
+        "uid": [str(entry.uuid)],
+        "url": [entry.location],
+        "post-status": ["published" if entry.published else "draft"],
+        "visibility": [entry.visibility],
+        "sensitive": ["true" if entry.sensitive else "false"],
+        "published": [entry.last_modified_at.isoformat()],
+    }
+    missing = {
+        key: value
+        for key, value in defaults.items()
+        if key not in entry.content.properties
+    }
+    entry.content.properties.update(missing)
 
-    return entry.content.model_dump()
+    return entry.content
 
 
 def extract_text_from_html(html: str) -> str:
@@ -414,31 +423,44 @@ def extract_text_from_html(html: str) -> str:
     return BeautifulSoup(html, "html.parser").get_text()
 
 
-def get_type_emoji(data: dict[str, Any]) -> str:
+def get_template(hentry: Microformats2) -> str:
+    """
+    Get the template for an h-entry.
+    """
+    templates = {
+        "in-reply-to": "reply",
+        "like-of": "like",
+        "bookmark-of": "bookmark",
+        "checkin": "checkin",
+        "name": "article",
+        "content": "note",
+    }
+    for key, template in templates.items():
+        if key in hentry.properties:
+            return template
+
+    return "generic"
+
+
+def get_type_emoji(hentry: Microformats2) -> str:
     """
     Get the emoji for the type of the data.
     """
-    data = Microformats2(**data)
+    types = {
+        "reply": ("A reply", "💬"),
+        "like": ("A like", "❤️"),
+        "bookmark": ("A bookmark", "🔖"),
+        "checkin": ("A checkin", "🚩"),
+        "article": ("An article", "📄"),
+        "note": ("A note", "📔"),
+    }
+    template = get_template(hentry)
+    title, emoji = types.get(template, ("A generic post", "📝"))
 
-    if data.type[0] == "h-entry":
-        if "in-reply-to" in data.properties:
-            return '<span title="A reply">💬</span>'
-
-        if "like-of" in data.properties:
-            return '<span title="A like">❤️</span>'
-
-        if "bookmark-of" in data.properties:
-            return '<span title="A bookmark">🔖</span>'
-
-        if "name" in data.properties:
-            return '<span title="An article">📄</span>'
-
-        return '<span title="A note">📔</span>'
-
-    return '<span title="A generic post">📝</span>'
+    return f'<span title="{title}">{emoji}</span>'
 
 
-async def fetch_hcard(url: str) -> dict[str, Any]:
+async def fetch_hcard(url: str) -> HCard:
     """
     Fetch an h-card from an URL.
     """
@@ -446,16 +468,12 @@ async def fetch_hcard(url: str) -> dict[str, Any]:
         response = await client.get(url)
         html = mf2py.Parser(response.content.decode(), url=url)
 
-    if cards := html.to_dict(filter_by_type="h-card"):
-        return cards[0]
+    hcards = [HCard(**hcard) for hcard in html.to_dict(filter_by_type="h-card")]
+    for hcard in hcards:
+        if hcard.property("url") == url:
+            return hcard
 
-    return {
-        "type": ["h-card"],
-        "properties": {
-            "name": [url],
-            "url": [url],
-        },
-    }
+    return HCard(properties={"name": [url], "url": [url]})
 
 
 def iso_to_rfc822(iso: str) -> str:
@@ -534,7 +552,7 @@ def summarize(html: str, max_length: int = SUMMARY_LENGTH) -> str:
     """
     Summarize HTML, making it shorter.
 
-    This is used when showing entries in the feed/search/cateegory pages.
+    This is used when showing entries in the feed/search/category pages.
     """
     soup = BeautifulSoup(html.strip(), "html.parser")
     truncated = truncate_html(soup, max_length)
@@ -545,9 +563,6 @@ def summarize(html: str, max_length: int = SUMMARY_LENGTH) -> str:
 def truncate_html(element: Tag, max_length: int) -> Tag:
     """
     Truncate an HTML element to a maximum length, considering its text.
-
-    This returns a tuple with the truncated HTML and a boolean indicating if the
-    truncation was necessary.
     """
     acc = i = 0
     for i, child in enumerate(element.contents):
@@ -569,3 +584,40 @@ def truncate_html(element: Tag, max_length: int) -> Tag:
     element.contents = element.contents[: i + 1]
 
     return element
+
+
+def get_checkin_metadata(checkin: str) -> dict[str, Any]:
+    """
+    Parse the checkin information.
+    """
+    parts = checkin.split(";")
+    metadata: dict[str, Any] = {}
+
+    for part in parts:
+        if part.startswith("geo:"):
+            geo = part.split(":")[1]
+            latitude, longitude, *rest = geo.split(",")
+            metadata["latitude"] = float(latitude)
+            metadata["longitude"] = float(longitude)
+            if rest:
+                metadata["altitude"] = float(rest[0])
+
+        elif "=" in part:
+            key, value = part.split("=", 1)
+            metadata[key] = value
+
+    return metadata
+
+
+def reformat_html(html: str) -> str:
+    """
+    Reformat HTML so it looks nice.
+    """
+    formatter = HTMLFormatter(indent=4)
+    html = BeautifulSoup(
+        html,
+        "html.parser",
+        preserve_whitespace_tags=["p", "pre"],
+    ).prettify(formatter=formatter)
+
+    return html

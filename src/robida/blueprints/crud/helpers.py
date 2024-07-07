@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup, Tag
 from robida.blueprints.crud.models import (
     ArticlePayload,
     BookmarkPayload,
+    CheckinPayload,
     ExternalSitePayload,
     GenericPayload,
     LikePayload,
@@ -87,6 +88,7 @@ async def get_type_properties(template: str, data: dict[str, Any]) -> dict[str, 
     custom_properties: CustomPropertiesType = {
         "article": (create_article, ArticlePayload),
         "bookmark": (create_bookmark, BookmarkPayload),
+        "checkin": (create_checkin, CheckinPayload),
         "like": (create_like, LikePayload),
         "note": (create_note, NotePayload),
         "generic": (create_generic, GenericPayload),
@@ -102,7 +104,11 @@ async def create_generic(data: GenericPayload) -> dict[str, Any]:
     """
     Create a generic h-entry.
     """
-    return json.loads(data.properties)
+    return {
+        key: value
+        for key, value in json.loads(data.properties).items()
+        if key not in {"post-status", "visibility", "sensitive"}
+    }
 
 
 async def create_article(data: ArticlePayload) -> dict[str, Any]:
@@ -150,6 +156,34 @@ async def create_bookmark(data: BookmarkPayload) -> dict[str, Any]:
             },
         ],
     }
+    if data.category:
+        properties["category"] = [
+            category.strip() for category in data.category.split(",")
+        ]
+
+    return properties
+
+
+async def create_checkin(data: CheckinPayload) -> dict[str, Any]:
+    """
+    Create a check-in.
+    """
+    parts = [data.coordinates]
+    if data.name:
+        parts.append(f"name={data.name}")
+    if data.url:
+        parts.append(f"url={data.url}")
+    checkin = ";".join(parts)
+
+    properties: dict[str, Any] = {"checkin": [checkin]}
+    if data.content:
+        html = pyromark.markdown(data.content.strip()).strip()
+        properties["content"] = [
+            {
+                "html": html,
+                "value": data.content,
+            },
+        ]
     if data.category:
         properties["category"] = [
             category.strip() for category in data.category.split(",")
@@ -225,7 +259,7 @@ async def get_metadata(data: ExternalSitePayload) -> dict[str, Any]:
     hcards = parser.to_dict(filter_by_type="h-card")
 
     properties["name"] = [data.title or get_title(soup, hentries, data.url)]
-    properties["post"]["author"] = [get_author(hentries, hcards, data.url)]
+    properties["post"]["author"] = [get_author(soup, hentries, hcards, data.url)]
     properties["post"]["content"] = [get_content(soup, hentries, data.url)]
 
     return properties
@@ -286,6 +320,7 @@ def get_title(
 
 
 def get_author(
+    soup: Tag,
     hentries: list[dict[str, Any]],
     hcards: list[dict[str, Any]],
     url: str,
@@ -299,5 +334,8 @@ def get_author(
     if len(hcards) == 1:
         return hcards[0]
 
-    # set root URL as the author, if not present
-    return urllib.parse.urlparse(url)._replace(path="/", query="", fragment="").geturl()
+    if meta := soup.find("meta", {"name": "author"}):
+        return meta["content"]
+
+    # set URL as the author, without decoration (should we leave query?)
+    return urllib.parse.urlparse(url)._replace(query="", fragment="").geturl()

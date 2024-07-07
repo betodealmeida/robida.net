@@ -12,7 +12,7 @@ from quart_schema import validate_querystring
 
 from robida.constants import MAX_PAGE_SIZE
 from robida.db import get_db
-from robida.helpers import get_entry, hentry_from_entry
+from robida.helpers import get_entry, hentry_from_entry, reformat_html
 
 from .helpers import (
     build_jsonfeed,
@@ -22,7 +22,6 @@ from .helpers import (
     get_title,
     hfeed_from_entries,
     make_conditional_response,
-    reformat_html,
 )
 from .models import FeedRequest
 
