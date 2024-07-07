@@ -8,6 +8,9 @@
             tabindex="1"
             required
             autofocus
+            {% if data and 'like-of' in data.properties %}
+                value="{{ data.properties['like-of'][0].properties.url[0] }}"
+            {% endif %}
         />
     </label>
     <label>
@@ -16,7 +19,10 @@
             name="title"
             placeholder="Leave blank for page title"
             tabindex="2"
+            {% if data and 'name' in data.properties %}
+                value="{{ data.properties.name[0] }}"
+            {% endif %}
         />
     </label>
 </fieldset>
-<input type="submit" value="Create" tabindex="3"/>
+<input type="submit" value="{{ 'Update' if data else 'Create' }}" tabindex="3"/>

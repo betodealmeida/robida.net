@@ -59,11 +59,11 @@ My website.
   - [ ] Post list
   - [ ] Category list
   - [ ] Contacts
-- [ ] Logging
-- [ ] CRUD
+- [X] CRUD
   - [X] Create
-  - [ ] Edit
-  - [ ] Delete
+  - [X] Delete
+  - [X] Edit
+- [ ] Logging
 - [ ] Bookmarklets
   - [ ] Like
   - [ ] Bookmark
@@ -81,15 +81,15 @@ My website.
 
 - [ ] Oura (steps, sleep hours, hearbeat)
 - [ ] Withings
-- [ ] Listens
 - [ ] Air quality
+- [ ] Song listens
 
 ### Reader
 
 - [ ] MicroSub
 - [ ] WebSub
-  - Subscribe to things by posting a https://indieweb.org/follow
-    - Add to trusted domains
+  - [ ] Subscribe by posting a https://indieweb.org/follow?
+  - [ ] Add followers to trusted domains
 - [ ] ActivityPub
 
 ### Other
@@ -99,7 +99,8 @@ My website.
 
 ### Notes
 
-- add icons for private/unlisted
+- after delete, remove item from feed or send user to homepage
+- make sure extra fields are preserved on edit
 
 - call /publish on new entries => event
 - fix rel="self" so it works in categories, main page, etc
@@ -119,7 +120,6 @@ https://indieweb.org/h-x-app#Properties
     - need this for indiepass, which doesn't refresh the token!
 
 - ask for scope when using indieauth to login
-
 
 - move db.execute out of API?
 - index should point to tags on veganism/indieweb, etc?

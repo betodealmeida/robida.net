@@ -336,7 +336,7 @@ WHERE
     dispatcher.dispatch(EntryCreated(new_entry=entry))
 
 
-def new_hentry() -> Microformats2:
+def new_hentry(**kwargs: Any) -> Microformats2:
     """
     Create a new entry.
     """
@@ -354,6 +354,7 @@ def new_hentry() -> Microformats2:
         "sensitive": ["false"],
         "published": [created_at.isoformat()],
         "updated": [last_modified_at.isoformat()],
+        **kwargs,
     }
 
     return Microformats2(type=["h-entry"], properties=properties)
@@ -421,18 +422,18 @@ def get_type_emoji(data: dict[str, Any]) -> str:
 
     if data.type[0] == "h-entry":
         if "in-reply-to" in data.properties:
-            return '<span title="A reply (h-entry)">💬</span>'
+            return '<span title="A reply">💬</span>'
 
         if "like-of" in data.properties:
-            return '<span title="A like (h-entry)">❤️</span>'
+            return '<span title="A like">❤️</span>'
 
         if "bookmark-of" in data.properties:
-            return '<span title="A bookmark (h-entry)">🔖</span>'
+            return '<span title="A bookmark">🔖</span>'
 
         if "name" in data.properties:
-            return '<span title="An article (h-entry)">📄</span>'
+            return '<span title="An article">📄</span>'
 
-        return '<span title="A note (h-entry)">📔</span>'
+        return '<span title="A note">📔</span>'
 
     return '<span title="A generic post">📝</span>'
 

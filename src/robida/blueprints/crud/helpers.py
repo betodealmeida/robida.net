@@ -2,6 +2,7 @@
 Helper functions for the CRUD endpoints.
 """
 
+import json
 import urllib.parse
 from typing import Any, Callable, Coroutine, TypeVar
 
@@ -14,6 +15,7 @@ from robida.blueprints.crud.models import (
     ArticlePayload,
     BookmarkPayload,
     ExternalSitePayload,
+    GenericPayload,
     LikePayload,
     NotePayload,
 )
@@ -29,9 +31,10 @@ async def create_hentry(data: dict[str, Any]) -> Microformats2:
     """
     Create an h-entry from the CRUD payload.
     """
-    hentry = new_hentry()
-    hentry.properties.update(
-        {
+    template = data.pop("template")
+    hentry = new_hentry(
+        **{
+            "post-template": [template],
             "post-status": [
                 "published" if data.pop("published", False) == "on" else "draft"
             ],
@@ -39,20 +42,67 @@ async def create_hentry(data: dict[str, Any]) -> Microformats2:
             "sensitive": ["true" if data.pop("sensitive", False) == "on" else "false"],
         },
     )
+    hentry.properties.update(await get_type_properties(template, data))
 
+    # remove empty properties
+    for key, value in list(hentry.properties.items()):
+        if not value:
+            del hentry.properties[key]
+
+    return hentry
+
+
+async def update_hentry(
+    hentry: Microformats2,
+    data: dict[str, Any],
+) -> Microformats2:
+    """
+    Update an existing hentry.
+    """
     template = data.pop("template")
+    hentry.properties.update(
+        {
+            "post-template": [template],
+            "post-status": [
+                "published" if data.pop("published", False) == "on" else "draft"
+            ],
+            "visibility": [data.pop("visibility")],
+            "sensitive": ["true" if data.pop("sensitive", False) == "on" else "false"],
+        }
+    )
+    hentry.properties.update(await get_type_properties(template, data))
 
+    # remove empty properties
+    for key, value in list(hentry.properties.items()):
+        if not value:
+            del hentry.properties[key]
+
+    return hentry
+
+
+async def get_type_properties(template: str, data: dict[str, Any]) -> dict[str, Any]:
+    """
+    Get the properties for a specific template.
+    """
     custom_properties: CustomPropertiesType = {
         "article": (create_article, ArticlePayload),
         "bookmark": (create_bookmark, BookmarkPayload),
         "like": (create_like, LikePayload),
         "note": (create_note, NotePayload),
+        "generic": (create_generic, GenericPayload),
     }
     if template in custom_properties:
         function, model = custom_properties[template]
-        hentry.properties.update(await function(model(**data)))
+        return await function(model(**data))
 
-    return hentry
+    return {}
+
+
+async def create_generic(data: GenericPayload) -> dict[str, Any]:
+    """
+    Create a generic h-entry.
+    """
+    return json.loads(data.properties)
 
 
 async def create_article(data: ArticlePayload) -> dict[str, Any]:
@@ -142,6 +192,8 @@ async def create_note(data: NotePayload) -> dict[str, Any]:
     soup = BeautifulSoup(html, "html.parser")
 
     properties: dict[str, Any] = {
+        "name": [],
+        "summary": [],
         "content": [
             {
                 "html": html,

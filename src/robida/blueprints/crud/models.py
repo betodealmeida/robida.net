@@ -15,6 +15,15 @@ class TemplateRequest:
 
 
 @dataclass
+class GenericPayload:
+    """
+    Represents a generic payload from an unknown type.
+    """
+
+    properties: str
+
+
+@dataclass
 class ArticlePayload:
     """
     Payload from a new article.

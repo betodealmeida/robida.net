@@ -4,7 +4,7 @@
 
 {# see https://indieweb.org/post-type-discovery #}
 {% macro h_entry(data, compact=False) %}
-<article class="h-entry">
+<article id="entry-{{ data.properties.uid[0] }}" class="h-entry">
     {% if data.properties.name %}
     <header>
         <hgroup>
@@ -33,6 +33,36 @@
             </a>
             {% else %}
             {{ published_macros.published(data.properties.published[0]) }}
+            {% endif %}
+
+            {% if data.properties.visibility %}
+            {% if data.properties.visibility[0] == 'private' %}
+                <span class="p-visibility" title="Private">
+                    🔒
+                </span>
+                {% elif data.properties.visibility[0] == 'unlisted' %}
+                <span class="p-visibility" title="Unlisted">
+                    🏴‍☠️
+                </span>
+                {% endif %}
+            </span>
+            {% endif %}
+
+            {% if session.me == url_for('homepage.index', _external=True) %}
+            <a
+                href="{{ url_for('crud.edit', uuid=data.properties.uid[0]) }}"
+                class="action"
+                title="Edit entry"
+            >✏️</a>
+            <a
+                href="#"
+                class="action"
+                title="Delete entry"
+                hx-delete="{{ url_for('crud.delete', uuid=data.properties.uid[0]) }}"
+                hx-confirm="Are you sure you wish to delete this entry?"
+                hx-target="closest article"
+                hx-swap="outerHTML swap:1s"
+            >🗑️</a>
             {% endif %}
 
             {% if data.properties.category %}

@@ -1,0 +1,20 @@
+<div
+    id="editor"
+    style="height: 400px;"
+>{{ data.properties | json(indent=4)  }}</div>
+
+<script>
+    var editor = ace.edit("editor");
+    editor.setOptions({ fontSize: "16px" });
+    editor.session.setMode("ace/mode/json");
+
+    const form = document.getElementById("updateEntry");
+    form.addEventListener("submit", function(event) {
+        var hiddenInput = document.getElementById("properties");
+        hiddenInput.value = editor.getValue();
+    });
+</script>
+
+<input type="hidden" name="properties" id="properties"/>
+<input type="hidden" name="template" id="template" value="generic"/>
+<input type="submit" value="Update" tabindex="1"/>

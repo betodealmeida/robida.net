@@ -6,6 +6,9 @@
             tabindex="1"
             required
             autofocus
+            {% if data and 'name' in data.properties %}
+                value="{{ data.properties.name[0] }}"
+            {% endif %}
         />
     </label>
     <label>
@@ -13,6 +16,9 @@
         <input
             name="summary"
             tabindex="2"
+            {% if data and 'summary' in data.properties %}
+                value="{{ data.properties.summary[0] }}"
+            {% endif %}
         />
     </label>
     <label>
@@ -23,7 +29,7 @@
             aria-label="Article"
             tabindex="3"
             required
-        ></textarea>
+        >{% if data and 'data-markdown' in data.properties.content[0] %}{{ data.properties.content[0]['data-markdown'] }}{% endif %}</textarea>
         <small>
             <a href="https://www.markdownguide.org/" tabindex="6">Markdown</a> supported.
         </small>
@@ -34,8 +40,11 @@
             name="category"
             placeholder="foo, bar"
             tabindex="4"
+            {% if data and 'category' in data.properties %}
+                value="{{ ', '.join(data.properties.category) }}"
+            {% endif %}
         />
         <small>Comma separated list.</small>
     </label>
 </fieldset>
-<input type="submit" value="Create" tabindex="5"/>
+<input type="submit" value="{{ 'Update' if data else 'Create' }}" tabindex="5"/>

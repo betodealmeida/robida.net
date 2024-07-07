@@ -5,12 +5,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="robots" content="noai">
         <meta name="robots" content="noimageai">
+
         <title>{{ title|default(config.SITE_NAME) }}</title>
-        <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
         {% for link in links %}
         <link rel="{{ link.rel }}" href="{{ url_for(link.endpoint) }}">
         {% endfor %}
+
+        <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/ace.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     </head>
     <body>

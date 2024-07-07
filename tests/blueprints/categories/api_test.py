@@ -22,7 +22,7 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
     assert response.status_code == 200
     assert (
         response.headers["ETag"]
-        == "eed8d2521e55b1bdedee8ae16e4dfd36db3b65cc1d3d5c3f4be2ec7743c51586"
+        == "727be149e390a915bea52b8937279ac311b3fa6e5c9a741ab814fb539b9e1dc8"
     )
 
     html = await response.data
@@ -64,6 +64,7 @@ async def test_category(client: testing.QuartClient, current_app: Quart) -> None
                                 "lang": "en",
                             }
                         ],
+                        "id": "entry-8bf10ece-be18-4b96-af91-04e5c2a931ad",
                         "lang": "en",
                     }
                 ],
@@ -137,7 +138,7 @@ async def test_category_conditional_get(
     response = await client.get(
         "/category/python",
         headers={
-            "If-None-Match": "eed8d2521e55b1bdedee8ae16e4dfd36db3b65cc1d3d5c3f4be2ec7743c51586"
+            "If-None-Match": "727be149e390a915bea52b8937279ac311b3fa6e5c9a741ab814fb539b9e1dc8"
         },
     )
 
