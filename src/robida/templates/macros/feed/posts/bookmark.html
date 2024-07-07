@@ -2,7 +2,7 @@
 
 {% macro bookmark(data, compact=False) %}
 {% set bookmark_of = data.properties['bookmark-of'][0] %}
-{% if bookmark_of.properties.content %}
+{% if bookmark_of is mapping %}
     {% if bookmark_of.properties.content[0] is mapping %}
         {% set content = bookmark_of.properties.content[0].html %}
     {% else %}
@@ -30,5 +30,7 @@
             {{ content | clean | safe }}
         </blockquote>
     </div>
+{% else %}
+    <a class="u-bookmark-of" href="{{ bookmark_of }}">{{ bookmark_of }}</a>
 {% endif %}
 {% endmacro %}
