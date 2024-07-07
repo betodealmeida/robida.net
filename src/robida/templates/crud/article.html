@@ -1,3 +1,9 @@
+{% if data %}
+{% set content = data.properties.content[0] %}
+{% else %}
+{% set content = None %}
+{% endif %}
+
 <fieldset>
     <label>
         Title
@@ -29,7 +35,13 @@
             aria-label="Article"
             tabindex="3"
             required
-        >{% if data and 'data-markdown' in data.properties.content[0] %}{{ data.properties.content[0]['data-markdown'] }}{% endif %}</textarea>
+        >
+            {%- if content is mapping -%}
+            {{ content.value }}
+            {%- elif content -%}
+            {{ content }}
+            {%- endif -%}
+        </textarea>
         <small>
             <a href="https://www.markdownguide.org/" tabindex="6">Markdown</a> supported.
         </small>

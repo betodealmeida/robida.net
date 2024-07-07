@@ -312,7 +312,7 @@ async def test_template(client: testing.QuartClient) -> None:
     assert response.status_code == 200
     assert (
         await response.data
-        == b"""<fieldset>
+        == b"""\n<fieldset>
     <label>
         Note
         <input
