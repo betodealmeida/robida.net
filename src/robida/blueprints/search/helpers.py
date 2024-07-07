@@ -72,7 +72,7 @@ async def search_entries(
             async with db.execute(
                 SEARCH_QUERY.format(protected=protected),
                 (
-                    url_for("homepage.index", _external=True),
+                    url_for("homepage.index", _external=True),  # XXX
                     False,
                     needle,
                     page_size,

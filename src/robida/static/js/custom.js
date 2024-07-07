@@ -32,4 +32,28 @@ document.addEventListener('DOMContentLoaded', (event) => {
             restoreFormData();
         }
     });
+
+    // function for speaking pronunciations
+    const rtElement = document.querySelector('[data-audio-url]');
+    if (rtElement) {
+        rtElement.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            const audioUrls = JSON.parse(rtElement.getAttribute('data-audio-url'));
+            let currentIndex = 0;
+
+            const playNextAudio = () => {
+                if (currentIndex < audioUrls.length) {
+                    const audio = new Audio(audioUrls[currentIndex]);
+                    audio.addEventListener('ended', () => {
+                        currentIndex++;
+                        playNextAudio();
+                    });
+                    audio.play();
+                }
+            };
+
+            playNextAudio();
+        });
+    }
 });

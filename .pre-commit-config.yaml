@@ -27,7 +27,7 @@ repos:
     - types-requests
     - types-freezegun
     - types-python-dateutil
-    - types-pkg_resources
+    #- types-pkg_resources
     - types-PyYAML
     - types-tabulate
     - types-aiofiles

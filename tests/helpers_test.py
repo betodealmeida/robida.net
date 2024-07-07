@@ -19,7 +19,7 @@ from quart.helpers import url_for
 from robida.helpers import (
     canonicalize_url,
     compute_challenge,
-    fetch_hcard,
+    get_representative_hcard,
     get_entry,
     get_type_emoji,
     iso_to_rfc822,
@@ -31,13 +31,13 @@ from robida.helpers import (
 from robida.models import Entry, Microformats2
 
 
-async def test_fetch_hcard_not_found(httpx_mock: HTTPXMock) -> None:
+async def test_get_representative_hcard_not_found(httpx_mock: HTTPXMock) -> None:
     """
     Test the `render_microformat` function when the h-card is not found.
     """
     httpx_mock.add_response(url="https://tantek.com/", status_code=404)
 
-    assert await fetch_hcard("https://tantek.com/") == {
+    assert await get_representative_hcard("https://tantek.com/") == {
         "type": ["h-card"],
         "properties": {
             "name": ["https://tantek.com/"],
@@ -68,7 +68,7 @@ async def test_get_type_emoji() -> None:
         == '<span title="A reply">💬</span>'
     )
     assert (
-        get_type_emoji({"type": ["h-entry"], "properties": {}})
+        get_type_emoji({"type": ["h-entry"], "properties": {"content": ["Hi"]}})
         == '<span title="A note">📔</span>'
     )
     assert (
@@ -87,7 +87,7 @@ async def test_get_type_emoji() -> None:
         == '<span title="A bookmark">🔖</span>'
     )
     assert (
-        get_type_emoji({"type": ["h-new"], "properties": {}})
+        get_type_emoji({"type": ["h-entry"], "properties": {}})
         == '<span title="A generic post">📝</span>'
     )
 
@@ -208,6 +208,7 @@ async def test_upsert_entry(db: Connection, current_app: Quart) -> None:
                     "content": [
                         "This is a dummy entry created by the webmention processor."
                     ],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),
@@ -278,6 +279,7 @@ async def test_upsert_entry_published(db: Connection, current_app: Quart) -> Non
                         "This is a dummy entry created by the webmention processor."
                     ],
                     "published": ["2024-01-01T01:23:45+00:00"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),

@@ -1,5 +1,6 @@
 {% import 'macros/feed/posts/article.html' as article_macros %}
 {% import 'macros/feed/posts/bookmark.html' as bookmark_macros %}
+{% import 'macros/feed/posts/checkin.html' as checkin_macros %}
 {% import 'macros/feed/posts/like.html' as like_macros %}
 {% import 'macros/feed/posts/note.html' as note_macros %}
 
@@ -9,6 +10,8 @@
         {{ like_macros.like(data, compact) }}
     {% elif data.properties['bookmark-of'] %}
         {{ bookmark_macros.bookmark(data, compact) }}
+    {% elif data.properties['checkin'] %}
+        {{ checkin_macros.checkin(data, compact) }}
     {% elif data.properties.name %}
         {{ article_macros.article(data, compact) }}
     {% else %}

@@ -25,7 +25,7 @@ async def test_create_entry(
     Test main endpoint.
     """
     mocker.patch(
-        "robida.blueprints.micropub.api.uuid4",
+        "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
     mocker.patch("robida.helpers.dispatcher")
@@ -49,17 +49,12 @@ async def test_create_entry(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "published": 1,
-        "visibility": "public",
-        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo", "bar"],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -79,16 +74,25 @@ async def test_create_entry(
                             "children": [],
                         }
                     ],
-                    "published": ["2024-01-01T00:00:00+00:00"],
-                    "updated": ["2024-01-01T00:00:00+00:00"],
                     "url": [
                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
+                    "visibility": ["public"],
+                    "sensitive": ["false"],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "content": ["hello world"],
+                    "category": ["foo", "bar"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),
         ),
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "read": 0,
         "deleted": 0,
         "created_at": "2024-01-01 00:00:00+00:00",
@@ -106,7 +110,7 @@ async def test_create_entry_no_type(
     Test main endpoint with a multipart/form-data payload without the type specified.
     """
     mocker.patch(
-        "robida.blueprints.micropub.api.uuid4",
+        "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
     mocker.patch("robida.helpers.dispatcher")
@@ -129,17 +133,12 @@ async def test_create_entry_no_type(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "published": 1,
-        "visibility": "public",
-        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo", "bar"],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -159,16 +158,25 @@ async def test_create_entry_no_type(
                             "children": [],
                         }
                     ],
-                    "published": ["2024-01-01T00:00:00+00:00"],
-                    "updated": ["2024-01-01T00:00:00+00:00"],
                     "url": [
                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
+                    "visibility": ["public"],
+                    "sensitive": ["false"],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "content": ["hello world"],
+                    "category": ["foo", "bar"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),
         ),
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "read": 0,
         "deleted": 0,
         "created_at": "2024-01-01 00:00:00+00:00",
@@ -186,7 +194,7 @@ async def test_create_entry_from_json(
     Test main endpoint with a JSON request payload.
     """
     mocker.patch(
-        "robida.blueprints.micropub.api.uuid4",
+        "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
     mocker.patch("robida.helpers.dispatcher")
@@ -212,18 +220,12 @@ async def test_create_entry_from_json(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "published": 1,
-        "visibility": "public",
-        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo", "bar"],
-                    "photo": ["https://photos.example.com/592829482876343254.jpg"],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -243,16 +245,26 @@ async def test_create_entry_from_json(
                             "children": [],
                         }
                     ],
-                    "published": ["2024-01-01T00:00:00+00:00"],
-                    "updated": ["2024-01-01T00:00:00+00:00"],
                     "url": [
                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
+                    "visibility": ["public"],
+                    "sensitive": ["false"],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-01T00:00:00+00:00"],
+                    "content": ["hello world"],
+                    "category": ["foo", "bar"],
+                    "photo": ["https://photos.example.com/592829482876343254.jpg"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),
         ),
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "read": 0,
         "deleted": 0,
         "created_at": "2024-01-01 00:00:00+00:00",
@@ -270,7 +282,7 @@ async def test_create_entry_from_json_no_type(
     Test main endpoint with a JSON request payload without the type specified.
     """
     mocker.patch(
-        "robida.blueprints.micropub.api.uuid4",
+        "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
     mocker.patch("robida.helpers.dispatcher")
@@ -305,34 +317,38 @@ async def test_create_entry_from_json_no_type(
 
     assert dict(row) == {
         "uuid": "92cdeabd827843ad871d0214dcb2d12e",
-        "published": 1,
-        "visibility": "public",
-        "sensitive": 0,
         "author": "http://example.com/",
         "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo", "bar"],
-                    "photo": ["https://photos.example.com/592829482876343254.jpg"],
                     "author": [
                         {
                             "type": ["h-card"],
                             "properties": {"url": ["http://example.com/"]},
                         }
                     ],
-                    "published": ["2024-01-01T00:00:00Z"],
-                    "updated": ["2024-01-01T00:00:00Z"],
                     "url": [
                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
+                    "visibility": ["public"],
+                    "sensitive": ["false"],
+                    "published": ["2024-01-01T00:00:00Z"],
+                    "updated": ["2024-01-01T00:00:00Z"],
+                    "content": ["hello world"],
+                    "category": ["foo", "bar"],
+                    "photo": ["https://photos.example.com/592829482876343254.jpg"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),
         ),
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "read": 0,
         "deleted": 0,
         "created_at": "2024-01-01 00:00:00+00:00",
@@ -350,11 +366,12 @@ async def test_create_entry_with_file(
     Test uploading file directly.
     """
     mocker.patch(
+        "robida.helpers.uuid4",
+        return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
+    )
+    mocker.patch(
         "robida.blueprints.micropub.api.uuid4",
-        side_effect=[
-            UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
-            UUID("c35ad471-6c6c-488b-9ffc-8854607192f0"),
-        ],
+        return_value=UUID("c35ad471-6c6c-488b-9ffc-8854607192f0"),
     )
     mocker.patch("robida.helpers.dispatcher")
     mocker.patch("robida.blueprints.micropub.api.aiofiles")
@@ -377,21 +394,13 @@ async def test_create_entry_with_file(
         row = await cursor.fetchone()
 
     assert dict(row) == {
-        "uuid": "c35ad4716c6c488b9ffc8854607192f0",
-        "published": 1,
-        "visibility": "public",
-        "sensitive": 0,
+        "uuid": "92cdeabd827843ad871d0214dcb2d12e",
         "author": "http://example.com/",
-        "location": "http://example.com/feed/c35ad471-6c6c-488b-9ffc-8854607192f0",
+        "location": "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e",
         "content": json.dumps(
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "content": ["hello world"],
-                    "category": ["foo"],
-                    "photo": [
-                        "http://example.com/media/92cdeabd-8278-43ad-871d-0214dcb2d12e"
-                    ],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -411,16 +420,28 @@ async def test_create_entry_with_file(
                             "children": [],
                         }
                     ],
+                    "url": [
+                        "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
+                    ],
+                    "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
+                    "visibility": ["public"],
+                    "sensitive": ["false"],
                     "published": ["2024-01-01T00:00:00+00:00"],
                     "updated": ["2024-01-01T00:00:00+00:00"],
-                    "url": [
-                        "http://example.com/feed/c35ad471-6c6c-488b-9ffc-8854607192f0"
+                    "content": ["hello world"],
+                    "category": ["foo"],
+                    "photo": [
+                        "http://example.com/media/c35ad471-6c6c-488b-9ffc-8854607192f0"
                     ],
-                    "uid": ["c35ad471-6c6c-488b-9ffc-8854607192f0"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),
         ),
+        "published": 1,
+        "visibility": "public",
+        "sensitive": 0,
         "read": 0,
         "deleted": 0,
         "created_at": "2024-01-01 00:00:00+00:00",
@@ -470,7 +491,7 @@ async def test_index_source(mocker: MockerFixture, client: testing.QuartClient) 
     Test fetching information about an entry.
     """
     mocker.patch(
-        "robida.blueprints.micropub.api.uuid4",
+        "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
     mocker.patch("robida.helpers.dispatcher")
@@ -518,10 +539,14 @@ async def test_index_source(mocker: MockerFixture, client: testing.QuartClient) 
             ],
             "category": ["foo", "bar"],
             "content": ["Hello World"],
+            "post-status": ["published"],
+            "post-template": ["note"],
             "published": ["2016-02-21T12:50:53-08:00"],
+            "sensitive": ["false"],
             "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
             "updated": ["2024-01-01T00:00:00+00:00"],
             "url": ["http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+            "visibility": ["public"],
         },
         "type": ["h-entry"],
     }
@@ -665,7 +690,7 @@ async def test_update(
     Test updating an entry.
     """
     mocker.patch(
-        "robida.blueprints.micropub.api.uuid4",
+        "robida.helpers.uuid4",
         return_value=UUID("92cdeabd-8278-43ad-871d-0214dcb2d12e"),
     )
     mocker.patch("robida.helpers.dispatcher")
@@ -724,8 +749,6 @@ WHERE
             {
                 "type": ["h-entry"],
                 "properties": {
-                    "content": ["hello world, updated"],
-                    "category": ["foo", "bar", "baz"],
                     "author": [
                         {
                             "type": ["h-card"],
@@ -745,12 +768,18 @@ WHERE
                             "children": [],
                         }
                     ],
-                    "published": ["2024-01-01T00:00:00+00:00"],
-                    "updated": ["2024-01-02T00:00:00+00:00"],
                     "url": [
                         "http://example.com/feed/92cdeabd-8278-43ad-871d-0214dcb2d12e"
                     ],
                     "uid": ["92cdeabd-8278-43ad-871d-0214dcb2d12e"],
+                    "post-status": ["published"],
+                    "visibility": ["public"],
+                    "sensitive": ["false"],
+                    "published": ["2024-01-01T00:00:00+00:00"],
+                    "updated": ["2024-01-02T00:00:00+00:00"],
+                    "content": ["hello world, updated"],
+                    "category": ["foo", "bar", "baz"],
+                    "post-template": ["note"],
                 },
             },
             separators=(",", ":"),

@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS entries;
 CREATE TABLE entries(
     uuid TEXT PRIMARY KEY,
     author URI,
-    location URI,
+    location URI UNIQUE,
     content JSON,
     published BOOLEAN DEFAULT TRUE,
     visibility TEXT DEFAULT 'public',

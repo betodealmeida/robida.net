@@ -5,19 +5,15 @@ Helper functions for the MicroPub endpoint.
 from typing import Any
 from werkzeug.datastructures import MultiDict
 
-from robida.models import Microformats2
 
-
-def process_form(payload: MultiDict) -> Microformats2:
+def process_form(payload: MultiDict) -> dict[str, Any]:
     """
-    Convert form data to Microformats 2 JSON.
+    Convert form data to Microformats 2 properties.
 
     See http://microformats.org/wiki/microformats2-json.
     """
-    data: dict[str, Any] = {
-        "type": [f'h-{payload["h"]}'],
-        "properties": {},
-    }
+    properties = {}
+
     for key, value in payload.to_dict(flat=False).items():
         if key == "h":
             continue
@@ -25,6 +21,6 @@ def process_form(payload: MultiDict) -> Microformats2:
         if key.endswith("[]"):
             key = key[:-2]
 
-        data["properties"][key] = value
+        properties[key] = value
 
-    return Microformats2(**data)
+    return properties

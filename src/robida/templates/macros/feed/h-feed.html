@@ -9,7 +9,15 @@
                     {{ data.properties.name[0] }}
                 </a>
             </h1>
-            <p class="p-summary">{{ data.properties.summary[0] }}</p>
+            {% if data.properties.summary %}
+                {% for summary in data.properties.summary %}
+                    {% if summary is mapping %}
+                    <p class="p-summary">{{ summary.html | safe }}</p>
+                    {% else %}
+                    <p class="p-summary">{{ summary }}</p>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         </hgroup>
     </header>
 

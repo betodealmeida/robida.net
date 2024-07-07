@@ -1,31 +1,244 @@
 {% macro h_card(data, compact=False) %}
     {% if compact %}
-        {% if data.properties.url %}
-        <a class="h-card" href="{{ data.properties.url[0] }}">
-            {{ data.properties.name[0] }}
-        </a>
-        {% else %}
-        <span class="h-card">{{ data.properties.name[0] }}</span>
-        {% endif %}
+        {{ compact_h_card(data) }}
     {% else %}
-        <div class="h-card">
-            {% if data.properties.url %}
-            <a class="p-name u-url" href="{{ data.properties.url[0] }}">
-                {{ data.properties.name[0] }}
-            </a>
-            {% else %}
-            <span class="p-name">
-                {{ data.properties.name[0] }}
-            </span>
-            {% endif %}
+        {{ full_h_card(data) }}
+    {% endif %}
+{% endmacro %}
 
-            {% if data.properties.photo %}
+{% macro get_name(data) %}
+    <span class="p-name">{{ data.properties.name | join(' / ') }}</span>
+{% endmacro %}
+
+{% macro add_pronounciation(name, data) %}
+    {% if data.properties.ipa %}
+        <ruby>
+            {{ name }}
+            <rt
+                {% if data.properties.sound %}
+                    class="p-sound"
+                    data-audio-url="{{ data.properties.sound | tojson | forceescape }}"
+                    {# role="button" #}
+                    aria-label="Pronunciation"
+                {% endif %}
+            >
+                /
+                {% for ipa in data.properties.ipa %}
+                    <span class="p-ipa">{{ ipa }}</span>
+                    {%- if not loop.last %} / {% endif -%}
+                {% endfor %}
+                /
+            </rt>
+        </ruby>
+    {% else %}
+        {{ name }}
+    {% endif %}
+{% endmacro %}
+
+{% macro add_honorifics(name, data) %}
+    {% if data.properties['honorific-prefix'] %}
+        {% for honorific in data.properties['honorific-prefix'] %}
+            <span class="p-honorific-prefix">{{ honorific }}</span>
+            {% if not loop.last %} {% endif %}
+        {% endfor %}
+    {% endif %}
+        {{ name }}
+    {% if data.properties['honorific-suffix'] %}
+        {% for honorific in data.properties['honorific-suffix'] %}
+            ,
+            <span class="p-honorific-suffix">{{ honorific }}</span>
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+{% macro add_links(name, data) %}
+    {% set uid = data.properties.uid | first if data.properties.uid | length == 1 else None %}
+
+    {% if not data.properties.url %}
+        {# If there is no URL, just display the name #}
+        <span>{{ name }}</span>
+    {% elif data.properties.url | length == 1 %}
+        {# Single URL #}
+        <a
+            class="u-url {% if uid and data.properties.url[0] == uid %}u-uid{% endif %}"
+            href="{{ data.properties.url[0] }}"
+        >
+            {{ name }}
+        </a>
+    {% else %}
+        {# Multiple URLs #}
+        <span>
+            {{ name }}
+            ({%- for url in data.properties.url -%}
+            <a
+                class="u-url {% if uid and url == uid %}u-uid{% endif %}"
+                href="{{ url }}"
+            >
+                {{ URL(url).host }}
+            </a>{%- if not loop.last %}, {% endif -%}
+            {%- endfor -%})
+    {% endif %}
+{% endmacro %}
+
+{% macro add_pronouns(name, data) %}
+    {{ name }}
+    {% if data.properties.pronoun %}
+        <small>(
+        {%- for pronoun in data.properties.pronoun -%}
+            <span class="p-pronoun">{{ pronoun }}</span>
+            {%- if not loop.last %}/{% endif -%}
+        {%- endfor -%}
+        )</small>
+    {% endif %}
+{% endmacro %}
+
+{% macro compact_h_card(data) %}
+    {% set name = get_name(data) %}
+    {% set name = add_pronounciation(name, data) %}
+    {% set name = add_honorifics(name, data) %}
+    {% set name = add_links(name, data) %}
+    {% set name = add_pronouns(name, data) %}
+    {{ name }}
+{% endmacro %}
+
+{% macro render_address(data) %}
+    {% set address_fields = ['street-address', 'extended-address', 'post-office-box', 'locality', 'region', 'postal-code', 'country-name'] %}
+    {% if address_fields | select('in', data.properties) | list | length > 0 %}
+        🌐
+    {% endif %}
+    {% for street in data.properties['street-address'] %}
+        <span class="p-street-address">{{ street }}</span>
+    {% endfor %}
+    {% for extended in data.properties['extended-address'] %}
+        <span class="p-extended-address">{{ extended }}</span>
+    {% endfor %}
+    {% for pobox in data.properties['post-office-box'] %}
+        <span class="p-post-office-box">{{ pobox }}</span>
+    {% endfor %}
+    {% for locality in data.properties.locality %}
+        <span class="p-locality">{{ locality }}</span>
+    {% endfor %}
+    {% for region in data.properties.region %}
+        <span class="p-region">{{ region }}</span>
+    {% endfor %}
+    {% for postal_code in data.properties['postal-code'] %}
+        <span class="p-postal-code">{{ postal_code }}</span>
+    {% endfor %}
+    {% for country in data.properties['country-name'] %}
+        <span class="p-country-name">{{ country }}</span>
+    {% endfor %}
+{% endmacro %}
+
+{% macro full_h_card(data) %}
+<article class="h-card">
+    <header>
+        <h1><span>{{ compact_h_card(data) }}</span></h1>
+
+        {% for photo in data.properties.photo %}
+            {% if photo is mapping %}
                 <img
                     class="u-photo"
-                    src="{{ data.properties.photo[0] }}"
-                    alt="{{ data.properties.name[0] }}"
-                />
+                    src="{{ photo.value }}"
+                    alt="{{ photo.alt }}"
+                >
+            {% else %}
+                <img
+                    class="u-photo"
+                    src="{{ photo }}"
+                >
             {% endif %}
+        {% endfor %}
+
+        <p>
+            {% if data.properties['given-name'] %}
+                <span class="p-given-name">{{ data.properties['given-name'] | join(' ') }}</span>
+            {% endif %}
+            {% if data.properties['additional-name'] %}
+                <span class="p-additional-name">{{ data.properties['additional-name'] | join(' ') }}</span>
+            {% endif %}
+            {% if data.properties['family-name'] %}
+                <span class="p-family-name">{{ data.properties['family-name'] | join(' ') }}</span>
+            {% endif %}
+            {% if data.properties.nickname %}
+            <abbr title="Also known as">aka</abbr>
+            <span class="p-nickname">{{ data.properties.nickname | join(' ') }}</span>
+            {% endif %}
+        </p>
+        {% if data.properties.category %}
+            {% for category in data.properties.category %}
+                <span class="p-category">{{ category }}</span>
+            {% endfor %}
+        {% endif %}
+    </header>
+
+    <section>
+        {% for note in data.properties.note %}
+            {% if note is mapping %}
+                {% if note.html %}
+                    <div class="e-note">{{ note.html }}</div>
+                {% elif note.value %}
+                    <p class="p-note">{{ note.value }}</p>
+                {% endif %}
+            {% else %}
+                <p class="p-note">{{ note }}</p>
+            {% endif %}
+        {% endfor %}
+    </section>
+
+    {% if data.properties.org %}
+    <section>
+        <h2>Organization</h2>
+        <div class="p-org">
+            {% for org in data.properties.org %}
+                {% if org.type and 'h-card' in org.type %}
+                    {{ h_card(org) }}
+                {% else %}
+                    <span>{{ org }}</span>
+                {% endif %}
+            {% endfor %}
         </div>
+    </section>
     {% endif %}
+
+    <section>
+        {% for tel in data.properties.tel %}
+            <p>☎️ <a class="p-tel" href="tel:{{ tel }}">{{ tel }}</a></p>
+        {% endfor %}
+
+        {% for email in data.properties.email %}
+            <p>📧 <a class="u-email" rel="me" href="{{ email }}">{{ URL(email).name }}</a></p>
+        {% endfor %}
+
+        {% for key in data.properties.key %}
+        <details>
+            <summary>🔐 GPG key</summary>
+            <pre class="p-key">{{ key }}</pre>
+        </details>
+        {% endfor %}
+
+        {% for birthday in data.properties.bday %}
+            <p>🎂 <time class="dt-bday" datetime="{{ birthday }}">{{ birthday }}</time></p>
+        {% endfor %}
+
+        {# h-adr address #}
+        {% for address in data.properties.adr %}
+            <address class="p-adr h-adr">
+                {{ render_address(address) }}
+            </address>
+        {% endfor %}
+        {# non-h-adr address #}
+        {{ render_address(data) }}
+    </section>
+
+    <footer>
+        {% if data.properties.summary %}
+            <span class="p-summary">{{ data.properties.summary | join(' / ') }}</span>
+        {% endif %}
+    </footer>
+
+    {% import 'macros/feed/render.html' as render_macros %}
+    {% for child in data.children %}
+        {{ render.render_microformat(data) }}
+    {% endfor %}
+</article>
 {% endmacro %}

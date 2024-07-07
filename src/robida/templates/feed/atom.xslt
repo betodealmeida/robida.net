@@ -109,16 +109,14 @@
                 </main>
 
                 <footer>
-                    <p>
-                        <form role="search" method="GET" action="{{ url_for('search.index') }}">
-                            <input
-                                name="q"
-                                type="search"
-                                placeholder="Try: python OR Flask, NEAR(like, entry), vegan AND recipes"
-                            />
-                            <input type="submit" value="Search"/>
-                        </form>
-                    </p>
+                    <form role="search" method="GET" action="{{ url_for('search.index') }}">
+                        <input
+                            name="q"
+                            type="search"
+                            placeholder="Try: python OR Flask, NEAR(like, entry), vegan AND recipes"
+                        />
+                        <input type="submit" value="Search"/>
+                    </form>
                     <p style="text-align: center;">
                         🍃
                         <a

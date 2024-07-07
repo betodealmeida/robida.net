@@ -5,12 +5,13 @@ Main application.
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from dotenv import dotenv_values
 from nh3 import clean  # pylint: disable=no-member, no-name-in-module
 from quart import Quart, Response, g, request, session, url_for
 from quart_schema import QuartSchema
+from yarl import URL
 
 from robida.blueprints.auth import api as auth
 from robida.blueprints.categories import api as categories
@@ -26,16 +27,48 @@ from robida.blueprints.webmention import api as webmention
 from robida.blueprints.websub import api as websub
 from robida.blueprints.wellknown import api as wellknown
 from robida.constants import links
-from robida.db import init_db, load_entries
+from robida.db import init_db
 from robida.helpers import (
-    XForwardedProtoMiddleware,
-    fetch_hcard,
+    get_representative_hcard,
     get_type_emoji,
     iso_to_rfc822,
     summarize,
 )
 
 quart_schema = QuartSchema()
+
+
+# pylint: disable=too-few-public-methods
+class XForwardedProtoMiddleware:
+    """
+    Middleware for generating https link when behind a reverse proxy.
+    """
+
+    def __init__(
+        self,
+        app: Callable[
+            [
+                dict[str, Any],
+                Callable[..., Awaitable[dict[str, Any]]],
+                Callable[..., Awaitable[None]],
+            ],
+            Awaitable[None],
+        ],
+    ) -> None:
+        self.app = app
+
+    async def __call__(
+        self,
+        scope: dict[str, Any],
+        receive: Callable[[], Awaitable[dict[str, Any]]],
+        send: Callable[[dict[str, Any]], Awaitable[None]],
+    ) -> None:
+        if scope["type"] == "http":
+            headers = dict(scope["headers"])
+            if b"x-forwarded-proto" in headers:
+                scope["scheme"] = headers[b"x-forwarded-proto"].decode("latin-1")
+
+        await self.app(scope, receive, send)
 
 
 def create_app(
@@ -75,10 +108,11 @@ def create_app(
     app.jinja_env.enable_async = True
     app.jinja_env.globals.update(
         {
-            "fetch_hcard": fetch_hcard,
-            "iso_to_rfc822": iso_to_rfc822,
+            "get_hcard": get_representative_hcard,
             "get_type_emoji": get_type_emoji,
+            "iso_to_rfc822": iso_to_rfc822,
             "summarize": summarize,
+            "URL": URL,
         }
     )
     app.jinja_env.filters.update(
@@ -162,14 +196,6 @@ def init_db_sync():
     """
     app = create_app()
     asyncio.run(init_db(app))
-
-
-def load_entries_sync() -> None:
-    """
-    Synchronous wrapper of `load_entries` for Poetry.
-    """
-    app = create_app()
-    asyncio.run(load_entries(app))
 
 
 def run() -> None:

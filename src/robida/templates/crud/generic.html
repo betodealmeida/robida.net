@@ -8,7 +8,7 @@
     editor.setOptions({ fontSize: "16px" });
     editor.session.setMode("ace/mode/json");
 
-    const form = document.getElementById("updateEntry");
+    var form = document.getElementById("updateEntry");
     form.addEventListener("submit", function(event) {
         var hiddenInput = document.getElementById("properties");
         hiddenInput.value = editor.getValue();

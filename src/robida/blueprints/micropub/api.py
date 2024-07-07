@@ -27,11 +27,11 @@ from robida.db import get_db
 from robida.helpers import (
     delete_entry,
     get_entry,
-    get_hcard,
+    get_own_hcard,
     undelete_entry,
     upsert_entry,
 )
-from robida.models import Microformats2
+from robida.models import HEntry, Microformats2
 
 from .helpers import process_form
 from .models import ActionType, ErrorType
@@ -133,14 +133,19 @@ async def post() -> Response:
 
         return await actions[action](payload)
 
-    # set detault type for new entry
+    hcard = get_own_hcard()
+    hentry = HEntry(properties={"author": [hcard.model_dump()]})
+
+    # update properties from payload
     if request.content_type == "application/json":
-        payload.setdefault("type", ["h-entry"])
-        data = Microformats2(**payload)
+        if "type" in payload and payload["type"] != ["h-entry"]:
+            return Response("Only h-entry is supported", status=422)
+        hentry.properties.update(payload["properties"])
     else:
         payload = MultiDict(payload)
-        payload.setdefault("h", "entry")
-        data = process_form(payload)
+        if "h" in payload and payload["h"] != "entry":
+            return Response("Only h-entry is supported", status=422)
+        hentry.properties.update(process_form(payload))
 
     files = await request.files
     for name, file in files.items():
@@ -150,7 +155,7 @@ async def post() -> Response:
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(file.read())
 
-        data.properties[name] = [
+        hentry.properties[name] = [
             url_for(
                 "media.download",
                 filename=str(uuid),
@@ -158,7 +163,7 @@ async def post() -> Response:
             )
         ]
 
-    return await create(data)
+    return await create(hentry)
 
 
 @requires_scope("create")
@@ -166,21 +171,10 @@ async def create(hentry: Microformats2) -> Response:
     """
     Create a new Micropub entry.
     """
-    uuid = uuid4()
-    created_at = last_modified_at = datetime.now(timezone.utc)
-    url = url_for("feed.entry", uuid=str(uuid), _external=True)
-    hcard = get_hcard()
-
-    hentry.properties.setdefault("author", [hcard.model_dump()])
-    hentry.properties.setdefault("published", [created_at.isoformat()])
-    hentry.properties.setdefault("updated", [last_modified_at.isoformat()])
-    hentry.properties.setdefault("url", [url])
-    hentry.properties.setdefault("uid", [str(uuid)])
-
     async with get_db(current_app) as db:
         await upsert_entry(db, hentry)
 
-    return Response(status=201, headers={"Location": url})
+    return Response(status=201, headers={"Location": hentry.properties["url"][0]})
 
 
 @requires_scope("update")
@@ -197,28 +191,28 @@ async def update(payload) -> Response:
         if entry is None:
             return Response(status=404)
 
-        data = entry.content
+        hentry = entry.content
 
-        data.properties["updated"] = [datetime.now(timezone.utc).isoformat()]
+        hentry.properties["updated"] = [datetime.now(timezone.utc).isoformat()]
 
         if "replace" in payload:
             for key, value in payload["replace"].items():
-                data.properties[key] = value
+                hentry.properties[key] = value
 
         if "add" in payload:
             for key, value in payload["add"].items():
-                data.properties.setdefault(key, [])
-                data.properties[key].extend(value)
+                hentry.properties.setdefault(key, [])
+                hentry.properties[key].extend(value)
 
         if "delete" in payload:
             for key, value in payload["delete"].items():
-                data.properties[key] = [
-                    item for item in data.properties[key] if item not in set(value)
+                hentry.properties[key] = [
+                    item for item in hentry.properties[key] if item not in set(value)
                 ]
-                if not data.properties[key]:
-                    del data.properties[key]
+                if not hentry.properties[key]:
+                    del hentry.properties[key]
 
-        await upsert_entry(db, data)
+        await upsert_entry(db, hentry)
 
     return Response(
         status=204,

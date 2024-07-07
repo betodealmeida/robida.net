@@ -2,23 +2,26 @@
 Generic helper functions.
 """
 
+import asyncio
 import base64
 import hashlib
 import urllib.parse
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable
+from typing import Any
 from uuid import UUID, uuid4
 
 import httpx
 import mf2py
+import yaml
 from aiosqlite import Connection
 from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4.formatter import HTMLFormatter
 from quart import current_app
 from quart.helpers import url_for
 
 from robida.events import EntryCreated, EntryDeleted, EntryUpdated, dispatcher
-from robida.models import Entry, Microformats2
+from robida.models import Entry, HCard, HEntry
 
 # inspired by Mastodon
 SUMMARY_LENGTH = 500
@@ -92,39 +95,6 @@ SELECT * FROM linked_entries;
 """
 
 
-# pylint: disable=too-few-public-methods
-class XForwardedProtoMiddleware:
-    """
-    Middleware for generating https link when behind a reverse proxy.
-    """
-
-    def __init__(
-        self,
-        app: Callable[
-            [
-                dict[str, Any],
-                Callable[..., Awaitable[dict[str, Any]]],
-                Callable[..., Awaitable[None]],
-            ],
-            Awaitable[None],
-        ],
-    ) -> None:
-        self.app = app
-
-    async def __call__(
-        self,
-        scope: dict[str, Any],
-        receive: Callable[[], Awaitable[dict[str, Any]]],
-        send: Callable[[dict[str, Any]], Awaitable[None]],
-    ) -> None:
-        if scope["type"] == "http":
-            headers = dict(scope["headers"])
-            if b"x-forwarded-proto" in headers:
-                scope["scheme"] = headers[b"x-forwarded-proto"].decode("latin-1")
-
-        await self.app(scope, receive, send)
-
-
 async def get_entry(
     db: Connection,
     uuid: UUID,
@@ -151,7 +121,7 @@ async def get_entry(
                 uuid=UUID(row["uuid"]),
                 author=row["author"],
                 location=row["location"],
-                content=Microformats2.model_validate_json(row["content"]),
+                content=HEntry.model_validate_json(row["content"]),
                 published=row["published"],
                 visibility=row["visibility"],
                 sensitive=row["sensitive"],
@@ -162,6 +132,7 @@ async def get_entry(
             )
         )
 
+    # populate children
     root = reply_map[None][0]
     queue = [root]
     seen = set()
@@ -178,17 +149,38 @@ async def get_entry(
     return root
 
 
-async def upsert_entry(db: Connection, hentry: Microformats2) -> Entry:
+async def upsert_entry(db: Connection, hentry: HEntry) -> Entry:
     """
     Create/update an entry in the database from an h-entry.
-    """
-    uuid = UUID(hentry.properties["uid"][0])
-    old_entry = await get_entry(db, uuid)
 
-    author = location = hentry.properties["url"][0]
-    if hcard := hentry.properties.get("author"):
-        if url := hcard[0]["properties"].get("url"):
-            author = url[0]
+    Note that the h-entry might come from a webmention, so it might not follow the
+    conventions used in the application.
+    """
+    # if there's no URL the h-entry cannot be external, and so it MUST be a new h-hentry
+    if "url" not in hentry.properties:
+        uuid = uuid4()
+        old_entry = None
+        location = url_for("feed.entry", uuid=str(uuid), _external=True)
+        hentry.properties["url"] = hentry.properties["uid"] = [location]
+
+    # if there is a URL, the h-entry might be external and not exist in the DB yet
+    else:
+        location = hentry.properties["url"][0]
+
+        async with db.execute(
+            "SELECT uuid FROM entries WHERE location = ?;",
+            (location,),
+        ) as cursor:
+            row = await cursor.fetchone()
+
+        if row:
+            uuid = UUID(row["uuid"])
+            old_entry = await get_entry(db, uuid)
+        else:
+            uuid = uuid4()
+            old_entry = None
+
+    hcard = await find_hcard(hentry)
 
     # "In most implementations, not passing a post-status is assumed to be published."
     # https://indieweb.org/Micropub-extensions#Post_Status
@@ -223,6 +215,11 @@ async def upsert_entry(db: Connection, hentry: Microformats2) -> Entry:
     except (KeyError, ValueError):
         last_modified_at = created_at
 
+    # Set a template, if one was not defined. This allows for easier editing on the
+    # web UI of entries created from an external MicroPub client.
+    template = get_template(hentry)
+    hentry.properties.setdefault("post-template", [template])
+
     await db.execute(
         """
 INSERT INTO entries (
@@ -252,9 +249,9 @@ ON CONFLICT(uuid) DO UPDATE SET
         """,
         (
             uuid.hex,
-            author,
+            hcard.properties["url"][0],
             location,
-            hentry.model_dump_json(exclude_unset=True),
+            hentry.model_dump_json(),
             published,
             visibility,
             sensitive,
@@ -268,14 +265,14 @@ ON CONFLICT(uuid) DO UPDATE SET
         "INSERT INTO documents (uuid, content) VALUES (?, ?);",
         (
             uuid.hex,
-            hentry.model_dump_json(exclude_unset=True),
+            hentry.model_dump_json(),
         ),
     )
     await db.commit()
 
     new_entry = Entry(
         uuid=uuid,
-        author=author,
+        author=hcard.properties["url"][0],
         location=location,
         content=hentry,
         published=published,
@@ -336,75 +333,56 @@ WHERE
     dispatcher.dispatch(EntryCreated(new_entry=entry))
 
 
-def new_hentry(**kwargs: Any) -> Microformats2:
+async def find_hcard(hentry: HEntry) -> HCard:
     """
-    Create a new entry.
+    Find the h-card of an h-entry.
+
+    This function traverses the properties and children of the h-entry to find the
+    h-card, if any.
     """
-    uuid = uuid4()
-    created_at = last_modified_at = datetime.now(timezone.utc)
-    url = url_for("feed.entry", uuid=str(uuid), _external=True)
-    hcard = get_hcard()
+    if "author" in hentry.properties and len(hentry.properties["author"]) == 1:
+        return HCard(**hentry.properties["author"][0])
 
-    properties = {
-        "author": [hcard.model_dump()],
-        "url": [url],
-        "uid": [str(uuid)],
-        "post-status": ["published"],
-        "visibility": ["public"],
-        "sensitive": ["false"],
-        "published": [created_at.isoformat()],
-        "updated": [last_modified_at.isoformat()],
-        **kwargs,
-    }
+    for child in hentry.children:
+        if child.type == ["h-card"]:
+            return child
 
-    return Microformats2(type=["h-entry"], properties=properties)
+    return await HCard.from_url(hentry.properties["url"][0])
 
 
-def get_hcard() -> Microformats2:
+def get_own_hcard() -> HCard:
     """
     Build our h-card.
     """
-    return Microformats2(
-        type=["h-card"],
-        value=url_for("homepage.index", _external=True),
-        properties={
-            "name": [current_app.config["NAME"]],
-            "url": [url_for("homepage.index", _external=True)],
-            "photo": [
-                {
-                    "alt": current_app.config["PHOTO_DESCRIPTION"],
-                    "value": url_for(
-                        "static",
-                        filename="img/photo.jpg",
-                        _external=True,
-                    ),
-                },
-            ],
-            "email": [current_app.config["EMAIL"]],
-            "note": [current_app.config["NOTE"]],
-        },
-    )
+    with open(current_app.config["HCARD"], "r", encoding="utf-8") as input:
+        hcard = HCard(**yaml.safe_load(input))
+
+    # make sure to set the URL to the blog
+    hcard.properties["url"] = [url_for("homepage.index", _external=True)]
+
+    return hcard
 
 
-def hentry_from_entry(entry: Entry) -> dict[str, Any]:
+def hentry_from_entry(entry: Entry) -> HEntry:
     """
     Build an h-entry from an entry.
     """
-    entry.content.properties.setdefault("uid", [str(entry.uuid)])
-    entry.content.properties.setdefault("url", [entry.location])
-    entry.content.properties.setdefault(
-        "post-status", ["published" if entry.published else "draft"]
-    )
-    entry.content.properties.setdefault("visibility", [entry.visibility])
-    entry.content.properties.setdefault(
-        "sensitive", ["true" if entry.sensitive else "false"]
-    )
-    entry.content.properties.setdefault(
-        "published",
-        [entry.last_modified_at.isoformat()],
-    )
+    defaults = {
+        "uid": [entry.location],
+        "url": [entry.location],
+        "post-status": ["published" if entry.published else "draft"],
+        "visibility": [entry.visibility],
+        "sensitive": ["true" if entry.sensitive else "false"],
+        "published": [entry.last_modified_at.isoformat()],
+    }
+    missing = {
+        key: value
+        for key, value in defaults.items()
+        if key not in entry.content.properties
+    }
+    entry.content.properties.update(missing)
 
-    return entry.content.model_dump()
+    return entry.content
 
 
 def extract_text_from_html(html: str) -> str:
@@ -414,48 +392,137 @@ def extract_text_from_html(html: str) -> str:
     return BeautifulSoup(html, "html.parser").get_text()
 
 
-def get_type_emoji(data: dict[str, Any]) -> str:
+def get_template(hentry: HEntry) -> str:
+    """
+    Get the template for an h-entry.
+    """
+    templates = {
+        "in-reply-to": "reply",
+        "like-of": "like",
+        "bookmark-of": "bookmark",
+        "checkin": "checkin",
+        "name": "article",
+        "content": "note",
+    }
+    for key, template in templates.items():
+        if key in hentry.properties:
+            return template
+
+    return "generic"
+
+
+def get_type_emoji(hentry: HEntry) -> str:
     """
     Get the emoji for the type of the data.
     """
-    data = Microformats2(**data)
+    types = {
+        "reply": ("A reply", "💬"),
+        "like": ("A like", "❤️"),
+        "bookmark": ("A bookmark", "🔖"),
+        "checkin": ("A checkin", "🚩"),
+        "article": ("An article", "📄"),
+        "note": ("A note", "📔"),
+    }
+    template = get_template(hentry)
+    title, emoji = types.get(template, ("A generic post", "📝"))
 
-    if data.type[0] == "h-entry":
-        if "in-reply-to" in data.properties:
-            return '<span title="A reply">💬</span>'
-
-        if "like-of" in data.properties:
-            return '<span title="A like">❤️</span>'
-
-        if "bookmark-of" in data.properties:
-            return '<span title="A bookmark">🔖</span>'
-
-        if "name" in data.properties:
-            return '<span title="An article">📄</span>'
-
-        return '<span title="A note">📔</span>'
-
-    return '<span title="A generic post">📝</span>'
+    return f'<span title="{title}">{emoji}</span>'
 
 
-async def fetch_hcard(url: str) -> dict[str, Any]:
+async def get_representative_hcard(url: str) -> HCard:
     """
-    Fetch an h-card from an URL.
+    Fetch the representative h-card of a given URL.
+    """
+    return await HCard.from_url(url)
+
+
+async def get_post_author(url: str) -> list[HCard]:
+    """
+    Implement the authorship algorithm.
+
+    See: https://indieweb.org/authorship-spec
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
-        html = mf2py.Parser(response.content.decode(), url=url)
+        parser = mf2py.Parser(response.content.decode(), url=url)
 
-    if cards := html.to_dict(filter_by_type="h-card"):
-        return cards[0]
+    # 1. start with a particular h-entry to determine authorship for, and no author. if
+    # no h-entry, then there's no post to find authorship for, abort.
+    # 2. parse the h-entry
+    hentries = parser.to_dict(filter_by_type="h-entry")
+    if not hentries:
+        return []
 
-    return {
-        "type": ["h-card"],
-        "properties": {
-            "name": [url],
-            "url": [url],
-        },
-    }
+    author = []
+    for hentry in hentries:
+        # 3. if the h-entry has an author property, use that
+        if author := hentry["properties"].get("author"):
+            break
+    else:
+        # 4. otherwise if the h-entry has a parent h-feed with author property, use that
+        if hfeeds := parser.to_dict(filter_by_type="h-feed"):
+            if len(hfeeds) == 1 and "author" in hfeeds[0]["properties"]:
+                author = hfeeds[0]["properties"]["author"]
+
+    # 6. if there is no author-page and the h-entry's page is a permalink page, then
+    # 6.1. if the page has a rel-author link, let the author-page's URL be the href of the
+    # rel-author link
+    rels = parser.to_dict()["rels"]
+    if not author and "author" in rels:
+        author = rels["author"]
+
+    return await asyncio.gather(*[get_hcard_from_author(item) for item in author])
+
+
+async def get_hcard_from_author(author: str | dict[str, list[Any]]) -> HCard:
+    """
+    Steps 5 and 7 of the authorship algorithm.
+    """
+    # 5. if an author property was found
+    # 5.1. if it has an h-card, use it, exit.
+    if isinstance(author, dict):
+        return HCard(**author)
+
+    # 5.2. otherwise if author property is an http(s) URL, let the author-page have
+    # that URL
+    if author.startswith("http://") or author.startswith("https://"):
+        # 7. if there is an author-page URL
+        # 7.1. get the author-page from that URL and parse it for microformats2
+        async with httpx.AsyncClient() as client:
+            response = await client.get(author)
+            parser = mf2py.Parser(response.content.decode(), url=author)
+        candidates = parser.to_dict(filter_by_type="h-card")
+
+        # 7.2. if author-page has 1+ h-card with url == uid == author-page's URL,
+        # then use first such h-card, exit.
+        for candidate in candidates:
+            if (
+                candidate["properties"]["url"]
+                == candidate["properties"]["uid"]
+                == [author]
+            ):
+                return HCard(**candidate)
+
+        # 7.3. else if author-page has 1+ h-card with url property which matches the
+        # href of a rel-me link on the author-page (perhaps the same hyperlink
+        # element as the u-url, though not required to be), use first such h-card,
+        # exit.
+        parsed = parser.to_dict()
+        rels = parsed["rels"]
+        me = set(rels.get("me", []))
+
+        for candidate in candidates:
+            if any(url in me for url in candidate["properties"].get("url", [])):
+                return HCard(**candidate)
+
+        # 7.4. if the h-entry's page has 1+ h-card with url == author-page URL, use
+        # first such h-card, exit.
+        for candidate in candidates:
+            if candidate["properties"]["url"] == [author]:
+                return HCard(**candidate)
+
+    # 5.3. otherwise use the author property as the author name, exit
+    return HCard(properties={"name": [author]})
 
 
 def iso_to_rfc822(iso: str) -> str:
@@ -534,7 +601,7 @@ def summarize(html: str, max_length: int = SUMMARY_LENGTH) -> str:
     """
     Summarize HTML, making it shorter.
 
-    This is used when showing entries in the feed/search/cateegory pages.
+    This is used when showing entries in the feed/search/category pages.
     """
     soup = BeautifulSoup(html.strip(), "html.parser")
     truncated = truncate_html(soup, max_length)
@@ -545,9 +612,6 @@ def summarize(html: str, max_length: int = SUMMARY_LENGTH) -> str:
 def truncate_html(element: Tag, max_length: int) -> Tag:
     """
     Truncate an HTML element to a maximum length, considering its text.
-
-    This returns a tuple with the truncated HTML and a boolean indicating if the
-    truncation was necessary.
     """
     acc = i = 0
     for i, child in enumerate(element.contents):
@@ -569,3 +633,17 @@ def truncate_html(element: Tag, max_length: int) -> Tag:
     element.contents = element.contents[: i + 1]
 
     return element
+
+
+def reformat_html(html: str) -> str:
+    """
+    Reformat HTML so it looks nice.
+    """
+    formatter = HTMLFormatter(indent=4)
+    html = BeautifulSoup(
+        html,
+        "html.parser",
+        preserve_whitespace_tags=["p", "pre"],
+    ).prettify(formatter=formatter)
+
+    return html

@@ -4,14 +4,21 @@
 
 {# see https://indieweb.org/post-type-discovery #}
 {% macro h_entry(data, compact=False) %}
-<article id="entry-{{ data.properties.uid[0] }}" class="h-entry">
+{% set uuid = data.properties.uid[0].split('/')[-1] %}
+<article id="entry-{{ uuid }}" class="h-entry">
     {% if data.properties.name %}
     <header>
         <hgroup>
-            <h1 class="p-name">{{ data.properties.name[0] }}</h1>
+            <h1 class="p-name">{{ data.properties.name | join(' ') }}</h1>
 
             {% if data.properties.summary %}
-            <p class="p-summary">{{ data.properties.summary[0] }}</p>
+                {% for summary in data.properties.summary %}
+                    {% if summary is mapping %}
+                    <p class="e-summary">{{ summary.html | replace('\n', '<br/>') | clean | safe }}</p>
+                    {% else %}
+                    <p class="p-summary">{{ summary }}</p>
+                    {% endif %}
+                {% endfor %}
             {% endif %}
         </hgroup>
     </header>
@@ -23,7 +30,13 @@
         <p>
             {% if data.properties.author %}
             {{ get_type_emoji(data) | safe }}
-            Published by {{ author_macros.author(data.properties.author[0], compact=True) }}
+            Published by
+            {% for author in data.properties.author -%}
+                {% if loop.length > 1 and loop.last %}, and
+                {% elif not loop.first %},
+                {% endif %}
+                {{ author_macros.author(author, compact=True).strip() }}
+            {%- endfor %}
             {% endif %}
             @
             {% if data.properties.url %}
@@ -50,7 +63,7 @@
 
             {% if session.me == url_for('homepage.index', _external=True) %}
             <a
-                href="{{ url_for('crud.edit', uuid=data.properties.uid[0]) }}"
+                href="{{ url_for('crud.edit', uuid=uuid) }}"
                 class="action"
                 title="Edit entry"
             >✏️</a>
@@ -58,7 +71,7 @@
                 href="#"
                 class="action"
                 title="Delete entry"
-                hx-delete="{{ url_for('crud.delete', uuid=data.properties.uid[0]) }}"
+                hx-delete="{{ url_for('crud.delete', uuid=uuid) }}"
                 hx-confirm="Are you sure you wish to delete this entry?"
                 hx-target="closest article"
                 hx-swap="outerHTML swap:1s"

@@ -1,7 +1,7 @@
 {% if data %}
-{% set content = data.properties.content[0] %}
+    {% set content = data.properties.content[0] %}
 {% else %}
-{% set content = None %}
+    {% set content = None %}
 {% endif %}
 
 <fieldset>
@@ -11,9 +11,10 @@
             name="title"
             tabindex="1"
             required
+
             autofocus
             {% if data and 'name' in data.properties %}
-                value="{{ data.properties.name[0] }}"
+            value="{{ data.properties.name[0] }}"
             {% endif %}
         />
     </label>
@@ -22,8 +23,9 @@
         <input
             name="summary"
             tabindex="2"
+
             {% if data and 'summary' in data.properties %}
-                value="{{ data.properties.summary[0] }}"
+            value="{{ data.properties.summary[0] }}"
             {% endif %}
         />
     </label>
@@ -52,8 +54,9 @@
             name="category"
             placeholder="foo, bar"
             tabindex="4"
+
             {% if data and 'category' in data.properties %}
-                value="{{ ', '.join(data.properties.category) }}"
+            value="{{ ', '.join(data.properties.category) }}"
             {% endif %}
         />
         <small>Comma separated list.</small>

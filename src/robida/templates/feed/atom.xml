@@ -62,7 +62,7 @@
         {% if child.properties.author[0] is mapping %}
         {% set hcard = child.properties.author[0] %}
         {% else %}
-        {% set hcard = fetch_hcard(child.properties.author[0]) %}
+        {% set hcard = get_hcard(child.properties.author[0]) %}
         {% endif %}
         <author>
             {% if hcard.properties.name %}

@@ -14,13 +14,15 @@
 
         <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/ace.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/leaflet.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
 
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/leaflet/leaflet.css') }}">
     </head>
     <body>
         <!-- This is a honeypot for robots, please ignore... -->
-        <a class="honey" href="{{ url_for('robots.honeypot', secret='into-the-mirror') }}">🤖</a>
+        <a aria-hidden="true" href="{{ url_for('robots.honeypot', secret='into-the-mirror') }}">🐇</a>
 
         <header>
             <nav>
@@ -50,16 +52,14 @@
         </main>
 
         <footer>
-            <p>
-                <form role="search" method="GET" action="{{ url_for('search.index') }}">
-                    <input
-                        name="q"
-                        type="search"
-                        placeholder="Try: python OR Flask, NEAR(like, entry), vegan AND recipes"
-                    />
-                    <input type="submit" value="Search"/>
-                </form>
-            </p>
+            <form role="search" method="GET" action="{{ url_for('search.index') }}">
+                <input
+                    name="q"
+                    type="search"
+                    placeholder="Try: python OR Flask, NEAR(like, entry), vegan AND recipes"
+                />
+                <input type="submit" value="Search"/>
+            </form>
             <p style="text-align: center;">
                 🍃
                 <a
