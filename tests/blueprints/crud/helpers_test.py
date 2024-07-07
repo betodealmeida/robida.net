@@ -190,8 +190,7 @@ async def test_create_article(mocker: MockerFixture, current_app: Quart) -> None
             "content": [
                 {
                     "html": "<p>This is a <em>test</em> article</p>\n<p>Test.</p>\n",
-                    "value": "This is a test article\nTest.\n",
-                    "data-markdown": "This is a *test* article\n\nTest.",
+                    "value": "This is a *test* article\n\nTest.",
                 }
             ],
             "category": ["blog", "meta"],
@@ -463,8 +462,7 @@ async def test_create_note(mocker: MockerFixture, current_app: Quart) -> None:
             "content": [
                 {
                     "html": "<p>This is a <em>test</em> note.</p>\n",
-                    "value": "This is a test note.\n",
-                    "data-markdown": "This is a *test* note.",
+                    "value": "This is a *test* note.",
                 }
             ],
             "category": ["blog", "meta"],
@@ -674,8 +672,7 @@ async def test_update_hentry(mocker: MockerFixture, current_app: Quart) -> None:
             "content": [
                 {
                     "html": "<p>This is a <em>test</em> note.</p>\n",
-                    "value": "This is a test note.\n",
-                    "data-markdown": "This is a *test* note.",
+                    "value": "This is a *test* note.",
                 }
             ],
             "post-template": ["note"],

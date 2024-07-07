@@ -99,9 +99,6 @@ My website.
 
 ### Notes
 
-- after delete, remove item from feed or send user to homepage
-- make sure extra fields are preserved on edit
-
 - call /publish on new entries => event
 - fix rel="self" so it works in categories, main page, etc
 

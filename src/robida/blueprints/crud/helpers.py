@@ -110,15 +110,13 @@ async def create_article(data: ArticlePayload) -> dict[str, Any]:
     Create an article.
     """
     html = pyromark.markdown(data.content)
-    soup = BeautifulSoup(html, "html.parser")
 
     properties: dict[str, Any] = {
         "name": [data.title],
         "content": [
             {
                 "html": html,
-                "value": soup.get_text(),
-                "data-markdown": data.content,
+                "value": data.content,
             },
         ],
     }
@@ -189,7 +187,6 @@ async def create_note(data: NotePayload) -> dict[str, Any]:
     Create a note.
     """
     html = pyromark.markdown(data.content)
-    soup = BeautifulSoup(html, "html.parser")
 
     properties: dict[str, Any] = {
         "name": [],
@@ -197,8 +194,7 @@ async def create_note(data: NotePayload) -> dict[str, Any]:
         "content": [
             {
                 "html": html,
-                "value": soup.get_text(),
-                "data-markdown": data.content,
+                "value": data.content,
             },
         ],
     }

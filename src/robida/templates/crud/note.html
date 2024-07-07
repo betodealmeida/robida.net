@@ -1,3 +1,9 @@
+{% if data %}
+{% set content = data.properties.content[0] %}
+{% else %}
+{% set content = None %}
+{% endif %}
+
 <fieldset>
     <label>
         Note
@@ -7,8 +13,10 @@
             tabindex="1"
             required
             autofocus
-            {% if data and 'data-markdown' in data.properties.content[0] %}
-                value="{{ data.properties.content[0]['data-markdown'] }}"
+            {% if content is mapping %}
+                value="{{ content.value }}"
+            {% elif content %}
+                value="{{ content }}"
             {% endif %}
         />
         <small><a href="https://www.markdownguide.org/" tabindex="4">Markdown</a> supported.</small>
