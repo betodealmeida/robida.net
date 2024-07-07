@@ -2,7 +2,7 @@
 
 {% macro like(data, compact=False) %}
 {% set like_of = data.properties['like-of'][0] %}
-{% if like_of.properties.content %}
+{% if like_of is mapping %}
     {% if like_of.properties.content[0] is mapping %}
         {% set content = like_of.properties.content[0].html %}
     {% else %}
@@ -30,5 +30,7 @@
             {{ content | clean | safe }}
         </blockquote>
     </div>
+{% else %}
+    <a class="u-life-of" href="{{ life_of }}">{{ life_of }}</a>
 {% endif %}
 {% endmacro %}
